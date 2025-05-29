@@ -533,6 +533,9 @@
 }
 
 @media (max-width: 768px) {
+  .nexus-login-left {
+  display: none;
+}
   .nexus-login-content {
     padding: 30px;
   }
@@ -557,10 +560,15 @@
     flex-direction: column;
   }
 
-  .nexus-math-drawings {
-    width: 300px;
-    height: 300px;
-  }
+  .nexus-logo {
+  width: auto;
+  height: 20vh;
+}
+.nexus-logo img{
+  width: 200px;
+  height: auto;
+  object-fit: contain;
+}
 
   .nexus-footer-content {
     grid-template-columns: repeat(2, 1fr);
