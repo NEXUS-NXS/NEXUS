@@ -165,12 +165,12 @@ const Dashboard = () => {
         <h3>Continue Learning</h3>
       <div className="continue-learning">
         
-        <div className="course-grid">
+        <div className="course-grid-dbd">
           {continuelearningCourses.map((course) => (
-            <div key={course.id} className="enhanced-course-card">
-              <div className="course-image">
+            <div key={course.id} className="enhanced-course-card-dbd">
+              <div className="course-image-dbd">
                 <img src={course.image || "/placeholder.svg"} alt={course.title} />
-                <div className="enrollments-badge">
+                <div className="enrollments-badge-dbd">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" />
                     <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
@@ -180,16 +180,16 @@ const Dashboard = () => {
                   {course.enrollments} enrollments
                 </div>
               </div>
-              <div className="course-info">
-                <span className="course-category">{course.category}</span>
-                <h4 className="course-title">{course.title}</h4>
-                <div className="progress-section">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${course.progress}%` }}></div>
+              <div className="course-info-dbd">
+                <span className="course-category-dbd">{course.category}</span>
+                <h4 className="course-title-dbd">{course.title}</h4>
+                <div className="progress-section-dbd">
+                  <div className="progress-bar-dbd">
+                    <div className="progress-fill-dbd" style={{ width: `${course.progress}%` }}></div>
                   </div>
-                  <span className="progress-text">{course.progress}% completed</span>
+                  <span className="progress-text-dbd">{course.progress}% completed</span>
                 </div>
-                <button className="continue-course-btn">Continue Course</button>
+                <button className="continue-course-btn-dbd">Continue Course</button>
               </div>
             </div>
           ))}
