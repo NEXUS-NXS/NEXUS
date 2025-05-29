@@ -309,9 +309,8 @@ const Login = () => {
           <div className="nexus-footer-section">
             <div className="nexus-footer-logo">
               <div className="nexus-footer-logo-icon">
-                <span>N</span>
+                <img src="/assets/nexus-white-logo.png" alt="" />
               </div>
-              <span className="nexus-footer-brand">NEXUS</span>
             </div>
             <p className="nexus-footer-description">
               Empowering actuarial professionals with cutting-edge tools, comprehensive resources, and a thriving
