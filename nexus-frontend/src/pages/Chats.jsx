@@ -109,7 +109,7 @@ const Chats = () => {
           senderName: "Mike Chen",
           message: "Let's schedule our next session",
           timestamp: "2024-01-11T14:45:00Z",
-          avatar: "/placeholder.svg?height=32&width=32",
+          avatar: "assets/monte-carlo.jpg",
         },
       ],
     }

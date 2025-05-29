@@ -63,7 +63,7 @@ const StudyGroups = () => {
         tags: ["Probability", "Statistics", "SOA"],
         nextSession: "2024-01-15T18:00:00Z",
         lastActivity: "2024-01-10T14:30:00Z",
-        avatar: "/placeholder.svg?height=80&width=80",
+        avatar: "/assets/monte-carlo.jpg",
         isJoined: false,
       },
       {
@@ -80,7 +80,7 @@ const StudyGroups = () => {
         tags: ["Python", "Programming", "Data Analysis"],
         nextSession: "2024-01-12T19:00:00Z",
         lastActivity: "2024-01-11T16:45:00Z",
-        avatar: "/placeholder.svg?height=80&width=80",
+        avatar: "/assets/monte-carlo.jpg",
         isJoined: true,
       },
       {
@@ -131,7 +131,7 @@ const StudyGroups = () => {
         tags: ["Weekend", "Casual", "Study"],
         nextSession: "2024-01-13T10:00:00Z",
         lastActivity: "2024-01-10T18:30:00Z",
-        avatar: "/placeholder.svg?height=80&width=80",
+        avatar: "/assets/monte-carlo.jpg",
         isJoined: false,
       },
     ]
