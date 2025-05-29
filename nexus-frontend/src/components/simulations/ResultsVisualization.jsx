@@ -5,7 +5,15 @@ import { BarChart2, LineChart, TableIcon, Info } from "lucide-react"
 import "./ResultsVisualization.css"
 
 const ResultsVisualization = ({ simulation, results }) => {
-  const [activeView, setActiveView] = useState(simulation.resultTypes[0])
+  // const [activeView, setActiveView] = useState(simulation.resultTypes[0])
+  const [activeView, setActiveView] = useState(
+    simulation?.resultTypes?.[0] || "histogram"
+  );
+
+   if (!simulation || !simulation.resultTypes) {
+    // You can show a loading or fallback message until simulation.resultTypes is ready
+    return <div>Loading results...</div>;
+  }
 
   // Function to create a simple histogram
   const renderHistogram = (data, bins = 20) => {

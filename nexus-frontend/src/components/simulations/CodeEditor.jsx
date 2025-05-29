@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Play, Copy, Download, Upload } from "lucide-react"
+import { Play, Copy, Download, Upload, X, Minimize2, ChevronDown, Plus, Code, TrendingUp, Settings } from "lucide-react"
 import "./CodeEditor.css"
 
-const CodeEditor = ({ simulation, onRun, isRunning }) => {
+const CodeEditor = ({ simulation, onRun, isRunning, activeTab, onTabChange, onBackToList, onNewSimulation }) => {
   const [code, setCode] = useState(`# Actuarial Risk Model
 import numpy as np
 import pandas as pd
@@ -44,11 +44,7 @@ print(f"99% VaR: {risk_metrics['var_99']:.4f}")
 print(f"Expected Shortfall: {risk_metrics['expected_shortfall']:.4f}")
 print(f"Sharpe Ratio: {risk_metrics['sharpe_ratio']:.4f}")`)
 
-//   const [language, setLanguage] = useState(simulation.language || "python")
-const [language, setLanguage] = useState(
-  (simulation && simulation.language) || "python"
-)
-
+  const [language, setLanguage] = useState(simulation?.language || "python")
 
   const handleCodeChange = (e) => {
     setCode(e.target.value)
@@ -108,59 +104,112 @@ return alpha`)
   }
 
   return (
-    <div className="code-editor-container">
-      <div className="editor-toolbar">
-        <div className="language-selector">
-          <select value={language} onChange={handleLanguageChange}>
-            <option value="python">Python</option>
-            <option value="r">R</option>
-            <option value="fel">Fast Expression Language</option>
-          </select>
+    <div className="code-editor-full-container">
+      {/* Header Section */}
+      <div className="nexus-sim-header">
+        <div className="nexus-sim-top-bar">
+          <div className="nexus-sim-info">
+            <div className="nexus-sim-alpha-icon">α</div>
+            <span className="nexus-sim-title">{simulation ? simulation.title : "Select a Simulation"}</span>
+            {simulation && <div className={`nexus-sim-status nexus-sim-status-${simulation.status}`}></div>}
+          </div>
+          <div className="nexus-sim-controls">
+            <button className="nexus-sim-btn" onClick={onBackToList}>
+              <X size={16} />
+            </button>
+            <button className="nexus-sim-btn">
+              <Minimize2 size={16} />
+            </button>
+            <button className="nexus-sim-btn">
+              <ChevronDown size={16} />
+            </button>
+            <button className="nexus-sim-btn nexus-sim-new-btn" onClick={onNewSimulation}>
+              <Plus size={16} />
+              New
+            </button>
+          </div>
         </div>
 
-        <div className="editor-actions">
-          <button className="action-btn" title="Copy Code">
-            <Copy size={16} />
+        <div className="nexus-sim-tabs">
+          <button
+            className={`nexus-sim-tab ${activeTab === "CODE" ? "nexus-sim-tab-active" : ""}`}
+            onClick={() => onTabChange("CODE")}
+          >
+            <Code size={16} />
+            CODE
           </button>
-          <button className="action-btn" title="Upload File">
-            <Upload size={16} />
+          <button
+            className={`nexus-sim-tab ${activeTab === "RESULTS" ? "nexus-sim-tab-active" : ""}`}
+            onClick={() => onTabChange("RESULTS")}
+          >
+            <TrendingUp size={16} />
+            RESULTS
           </button>
-          <button className="action-btn" title="Download Code">
-            <Download size={16} />
+          <button
+            className={`nexus-sim-tab ${activeTab === "SETTINGS" ? "nexus-sim-tab-active" : ""}`}
+            onClick={() => onTabChange("SETTINGS")}
+          >
+            <Settings size={16} />
+            SETTINGS
           </button>
         </div>
       </div>
 
-      <div className="code-editor">
-        <div className="line-numbers">
-          {code.split("\n").map((_, index) => (
-            <div key={index} className="line-number">
-              {index + 1}
-            </div>
-          ))}
+      {/* Code Editor Content */}
+      <div className="code-editor-container">
+        <div className="editor-toolbar">
+          <div className="language-selector">
+            <select value={language} onChange={handleLanguageChange}>
+              <option value="python">Python</option>
+              <option value="r">R</option>
+              <option value="fel">Fast Expression Language</option>
+            </select>
+          </div>
+
+          <div className="editor-actions">
+            <button className="action-btn" title="Copy Code">
+              <Copy size={16} />
+            </button>
+            <button className="action-btn" title="Upload File">
+              <Upload size={16} />
+            </button>
+            <button className="action-btn" title="Download Code">
+              <Download size={16} />
+            </button>
+          </div>
         </div>
 
-        <textarea
-          value={code}
-          onChange={handleCodeChange}
-          className="code-textarea"
-          spellCheck={false}
-          placeholder="Enter your actuarial model code here..."
-        />
-      </div>
+        <div className="code-editor">
+          <div className="line-numbers">
+            {code.split("\n").map((_, index) => (
+              <div key={index} className="line-number">
+                {index + 1}
+              </div>
+            ))}
+          </div>
 
-      <div className="editor-footer">
-        <div className="execution-info">
-          <span className="execution-status">{isRunning ? "Running..." : "Ready to execute"}</span>
+          <textarea
+            value={code}
+            onChange={handleCodeChange}
+            className="code-textarea"
+            spellCheck={false}
+            placeholder="Enter your actuarial model code here..."
+          />
         </div>
 
-        <div className="action-buttons">
-          <button className="example-btn">Example</button>
-          <button className="clone-btn">Clone</button>
-          <button className="simulate-btn" onClick={onRun} disabled={isRunning}>
-            <Play size={16} />
-            {isRunning ? "Running..." : "Simulate"}
-          </button>
+        <div className="editor-footer">
+          <div className="execution-info">
+            <span className="execution-status">{isRunning ? "Running..." : "Ready to execute"}</span>
+          </div>
+
+          <div className="action-buttons">
+            <button className="example-btn">Example</button>
+            <button className="clone-btn">Clone</button>
+            <button className="simulate-btn" onClick={onRun} disabled={isRunning}>
+              <Play size={16} />
+              {isRunning ? "Running..." : "Simulate"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

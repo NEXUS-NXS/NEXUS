@@ -68,56 +68,56 @@ const Header = () => {
   }
 
   return (
-    <header className="header">
-      <div className="header-left">
-        <button className="menu-button">
+    <header className="header-top-nav">
+      <div className="header-left-top-nav">
+        <button className="menu-button-top-nav">
           <Menu size={20} />
         </button>
 
-        <div className="browse-container">
-          <button className="browse-button" onClick={toggleBrowseMenu}>
+        <div className="browse-container-top-nav">
+          <button className="browse-button-top-nav" onClick={toggleBrowseMenu}>
             Browse
-            <ChevronDown size={16} className={`browse-arrow ${showBrowseMenu ? "rotated" : ""}`} />
+            <ChevronDown size={16} className={`browse-arrow-top-nav ${showBrowseMenu ? "rotated" : ""}`} />
           </button>
 
           {showBrowseMenu && (
-            <div className="browse-dropdown">
-              <div className="browse-overlay" onClick={() => setShowBrowseMenu(false)} />
+            <div className="browse-dropdown-top-nav">
+              <div className="browse-overlay-top-nav" onClick={() => setShowBrowseMenu(false)} />
 
-              <div className="browse-content">
-                <div className="browse-section">
-                  <div className="section-header">
+              <div className="browse-content-top-nav">
+                <div className="browse-section-top-nav">
+                  <div className="section-header-top-nav">
                     <BookOpen size={18} />
                     <h3>Course Categories</h3>
                   </div>
-                  <div className="category-grid">
+                  <div className="category-grid-top-nav">
                     {browseMenuData.categories.map((category, index) => (
-                      <div key={index} className={`category-item ${category.popular ? "popular" : ""}`}>
-                        <category.icon size={16} className="category-icon" />
+                      <div key={index} className={`category-item-top-nav ${category.popular ? "popular" : ""}`}>
+                        <category.icon size={16} className="category-icon-top-nav" />
                         <span>{category.name}</span>
-                        {category.popular && <span className="popular-badge">Popular</span>}
+                        {category.popular && <span className="popular-badge-top-nav">Popular</span>}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="browse-section">
-                  <div className="section-header">
+                <div className="browse-section-top-nav">
+                  <div className="section-header-top-nav">
                     <Star size={18} />
                     <h3>Featured Courses</h3>
                   </div>
-                  <div className="featured-courses">
+                  <div className="featured-courses-top-nav">
                     {browseMenuData.featuredCourses.map((course, index) => (
-                      <div key={index} className="course-item">
-                        <div className="course-info">
+                      <div key={index} className="course-item-top-nav">
+                        <div className="course-info-top-nav">
                           <h4>{course.name}</h4>
-                          <div className="course-meta">
-                            <span className={`level ${course.level.toLowerCase()}`}>{course.level}</span>
-                            <div className="rating">
-                              <Star size={12} fill="currentColor" />
+                          <div className="course-meta-top-nav">
+                            <span className={`level-top-nav ${course.level.toLowerCase()}`}>{course.level}</span>
+                            <div className="rating-top-nav">
+                              <Star size={12} fill="currentColor-top-nav" />
                               <span>{course.rating}</span>
                             </div>
-                            <div className="students">
+                            <div className="students-top-nav">
                               <Users size={12} />
                               <span>{course.students}</span>
                             </div>
@@ -128,36 +128,36 @@ const Header = () => {
                   </div>
                 </div>
 
-                <div className="browse-section">
-                  <div className="section-header">
+                <div className="browse-section-top-nav">
+                  <div className="section-header-top-nav">
                     <TrendingUp size={18} />
                     <h3>Learning Paths</h3>
                   </div>
-                  <div className="learning-paths">
+                  <div className="learning-paths-top-nav">
                     {browseMenuData.learningPaths.map((path, index) => (
-                      <div key={index} className="path-item">
+                      <div key={index} className="path-item-top-nav">
                         <h4>{path.name}</h4>
-                        <div className="path-meta">
-                          <span className="duration">{path.duration}</span>
-                          <span className="courses">{path.courses} courses</span>
+                        <div className="path-meta-top-nav">
+                          <span className="duration-top-nav">{path.duration}</span>
+                          <span className="courses-top-nav">{path.courses} courses</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="browse-section">
-                  <div className="section-header">
+                <div className="browse-section-top-nav">
+                  <div className="section-header-top-nav">
                     <Award size={18} />
                     <h3>Professional Certifications</h3>
                   </div>
-                  <div className="certifications">
+                  <div className="certifications-top-nav">
                     {browseMenuData.certifications.map((cert, index) => (
-                      <div key={index} className="cert-item">
-                        <div className="cert-info">
+                      <div key={index} className="cert-item-top-nav">
+                        <div className="cert-info-top-nav">
                           <h4>{cert.name}</h4>
-                          <p className="cert-provider">{cert.provider}</p>
-                          <span className={`cert-level ${cert.level.toLowerCase().replace(/[^a-z]/g, "-")}`}>
+                          <p className="cert-provider-top-nav">{cert.provider}</p>
+                          <span className={`cert-level-top-nav ${cert.level.toLowerCase().replace(/[^a-z]/g, "-")}`}>
                             {cert.level}
                           </span>
                         </div>
@@ -171,20 +171,20 @@ const Header = () => {
         </div>
       </div>
 
-      <div className="search-container">
-        <Search size={18} className="search-icon" />
-        <input type="text" placeholder="Search courses, exams, study materials..." className="search-input" />
+      <div className="search-container-top-nav">
+        <Search size={18} className="search-icon-top-nav" />
+        <input type="text" placeholder="Search courses, exams, study materials..." className="search-input-top-nav" />
       </div>
 
-      <div className="header-actions">
-        <div className="notification-icon">
+      <div className="header-actions-top-nav">
+        <div className="notification-icon-top-nav">
           <Bell size={20} />
-          {user?.notifications > 0 && <span className="notification-badge">{user.notifications}</span>}
+          {user?.notifications > 0 && <span className="notification-badge-top-nav">{user.notifications}</span>}
         </div>
 
-        <div className="profile-container">
-          <div className="profile-trigger" onClick={toggleProfileMenu}>
-            <div className="avatar">
+        <div className="profile-container-top-nav">
+          <div className="profile-trigger-top-nav" onClick={toggleProfileMenu}>
+            <div className="avatar-top-nav">
               {user?.profileImage ? (
                 <img src={user.profileImage || "/placeholder.svg"} alt={user.name} />
               ) : (
@@ -194,16 +194,16 @@ const Header = () => {
           </div>
 
           {showProfileMenu && (
-            <div className="profile-menu">
-              <div className="profile-header">
-                <p className="profile-name">{user?.name}</p>
-                <p className="profile-email">{user?.email}</p>
+            <div className="profile-menu-top-nav">
+              <div className="profile-header-top-nav">
+                <p className="profile-name-top-nav">{user?.name}</p>
+                <p className="profile-email-top-nav">{user?.email}</p>
               </div>
               <ul>
                 <li>Profile Settings</li>
                 <li>Account</li>
                 <li>Help Center</li>
-                <li className="logout">Logout</li>
+                <li className="logout-top-nav">Logout</li>
               </ul>
             </div>
           )}

@@ -1,26 +1,213 @@
-.code-editor-container {
+/* Full Container for Code Editor */
+.code-editor-full-container {
   height: 100%;
-  background: #1a1a1a;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
+/* Header Section */
+.nexus-sim-header {
+  background: rgba(30, 60, 114, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.nexus-sim-top-bar {
+  background: #34495e;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 60px;
+}
+
+.nexus-sim-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nexus-sim-alpha-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+}
+
+.nexus-sim-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-sim-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.nexus-sim-status-active {
+  background: #4ade80;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+  border-color: #4ade80;
+}
+
+.nexus-sim-status-completed {
+  background: #60a5fa;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.6);
+  border-color: #60a5fa;
+}
+
+.nexus-sim-status-failed {
+  background: #f87171;
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.6);
+  border-color: #f87171;
+}
+
+/* Control Buttons */
+.nexus-sim-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nexus-sim-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nexus-sim-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.nexus-sim-new-btn {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.4);
+  font-weight: 500;
+}
+
+.nexus-sim-new-btn:hover {
+  background: rgba(74, 222, 128, 0.3);
+  color: #22c55e;
+  border-color: rgba(74, 222, 128, 0.6);
+}
+
+/* Main Navigation Tabs */
+.nexus-sim-tabs {
+  display: flex;
+  padding: 0 20px;
+  background: rgba(42, 82, 152, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-x: auto;
+}
+
+.nexus-sim-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+  white-space: nowrap;
+  min-height: 56px;
+  position: relative;
+}
+
+.nexus-sim-tab:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.nexus-sim-tab-active {
+  background: white;
+  color: #1e3c72;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nexus-sim-tab-active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #00d4ff;
+}
+
+/* Code Editor Container */
+.code-editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  overflow: hidden;
+}
+
+/* Editor Toolbar */
 .editor-toolbar {
+  background: #2a2a2a;
+  border-bottom: 1px solid #3a3a3a;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #2d2d2d;
-  border-bottom: 1px solid #404040;
+  flex-shrink: 0;
 }
 
 .language-selector select {
-  background: #404040;
+  background: #333;
+  border: 1px solid #444;
   color: white;
-  border: 1px solid #555;
-  border-radius: 4px;
-  padding: 6px 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
   font-size: 14px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.language-selector select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.language-selector select option {
+  background: #333;
+  color: white;
 }
 
 .editor-actions {
@@ -29,138 +216,182 @@
 }
 
 .action-btn {
-  background: #404040;
-  border: 1px solid #555;
-  color: white;
-  padding: 6px 8px;
-  border-radius: 4px;
+  background: #333;
+  border: 1px solid #444;
+  color: #9ca3af;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:hover {
-  background: #505050;
+  background: #3a3a3a;
+  color: white;
+  border-color: #555;
+  transform: translateY(-1px);
 }
 
+/* Code Editor */
 .code-editor {
   flex: 1;
   display: flex;
-  background: #1a1a1a;
+  background: #1e1e1e;
   overflow: hidden;
 }
 
 .line-numbers {
-  background: #2d2d2d;
-  color: #666;
-  padding: 16px 8px;
+  background: #252525;
+  border-right: 1px solid #3a3a3a;
+  padding: 20px 12px;
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 14px;
   line-height: 1.5;
-  text-align: right;
-  min-width: 50px;
-  border-right: 1px solid #404040;
+  color: #6b7280;
   user-select: none;
+  min-width: 60px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .line-number {
   height: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .code-textarea {
   flex: 1;
-  background: #1a1a1a;
-  color: #f8f8f2;
+  background: #1e1e1e;
   border: none;
   outline: none;
-  padding: 16px;
+  padding: 20px;
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 14px;
   line-height: 1.5;
+  color: #e5e7eb;
   resize: none;
   white-space: pre;
   overflow-wrap: normal;
   overflow-x: auto;
+  tab-size: 2;
 }
 
 .code-textarea::placeholder {
-  color: #666;
+  color: #6b7280;
 }
 
+/* Editor Footer */
 .editor-footer {
-  background: #2d2d2d;
-  padding: 12px 16px;
+  background: #2a2a2a;
+  border-top: 1px solid #3a3a3a;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #404040;
+  flex-shrink: 0;
+}
+
+.execution-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .execution-status {
-  color: #888;
   font-size: 14px;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .action-buttons {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .example-btn,
 .clone-btn {
-  background: #404040;
-  color: white;
-  border: 1px solid #555;
+  background: #333;
+  border: 1px solid #444;
+  color: #d1d5db;
   padding: 8px 16px;
   border-radius: 6px;
-  cursor: pointer;
   font-size: 14px;
-  transition: background 0.2s ease;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .example-btn:hover,
 .clone-btn:hover {
-  background: #505050;
+  background: #3a3a3a;
+  color: white;
+  border-color: #555;
+  transform: translateY(-1px);
 }
 
 .simulate-btn {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: #4a90e2;
+  border: 1px solid #4a90e2;
   color: white;
-  border: none;
-  padding: 8px 20px;
+  padding: 8px 16px;
   border-radius: 6px;
-  cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
+  gap: 8px;
 }
 
 .simulate-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0099cc, #007399);
+  background: #3a80d2;
   transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(74, 144, 226, 0.3);
 }
 
 .simulate-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* Syntax highlighting simulation */
-.code-textarea {
-  color: #f8f8f2;
-}
-
-/* Comments */
-.code-textarea:focus {
-  background: #1e1e1e;
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
+  .nexus-sim-top-bar {
+    padding: 10px 16px;
+  }
+
+  .nexus-sim-alpha-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .nexus-sim-title {
+    font-size: 16px;
+  }
+
+  .nexus-sim-tabs {
+    padding: 0 10px;
+  }
+
+  .nexus-sim-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    min-height: 48px;
+  }
+
   .editor-toolbar {
+    padding: 10px 16px;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     align-items: stretch;
   }
 
@@ -169,6 +400,7 @@
   }
 
   .editor-footer {
+    padding: 10px 16px;
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
@@ -176,5 +408,16 @@
 
   .action-buttons {
     justify-content: center;
+  }
+
+  .code-textarea {
+    padding: 15px;
+    font-size: 13px;
+  }
+
+  .line-numbers {
+    padding: 15px 8px;
+    font-size: 13px;
+    min-width: 50px;
   }
 }
