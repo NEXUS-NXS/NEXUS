@@ -12,8 +12,8 @@ import MyCourses from "./pages/MyCourses"
 import MyCertificates from "./pages/MyCertificates"
 import WellBeingCenter from "./pages/WellBeingCenter"
 import CareerGuidance from "./pages/CareerGuidance"
-import Simulations from "./pages/Simulations"
-import CourseDetail from "./pages/CourseDetail"
+// import Simulations from "./pages/Simulations"
+// import CourseDetail from "./pages/CourseDetail"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import { UserProvider } from "./context/UserContext"
@@ -113,14 +113,14 @@ function AppContent({ isMobile }) {
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* <Route
               path="/simulations"
               element={
                 <ProtectedRoute>
                   <Simulations />
                 </ProtectedRoute>
               }
-            />
+            /> */}
             <Route path="/add-course" element={<CourseContentManager />} />
           </Routes>
         </div>

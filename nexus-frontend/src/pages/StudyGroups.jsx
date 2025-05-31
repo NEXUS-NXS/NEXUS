@@ -254,7 +254,7 @@ const StudyGroups = () => {
       {activeTab === "discover" && (
         <>
           <div className="study-groups-filters">
-            <div className="search-container">
+            <div className="search-container-std-grp">
               <Search size={18} />
               <input
                 type="text"

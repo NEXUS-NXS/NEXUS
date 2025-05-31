@@ -70,7 +70,7 @@
   transform: translateY(-2px);
 }
 
-.filter-container {
+.filter-container-resource {
   position: relative;
   display: flex;
   align-items: center;
@@ -82,18 +82,18 @@
   transition: all 0.3s ease;
 }
 
-.filter-container:hover {
+.filter-container-resource:hover {
   background: rgba(255, 255, 255, 1);
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
-.filter-container svg {
+.filter-container-resource svg {
   margin-right: 0.5rem;
   color: #6b7280;
 }
 
-.filter-container select {
+.filter-container-resource select {
   border: none;
   background: transparent;
   padding: 1rem 0.5rem;

@@ -160,7 +160,7 @@ const Resources = () => {
             </select>
           </div>
 
-          <div className="filter-container">
+          <div className="filter-container-resource">
             <BookOpen size={18} />
             <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
               {resourceTypes.map((type) => (
