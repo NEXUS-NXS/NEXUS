@@ -16,20 +16,6 @@
   gap: 20px;
 }
 
-.menu-button-top-nav {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: all 0.2s;
-  color: var(--text-secondary);
-}
-
-.menu-button-top-nav:hover {
-  background-color: var(--light-bg);
-  color: var(--text-primary);
-}
 
 .browse-container-top-nav {
   position: relative;

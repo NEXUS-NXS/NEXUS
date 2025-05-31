@@ -70,9 +70,9 @@ const Header = () => {
   return (
     <header className="header-top-nav">
       <div className="header-left-top-nav">
-        <button className="menu-button-top-nav">
+        {/* <button className="menu-button-top-nav">
           <Menu size={20} />
-        </button>
+        </button> */}
 
         <div className="browse-container-top-nav">
           <button className="browse-button-top-nav" onClick={toggleBrowseMenu}>

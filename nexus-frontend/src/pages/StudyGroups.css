@@ -72,23 +72,23 @@
   flex-wrap: wrap;
 }
 
-.search-container {
+.search-container-std-grp {
   display: flex;
   align-items: center;
   background-color: var(--light-surface);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
+  border-radius: 50px;
   padding: 10px 15px;
   flex: 1;
   min-width: 250px;
 }
 
-.search-container svg {
+.search-container-std-grp svg {
   color: var(--text-muted);
   margin-right: 10px;
 }
 
-.search-container input {
+.search-container-std-grp input {
   border: none;
   background: none;
   outline: none;
