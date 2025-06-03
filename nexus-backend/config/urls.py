@@ -20,11 +20,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
-    # API endpoints will be added here
-    # path('api/', include('apps.users.urls')),
-    # path('api/courses/', include('apps.courses.urls')),
+    
+    # API endpoints
+    path('api/resources/', include('resources.api.urls')),
     # Add other app URLs here
+    # path('api/users/', include('users.urls')),
+    # path('api/courses/', include('courses.urls')),
 ]
 
 # Serve static and media files in development
