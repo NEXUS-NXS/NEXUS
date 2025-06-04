@@ -1,0 +1,1752 @@
+/* Main Container */
+.nexus-wellbeing-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f8fafc;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Header */
+.nexus-wellbeing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(90deg, #4ade80, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nexus-wellbeing-title p {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  margin: 0.25rem 0 0 0;
+}
+
+.nexus-wellbeing-score {
+  display: flex;
+  align-items: center;
+}
+
+.nexus-wellbeing-score-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.nexus-wellbeing-score-inner {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #1e293b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexus-wellbeing-score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.nexus-wellbeing-score-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Tabs */
+.nexus-wellbeing-tabs {
+  display: flex;
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nexus-wellbeing-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.nexus-wellbeing-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.nexus-wellbeing-tab:hover {
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-tab.active {
+  color: #4ade80;
+}
+
+.nexus-wellbeing-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #4ade80;
+  border-radius: 3px 3px 0 0;
+}
+
+/* Content */
+.nexus-wellbeing-content {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+}
+
+/* Chat Section */
+.nexus-wellbeing-chat {
+  display: flex;
+  gap: 1.5rem;
+  height: calc(100vh - 200px);
+}
+
+.nexus-wellbeing-chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.nexus-wellbeing-chat-messages {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nexus-wellbeing-message {
+  display: flex;
+  gap: 1rem;
+  max-width: 80%;
+}
+
+.nexus-wellbeing-message.ai {
+  align-self: flex-start;
+}
+
+.nexus-wellbeing-message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.nexus-wellbeing-message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nexus-wellbeing-message.ai .nexus-wellbeing-message-avatar {
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  color: white;
+}
+
+.nexus-wellbeing-message.user .nexus-wellbeing-message-avatar {
+  background: #475569;
+  color: white;
+}
+
+.nexus-wellbeing-message-content {
+  background: #334155;
+  padding: 1rem;
+  border-radius: 12px;
+  position: relative;
+}
+
+.nexus-wellbeing-message.ai .nexus-wellbeing-message-content {
+  border-top-left-radius: 0;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.nexus-wellbeing-message.user .nexus-wellbeing-message-content {
+  border-top-right-radius: 0;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.nexus-wellbeing-message-content p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.nexus-wellbeing-message-time {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.nexus-wellbeing-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nexus-wellbeing-typing-indicator span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: typing 1.4s infinite both;
+}
+
+.nexus-wellbeing-typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.nexus-wellbeing-typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+}
+
+.nexus-wellbeing-chat-input {
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-mood-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.5rem;
+}
+
+.nexus-wellbeing-mood-selector::-webkit-scrollbar {
+  display: none;
+}
+
+.nexus-wellbeing-mood-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #334155;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nexus-wellbeing-mood-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-mood-more {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #334155;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-input-container {
+  display: flex;
+  align-items: center;
+  background: #334155;
+  border-radius: 8px;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-input-container input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  color: white;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.nexus-wellbeing-input-container input::placeholder {
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.nexus-wellbeing-send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-send-btn:disabled {
+  background: #475569;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.nexus-wellbeing-chat-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.nexus-wellbeing-sidebar-section {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-sidebar-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-suggested-topics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nexus-wellbeing-suggested-topics button {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-suggested-topics button:hover {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: rgba(74, 222, 128, 0.5);
+  transform: translateY(-1px);
+}
+
+.nexus-wellbeing-capabilities {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nexus-wellbeing-capabilities li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-capabilities li svg {
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+/* Mood Tracking */
+.nexus-wellbeing-mood {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.nexus-wellbeing-mood-today {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-mood-today h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-mood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.nexus-wellbeing-mood-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  background: rgba(51, 65, 85, 0.5);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-mood-option:hover {
+  background: rgba(51, 65, 85, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-mood-option.selected {
+  border-color: var(--mood-color);
+  background: rgba(51, 65, 85, 0.8);
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+.nexus-wellbeing-mood-emoji {
+  font-size: 2rem;
+}
+
+.nexus-wellbeing-mood-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-mood-notes {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-mood-notes h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-mood-notes textarea {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  color: white;
+  font-size: 0.875rem;
+  resize: vertical;
+  margin-bottom: 1rem;
+}
+
+.nexus-wellbeing-mood-notes textarea::placeholder {
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-save-btn {
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.nexus-wellbeing-mood-history {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.nexus-wellbeing-section-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-section-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nexus-wellbeing-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-action-btn:hover {
+  background: rgba(51, 65, 85, 0.8);
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-mood-chart {
+  margin-bottom: 2rem;
+}
+
+.nexus-wellbeing-chart-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-chart-bars {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+  height: 200px;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-chart-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+}
+
+.nexus-wellbeing-chart-bar {
+  width: 100%;
+  max-width: 40px;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-chart-bar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-chart-emoji {
+  font-size: 1rem;
+}
+
+.nexus-wellbeing-chart-date {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-mood-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nexus-wellbeing-mood-insights h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-insight-card {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-insight-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.nexus-wellbeing-insight-header svg {
+  color: #4ade80;
+}
+
+.nexus-wellbeing-insight-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-insight-card p {
+  margin: 0;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-action-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nexus-wellbeing-action-list li {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.nexus-wellbeing-action-list li::before {
+  content: "•";
+  color: #4ade80;
+  position: absolute;
+  left: 0;
+}
+
+/* Meditation */
+.nexus-wellbeing-meditation {
+  display: flex;
+  gap: 2rem;
+  height: calc(100vh - 200px);
+}
+
+.nexus-wellbeing-meditation-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.nexus-wellbeing-meditation-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-meditation-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.nexus-wellbeing-timer-circle {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexus-wellbeing-timer-progress {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.nexus-wellbeing-timer-display {
+  background: #1e293b;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.nexus-wellbeing-meditation-timer h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: center;
+}
+
+.nexus-wellbeing-meditation-timer p {
+  margin: 0;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.nexus-wellbeing-meditation-controls {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nexus-wellbeing-control-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(248, 113, 113, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-control-btn:hover {
+  background: rgba(248, 113, 113, 0.3);
+  transform: translateY(-1px);
+}
+
+.nexus-wellbeing-volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-volume-control input {
+  width: 100px;
+}
+
+.nexus-wellbeing-meditation-selector {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-y: auto;
+}
+
+.nexus-wellbeing-meditation-selector h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-meditation-selector > p {
+  margin: 0 0 2rem 0;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-meditation-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.nexus-wellbeing-meditation-card {
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-meditation-card:hover {
+  background: rgba(51, 65, 85, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-meditation-card.active {
+  border-color: #4ade80;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+}
+
+.nexus-wellbeing-meditation-card-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-meditation-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.nexus-wellbeing-meditation-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-meditation-card-content p {
+  margin: 0 0 1.5rem 0;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.nexus-wellbeing-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.nexus-wellbeing-start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.nexus-wellbeing-meditation-customize {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-meditation-customize h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-customize-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.nexus-wellbeing-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nexus-wellbeing-form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-form-group select {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-generate-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  justify-content: center;
+}
+
+.nexus-wellbeing-generate-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.nexus-wellbeing-meditation-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.nexus-wellbeing-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.nexus-wellbeing-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.nexus-wellbeing-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.nexus-wellbeing-stat-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nexus-wellbeing-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nexus-wellbeing-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-benefits li svg {
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+.nexus-wellbeing-research {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-research p {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4ade80;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-link:hover {
+  color: #22c55e;
+}
+
+/* Progress */
+.nexus-wellbeing-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.nexus-wellbeing-progress-overview {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-progress-chart {
+  margin-bottom: 2rem;
+}
+
+.nexus-wellbeing-chart-placeholder {
+  height: 200px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.nexus-wellbeing-line-chart {
+  position: relative;
+  height: 100%;
+  padding: 2rem;
+}
+
+.nexus-wellbeing-chart-line {
+  position: absolute;
+  top: 50%;
+  left: 2rem;
+  right: 2rem;
+  height: 3px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.nexus-wellbeing-chart-points {
+  position: relative;
+  height: 100%;
+}
+
+.nexus-wellbeing-chart-points span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #4ade80;
+  border-radius: 50%;
+  transform: translate(-50%, 50%);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+}
+
+.nexus-wellbeing-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.nexus-wellbeing-stat-card {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nexus-wellbeing-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.nexus-wellbeing-stat-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-stat-info .nexus-wellbeing-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.nexus-wellbeing-stat-change {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.nexus-wellbeing-stat-change.positive {
+  color: #4ade80;
+}
+
+.nexus-wellbeing-stat-change.negative {
+  color: #f87171;
+}
+
+.nexus-wellbeing-stat-change.neutral {
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-goals {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.nexus-wellbeing-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.nexus-wellbeing-goal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-goal-info {
+  flex: 1;
+}
+
+.nexus-wellbeing-goal-info h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-goal-progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nexus-wellbeing-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.nexus-wellbeing-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #3b82f6);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.nexus-wellbeing-goal-progress span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4ade80;
+  min-width: 40px;
+  text-align: right;
+}
+
+.nexus-wellbeing-goal-actions {
+  margin-left: 1rem;
+}
+
+.nexus-wellbeing-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-icon-btn:hover {
+  background: rgba(51, 65, 85, 0.8);
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-ai-suggestion {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.nexus-wellbeing-suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.nexus-wellbeing-suggestion-header svg {
+  color: #8b5cf6;
+}
+
+.nexus-wellbeing-suggestion-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-ai-suggestion p {
+  margin: 0 0 1rem 0;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.nexus-wellbeing-add-suggestion-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #8b5cf6;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-add-suggestion-btn:hover {
+  background: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.nexus-wellbeing-achievements {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-view-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #4ade80;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.nexus-wellbeing-view-all-btn:hover {
+  color: #22c55e;
+}
+
+.nexus-wellbeing-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.nexus-wellbeing-achievement-card {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-achievement-card.active {
+  border-color: #4ade80;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+}
+
+.nexus-wellbeing-achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-achievement-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 0 auto 1rem auto;
+}
+
+.nexus-wellbeing-achievement-icon.locked {
+  background: #475569;
+  color: #64748b;
+}
+
+.nexus-wellbeing-achievement-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-achievement-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Resources */
+.nexus-wellbeing-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.nexus-wellbeing-resources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.nexus-wellbeing-resource-card {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-resource-card:hover {
+  background: rgba(30, 41, 59, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-resource-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.nexus-wellbeing-resource-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  flex: 1;
+}
+
+.nexus-wellbeing-resource-tag {
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nexus-wellbeing-resource-card p {
+  margin: 0 0 1rem 0;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.nexus-wellbeing-resource-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.nexus-wellbeing-resource-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-resource-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nexus-wellbeing-resource-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.nexus-wellbeing-resource-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.nexus-wellbeing-quick-tools {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-wellbeing-quick-tools h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.nexus-wellbeing-tool-card {
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.nexus-wellbeing-tool-card:hover {
+  background: rgba(51, 65, 85, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-wellbeing-tool-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4ade80, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 0 auto 1rem auto;
+}
+
+.nexus-wellbeing-tool-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-tool-card p {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.nexus-wellbeing-tool-btn {
+  background: rgba(74, 222, 128, 0.2);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #4ade80;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.nexus-wellbeing-tool-btn:hover {
+  background: rgba(74, 222, 128, 0.3);
+  transform: translateY(-1px);
+}
+
+.nexus-wellbeing-ai-insights {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.nexus-wellbeing-insight-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.nexus-wellbeing-insight-header svg {
+  color: #8b5cf6;
+}
+
+.nexus-wellbeing-insight-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.nexus-wellbeing-insight-content p {
+  margin: 0 0 1.5rem 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.nexus-wellbeing-insight-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.nexus-wellbeing-insight-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #8b5cf6;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.nexus-wellbeing-insight-btn:hover {
+  background: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.nexus-wellbeing-insight-btn.secondary {
+  background: rgba(51, 65, 85, 0.5);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.nexus-wellbeing-insight-btn.secondary:hover {
+  background: rgba(51, 65, 85, 0.8);
+  color: #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .nexus-wellbeing-chat {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .nexus-wellbeing-chat-sidebar {
+    width: 100%;
+  }
+
+  .nexus-wellbeing-meditation {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .nexus-wellbeing-meditation-sidebar {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .nexus-wellbeing-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .nexus-wellbeing-content {
+    padding: 1rem;
+  }
+
+  .nexus-wellbeing-mood-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .nexus-wellbeing-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexus-wellbeing-achievements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexus-wellbeing-resources-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexus-wellbeing-tools-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexus-wellbeing-customize-form {
+    grid-template-columns: 1fr;
+  }
+
+  .nexus-wellbeing-insight-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .nexus-wellbeing-header {
+    padding: 1rem;
+  }
+
+  .nexus-wellbeing-tabs {
+    padding: 0 1rem;
+  }
+
+  .nexus-wellbeing-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .nexus-wellbeing-content {
+    padding: 0.75rem;
+  }
+
+  .nexus-wellbeing-meditation-options {
+    grid-template-columns: 1fr;
+  }
+}
