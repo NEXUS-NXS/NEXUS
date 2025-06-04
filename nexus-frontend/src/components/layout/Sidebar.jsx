@@ -79,10 +79,14 @@ const Sidebar = ({ isMobile }) => {
           {!collapsed && <span>Career Guidance</span>}
         </NavLink>
 
-        <NavLink to="/simulations" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+        {/* <NavLink to="/simulations" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           <BarChart3 size={20} />
           {!collapsed && <span>Simulations</span>}
-        </NavLink>
+        </NavLink> */}
+        <a href="http://localhost:3000/" className={`nav-item`} >
+          <BarChart3 size={20} />
+          {!collapsed && <span>Simulations</span>}
+        </a>
       </nav>
 
       <div className="sidebar-footer">
