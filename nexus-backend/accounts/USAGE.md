@@ -216,3 +216,34 @@ Located in `settings.py`.
 3. **Frontend**:
     - Maintains isAuthenticated state.
 
+### Token Refresh
+1. **Frontend**:
+    - If access_token expires, refreshToken sends POST to /auth/token/refresh/.
+
+2. **Bakcend**: 
+    - Validates refresh_token and issues new access_token.
+
+3. **Frontend**:
+    - Updates cookies and maintains session.
+
+
+### Logout
+1. **Frontend**:
+    - logout sends POST to /auth/logout/.
+    - Clears localStorage and state.
+
+2. **Backend**: 
+    - LogoutView deletes cookies.
+    - Returns { "message": "Logged out" }.
+
+## Interacting with the API Using Postman
+
+### Setup
+1. **Navigate to postman**: [postman.com](https://www.postman.com/)
+2. **Start servers**:
+- **backend**:  `python manage.py runserver`
+- **frontend**: npm run dev
+    - if first time running the frontend, proceed:
+    ```bash
+        npm install
+        npm run dev
