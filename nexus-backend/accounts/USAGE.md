@@ -240,6 +240,7 @@ Located in `settings.py`.
 
 ### Setup
 1. **Navigate to postman**: [postman.com](https://www.postman.com/)
+    -   ensure that you also download the postman agent as directed at postman.com
 2. **Start servers**:
 - **backend**:  `python manage.py runserver`
 - **frontend**: npm run dev
@@ -250,3 +251,62 @@ Located in `settings.py`.
 - else
     ```bash
         npm install
+
+### Register a user
+- **Method**: **Post**
+- **Url**: `http://127.0.0.1:8000/auth/register/`
+- **Body**:
+    ```json
+    {
+        "full_name": "Jane Smith",
+        "email": "jane@example.com",
+        "password": "securepass123",
+        "password2": "securepass123",
+        "gender": "female",
+        "education": "graduate"
+    }
+- **Response (201_created)**:
+    ```json
+    {
+        
+        "message": "User registered",
+        "user": {
+            "id": 2,
+            "email": "jane@example.com",
+            "first_name": "Jane",
+            "last_name": "Smith",
+            "gender": "female",
+            "education": "graduate"
+        }
+
+    }
+
+ **Cookies**: 
+ - Check Postman’s Cookies tab for access_token and refresh_token.
+
+### Login
+- **Method**: **Post**
+- **Url**: `http://127.0.0.1:8000/auth/token/`
+- **Body**:
+    ```json
+    {
+        "email": "jane@example.com",
+        "password": "securepass123"
+    }
+
+- **Response (200_OK)**:
+    ```json
+    {
+        "user": {
+            "id": 2,
+            "email": "jane@example.com",
+            "first_name": "Jane",
+            "last_name": "Smith",
+            "gender": "female",
+            "education": "graduate"
+        }
+
+    }
+
+- **Cookies**:
+    - Updated access_token, refresh_token.
