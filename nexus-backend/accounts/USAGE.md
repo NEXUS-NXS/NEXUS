@@ -247,3 +247,6 @@ Located in `settings.py`.
     ```bash
         npm install
         npm run dev
+    - else
+    ```bash
+        npm install
