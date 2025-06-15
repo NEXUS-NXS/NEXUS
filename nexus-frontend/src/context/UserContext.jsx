@@ -87,14 +87,16 @@ export const UserProvider = ({ children }) => {
     
     
 
-  const register = async (username, email, password, password2) => {
+  const register = async (fullName, email, password, confirmPassword, gender, education) => {
     // In a real app, this would make an API call to register
     try {
       const response = await axios.post("http://127.0.0.1:8000/auth/register/", {
-        username,
+       full_name: fullName,
         email,
         password,
-        password2,
+        password2: confirmPassword,
+        gender, 
+        education,
       })
 
       const {user:userData} = response.data
