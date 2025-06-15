@@ -15,7 +15,7 @@ import CareerGuidance from "./pages/CareerGuidance"
 // import Simulations from "./pages/Simulations"
 // import CourseDetail from "./pages/CourseDetail"
 import Login from "./pages/Login"
-import Register from "./pages/Register"
+
 import { UserProvider } from "./context/UserContext"
 import { CourseProvider } from "./context/CourseContext"
 import ProtectedRoute from "./components/auth/ProtectedRoute"
@@ -32,7 +32,7 @@ function AppContent({ isMobile }) {
   return isNoLayoutRoute ? (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      
     </Routes>
   ) : (
     <>
