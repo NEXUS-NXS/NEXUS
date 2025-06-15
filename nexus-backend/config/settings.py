@@ -73,7 +73,11 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+# CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:8000",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # REST Framework settings
@@ -92,8 +96,8 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": 'access_token',
     "AUTH_COOKIE_REFRESH": "refresh_token",
     "AUTH_COOKIE_HTTP_ONLY": True,#prevents javascript access
-    "AUTH_COOKIE_SECURE": True,#use in production with https
-    "AUTH_COOKIE_SAME_SITE": 'Lax',
+    "AUTH_COOKIE_SECURE": False,#use in production with https
+    "AUTH_COOKIE_SAME_SITE": 'None',
 }
 # REST_FRAMEWORK = {
 #     'DEFAULT_AUTHENTICATION_CLASSES': [

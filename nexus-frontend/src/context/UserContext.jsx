@@ -52,14 +52,17 @@ export const UserProvider = ({ children }) => {
         email,
         password,
       })
-
-      const { user=userData} = response.data
-
+      console.log("Login response:", response.data) // Debug response
+      const { user } = response.data
+      if (!user) {
+        throw new Error("User data not found in response")
+      }
+     
       // store userdata 
-      localStorage.setItem("nexus_user", JSON.stringify(userData))
+      localStorage.setItem("nexus_user", JSON.stringify(user))
 
       // update context state
-      setUser(userData)
+      setUser(user)
       setIsAuthenticated(true)
 
       return true

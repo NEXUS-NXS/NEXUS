@@ -39,7 +39,7 @@ class RegisterView(APIView):
                 value=str(refresh.access_token),
                 httponly=True,
                 secure=False,  # Set to True in production
-                samesite="Lax",
+                samesite="None",
                 max_age=3600,  # 1 hour
             )
             response.set_cookie(
@@ -47,7 +47,7 @@ class RegisterView(APIView):
                 value=str(refresh),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite="None",
                 max_age=86400,  # 1 day
             )
 
@@ -81,7 +81,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 value=str(refresh.access_token),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite="None",
                 max_age=3600,
             )
             response.set_cookie(
@@ -89,7 +89,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 value=str(refresh),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite="None",
                 max_age=86400,
             )
             return response
