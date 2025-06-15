@@ -247,6 +247,6 @@ Located in `settings.py`.
     ```bash
         npm install
         npm run dev
-    - else
+- else
     ```bash
         npm install
