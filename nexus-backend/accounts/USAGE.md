@@ -139,3 +139,80 @@ Located in `settings.py`.
        "gender": "male",
        "education": "undergraduate"
      }
+
+2. **Backend**:
+    - RegisterView validates data using RegisterSerializer.
+    - Creates User (sets username=email, splits full_name into first_name/last_name).
+    - Creates Profile with gender and education.
+    - Generates JWT tokens (access_token, refresh_token).
+    - Returns:
+
+    ```json
+    {
+        "message": "User registered",
+            "user": {
+                "id": 1,
+                "email": "john@example.com",
+                "first_name": "John",
+                "last_name": "Doe",
+                "gender": "male",
+                "education": "undergraduate"
+            }
+    }
+- Sets HTTP-only cookies: access_token (1 hour), refresh_token (1 day).
+
+3. **Frontend**:
+    - UserContext.jsx stores user data in localStorage as nexus_user.
+    - Updates user and isAuthenticated state.
+    - Redirects to /.
+
+### Login
+1. **Frontend**:
+    - User fills out login form (email, password).
+    - Submits form, triggering login in UserContext.jsx.
+    - Sends POST to http://127.0.0.1:8000/auth/token/ with:
+    
+    ```json
+    {
+        
+        "email": "john@example.com",
+        "password": "securepass123"
+
+    }
+
+2. **Backend**:
+    - CustomTokenObtainPairView authenticates user by email.
+    - Generates JWT tokens.
+    - Returns:
+
+    ```json
+    {
+        
+        "user": {
+            "id": 1,
+            "email": "john@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "gender": "male",
+            "education": "undergraduate"
+        }
+
+    }
+- Sets HTTP-only cookies.
+
+3. **Frontend**:
+    - Stores user data in localStorage.
+    - Updates state and redirects to /.
+
+### Protected Routes
+
+1. **Frontend**:
+    -   checkAuth in UserContext.jsx sends GET to /protected/ with cookies.
+
+2. **Backend**:
+    - ProtectedView verifies access_token.
+    - Returns { "message": "Authenticated" } if valid.
+
+3. **Frontend**:
+    - Maintains isAuthenticated state.
+
