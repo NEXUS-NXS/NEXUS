@@ -39,9 +39,17 @@ const Login = () => {
       if (isSignUp) {
         if (formData.password !== formData.confirmPassword) {
           setError("Passwords do not match")
+          setIsLoading(false)
           return
         }
-        const success = await register(formData.fullName, formData.email, formData.password)
+        const success = await register(
+          formData.fullName,
+          formData.email,
+          formData.password,
+          formData.confirmPassword,
+          formData.gender,
+          formData.education
+        )
         if (success) {
           navigate("/")
         } else {
@@ -56,7 +64,7 @@ const Login = () => {
         }
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError(err.message || "An error occurred. Please try again.")
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -65,7 +73,7 @@ const Login = () => {
 
   const handleSocialLogin = (provider) => {
     console.log(`Login with ${provider}`)
-    // Implement social login logic here
+    // Social login not implemented
   }
 
   return (
@@ -75,8 +83,7 @@ const Login = () => {
         <div className="nexus-login-left">
           <div className="nexus-login-illustration">
             <div className="nexus-math-drawings">
-              {/* Mathematical illustrations will be CSS-based */}
-              <MathClock/>
+              <MathClock />
             </div>
           </div>
 
@@ -250,7 +257,7 @@ const Login = () => {
                       <input
                         type="password"
                         name="confirmPassword"
-                        placeholder="confirm password"
+                        placeholder="Confirm password"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         required
@@ -261,7 +268,7 @@ const Login = () => {
                   <div className="nexus-form-row">
                     <div className="nexus-form-group nexus-half-width">
                       <select name="gender" value={formData.gender} onChange={handleInputChange} required>
-                        <option value="">gender</option>
+                        <option value="">Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                         <option value="other">Other</option>
@@ -270,7 +277,7 @@ const Login = () => {
                     </div>
                     <div className="nexus-form-group nexus-half-width">
                       <select name="education" value={formData.education} onChange={handleInputChange} required>
-                        <option value="">undergraduate</option>
+                        <option value="">Education</option>
                         <option value="undergraduate">Undergraduate</option>
                         <option value="graduate">Graduate</option>
                         <option value="postgraduate">Postgraduate</option>
@@ -296,13 +303,11 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Decorative waves */}
           <div className="nexus-decorative-waves">
             <img src="/assets/linear-wave-rainbow.png" alt="" />
           </div>
         </div>
       </div>
-
       {/* Website Footer */}
       <footer className="nexus-website-footer">
         <div className="nexus-footer-content">
