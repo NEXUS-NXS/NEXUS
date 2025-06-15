@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    
     # Third-party apps
     'rest_framework',
     'corsheaders',
@@ -56,9 +57,11 @@ INSTALLED_APPS = [
     'study_groups.apps.StudyGroupsConfig',
     'resources.apps.ResourcesConfig',
     'chat.apps.ChatConfig',
-]
+    'accounts.apps.AccountsConfig',
+]   
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -82,10 +85,15 @@ REST_FRAMEWOTK = {
 
 from datetime import timedelta
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_COOKIE": 'access_token',
+    "AUTH_COOKIE_REFRESH": "refresh_token",
+    "AUTH_COOKIE_HTTP_ONLY": True,#prevents javascript access
+    "AUTH_COOKIE_SECURE": True,#use in production with https
+    "AUTH_COOKIE_SAME_SITE": 'Lax',
 }
 # REST_FRAMEWORK = {
 #     'DEFAULT_AUTHENTICATION_CLASSES': [

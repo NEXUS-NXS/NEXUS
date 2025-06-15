@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('auth.urls')),
+    path('auth/', include('accounts.urls')),
     # API endpoints will be added here
     # path('api/', include('apps.users.urls')),
     # path('api/courses/', include('apps.courses.urls')),

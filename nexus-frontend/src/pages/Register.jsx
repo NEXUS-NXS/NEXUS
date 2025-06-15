@@ -1,3 +1,4 @@
+// pages/Register.jsx
 "use client"
 
 import { useState } from "react"
@@ -6,7 +7,7 @@ import { useUser } from "../context/UserContext"
 import "./Register.css"
 
 const Register = () => {
-  const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -28,7 +29,7 @@ const Register = () => {
     setIsLoading(true)
 
     try {
-      const success = await register(name, email, password)
+      const success = await register(username, email, password, confirmPassword)
       if (success) {
         navigate("/")
       } else {
@@ -55,12 +56,12 @@ const Register = () => {
 
         <form onSubmit={handleSubmit} className="register-form">
           <div className="form-group">
-            <label htmlFor="name">Full Name</label>
+            <label htmlFor="username">userName</label>
             <input
               type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               placeholder="Enter your full name"
             />

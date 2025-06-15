@@ -1,6 +1,11 @@
+// context/UserContext.jsx
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
+import axios from 'axios'
+
+// enable cookies in axios requests
+axios.defaults.withCredentials=true
 
 const UserContext = createContext(undefined)
 
@@ -11,92 +16,121 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is already logged in
     const storedUser = localStorage.getItem("nexus_user")
+    
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser)
         setUser(parsedUser)
         setIsAuthenticated(true)
+
+        // verify authentication with a protected end
+        checkAuth()
       } catch (error) {
         console.error("Failed to parse stored user data", error)
         localStorage.removeItem("nexus_user")
+        setIsAuthenticated(false)
       }
     }
   }, [])
 
-  const login = async (email, password) => {
-    // In a real app, this would make an API call to authenticate
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock successful login
-      const mockUser = {
-        id: "123456",
-        name: "John Doe",
-        email: email,
-        notifications: 3,
-        points: 750,
-        stats: {
-          completedCourses: 0,
-          completedLessons: 47,
-          watchTime: {
-            hours: 30,
-            minutes: 47,
-          },
-        },
-      }
-
-      setUser(mockUser)
+  const checkAuth = async()=>{
+    try{
+      // call a protected endpoint to verify authentication
+      await axios.get("http://127.0.0.1:8000/auth/protected/")
       setIsAuthenticated(true)
-      localStorage.setItem("nexus_user", JSON.stringify(mockUser))
-      return true
-    } catch (error) {
-      console.error("Login failed", error)
-      return false
+
+    }catch (error){
+      console.error("Authentication check failed", error) 
+      isAuthenticated(false)
+      localStorage.removeItem("nexus_user")
     }
   }
 
-  const logout = () => {
+  const login = async (email, password) => {
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/auth/token/", {
+        email,
+        password,
+      })
+
+      const { user=userData} = response.data
+
+      // store userdata 
+      localStorage.setItem("nexus_user", JSON.stringify(userData))
+
+      // update context state
+      setUser(userData)
+      setIsAuthenticated(true)
+
+      return true
+    } catch (error) {
+      console.error("Login failed", error)
+      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).flat().join(" ") || "login failed"
+
+      throw new Error(errorMessage)
+
+    }
+  }
+
+  const logout = async () => {
+    try{
+      await axios.post("http://127.0.0.1:8000/auth/logout/")
+
+    } catch (error) {
+      console.error("Logout failed", error)
+    }
+
     setUser(null)
     setIsAuthenticated(false)
     localStorage.removeItem("nexus_user")
-  }
+  } 
+    
+    
 
-  const register = async (name, email, password) => {
+  const register = async (username, email, password, password2) => {
     // In a real app, this would make an API call to register
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await axios.post("http://127.0.0.1:8000/auth/register/", {
+        username,
+        email,
+        password,
+        password2,
+      })
 
-      // Mock successful registration
-      const mockUser = {
-        id: "123456",
-        name: name,
-        email: email,
-        notifications: 0,
-        points: 0,
-        stats: {
-          completedCourses: 0,
-          completedLessons: 0,
-          watchTime: {
-            hours: 0,
-            minutes: 0,
-          },
-        },
-      }
+      const {user:userData} = response.data
+      
+      // store userdata
+      localStorage.setItem("nexus_user", JSON.stringify(userData))
 
-      setUser(mockUser)
+      // update context state
+      setUser(userData)
       setIsAuthenticated(true)
-      localStorage.setItem("nexus_user", JSON.stringify(mockUser))
+
       return true
+
     } catch (error) {
       console.error("Registration failed", error)
+      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).flat().join(" ") || "Registration failed"
+
+      throw new Error(errorMessage)
+
+    }
+  }
+
+  const refreshToken = async () => {
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/auth/token/refresh/")
+      setIsAuthenticated(true)
+      return true
+    } catch (error) {
+      console.error("Token refresh failed", error)
+      logout()
       return false
     }
   }
 
   return (
-    <UserContext.Provider value={{ user, isAuthenticated, login, logout, register }}>{children}</UserContext.Provider>
+    <UserContext.Provider value={{ user, isAuthenticated, login, logout, register, refreshToken }}>{children}</UserContext.Provider>
   )
 }
 
