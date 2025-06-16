@@ -22,11 +22,12 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  X,
 } from "lucide-react"
 import { useUser } from "../../context/UserContext"
 import "./Header.css"
 
-const Header = () => {
+const Header = ({ onMenuToggle, isSidebarOpen }) => {
   const { user } = useUser()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showBrowseMenu, setShowBrowseMenu] = useState(false)
@@ -37,6 +38,12 @@ const Header = () => {
 
   const toggleBrowseMenu = () => {
     setShowBrowseMenu(!showBrowseMenu)
+  }
+
+  const handleMenuToggle = () => {
+    if (onMenuToggle) {
+      onMenuToggle()
+    }
   }
 
   const handleProfileNavigation = (path) => {
@@ -84,8 +91,12 @@ const Header = () => {
   return (
     <header className="header-top-nav">
       <div className="header-left-top-nav">
-        <button className="menu-button-top-nav">
-          <Menu size={20} />
+        <button
+          className="menu-button-top-nav"
+          onClick={handleMenuToggle}
+          aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
+        >
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
         <div className="browse-container-top-nav">
