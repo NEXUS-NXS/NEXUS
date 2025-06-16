@@ -23,6 +23,7 @@ class TagListView(generics.ListAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
+#Search for someone by their username
 class ChatUserSearchView(generics.ListAPIView):
     serializer_class = ChatUserSerializer
     permission_classes = [IsAuthenticated]
@@ -31,6 +32,7 @@ class ChatUserSearchView(generics.ListAPIView):
         query = self.request.query_params.get('q', '')
         return ChatUser.objects.filter(chat_username__icontains=query).exclude(user=self.request.user)
 
+#search for  group, create a group
 class StudyGroupListCreateView(generics.ListCreateAPIView):
     serializer_class = StudyGroupSerializer
     permission_classes = [IsAuthenticated]
@@ -43,6 +45,14 @@ class StudyGroupListCreateView(generics.ListCreateAPIView):
         group = serializer.save(owner=self.request.user.chat_user)
         GroupMembership.objects.create(group=group, user=self.request.user.chat_user, role='OWNER')
 
+"""
+it is designed to :
+    fetch the full details of a specific studygroup GET
+    allow the group owner to update the group's information PUT/PATCH
+    allow the group owner to delete the group DELETE
+    Restrict access so that only group members can see the group, and only the owner can edit it
+
+"""
 class StudyGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = StudyGroup.objects.all()
     serializer_class = StudyGroupSerializer
@@ -54,7 +64,10 @@ class StudyGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), IsGroupOwner()]
         return [IsAuthenticated(), IsGroupMember()]
+    
 
+
+#handles join requests
 class JoinRequestCreateView(generics.CreateAPIView):
     serializer_class = JoinRequestSerializer
     permission_classes = [IsAuthenticated]
@@ -66,6 +79,7 @@ class JoinRequestCreateView(generics.CreateAPIView):
         else:
             raise serializers.ValidationError("Cannot send join request to a public group or if already a member.")
 
+#handles approval or rejection of join requests
 class JoinRequestManageView(APIView):
     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
 
@@ -88,6 +102,8 @@ class JoinRequestManageView(APIView):
         
         return Response({'status': join_request.status}, status=status.HTTP_200_OK)
 
+
+#handles role management in groups
 class GroupMembershipManageView(APIView):
     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
 
@@ -115,6 +131,7 @@ class GroupMembershipManageView(APIView):
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
+
 
 class MessageListCreateView(generics.ListCreateAPIView):
     serializer_class = MessageSerializer
