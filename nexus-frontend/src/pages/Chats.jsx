@@ -15,7 +15,6 @@ import {
   Send,
   X,
   Download,
-  Play,
   FileText,
   ImageIcon,
   Film,
@@ -39,6 +38,7 @@ const Chats = () => {
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState("smileys")
   const [recentEmojis, setRecentEmojis] = useState(["😊", "👍", "❤️", "😂", "🎉"])
   const [showMobileChat, setShowMobileChat] = useState(false)
+  const [imageModal, setImageModal] = useState({ isOpen: false, src: "", name: "" })
 
   const fileInputRef = useRef(null)
   const emojiPickerRef = useRef(null)
@@ -1570,29 +1570,33 @@ const Chats = () => {
     files.forEach((file) => {
       // Validate file type and size
       const validTypes = {
-        image: ["image/jpeg", "image/png", "image/jpg"],
-        video: ["video/mp4", "video/mov", "video/avi"],
+        image: ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"],
+        video: ["video/mp4", "video/mov", "video/avi", "video/webm"],
         document: [
           "application/pdf",
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/msword",
           "text/plain",
         ],
       }
 
       const maxSizes = {
         image: 10 * 1024 * 1024, // 10MB
-        video: 50 * 1024 * 1024, // 50MB
+        video: 100 * 1024 * 1024, // 100MB
         document: 25 * 1024 * 1024, // 25MB
       }
 
       let fileType = "document"
-      if (validTypes.image.includes(file.type)) fileType = "image"
-      else if (validTypes.video.includes(file.type)) fileType = "video"
+      if (validTypes.image.some((type) => file.type.includes(type.split("/")[1]))) fileType = "image"
+      else if (validTypes.video.some((type) => file.type.includes(type.split("/")[1]))) fileType = "video"
 
       if (file.size > maxSizes[fileType]) {
         alert(`File too large. Maximum size for ${fileType}s is ${maxSizes[fileType] / (1024 * 1024)}MB`)
         return
       }
+
+      // Create object URL for file
+      const fileUrl = URL.createObjectURL(file)
 
       // Simulate file upload
       const fileId = Date.now() + Math.random()
@@ -1621,7 +1625,7 @@ const Chats = () => {
             fileData: {
               name: file.name,
               size: formatFileSize(file.size),
-              url: URL.createObjectURL(file),
+              url: fileUrl,
               type: file.type,
             },
           }
@@ -1632,12 +1636,13 @@ const Chats = () => {
           }))
 
           // Update last message in conversation
+          const fileEmoji = fileType === "image" ? "🖼️" : fileType === "video" ? "🎥" : "📄"
           setConversations((prev) =>
             prev.map((conv) =>
               conv.id === activeChat.id
                 ? {
                     ...conv,
-                    lastMessage: `📎 ${file.name}`,
+                    lastMessage: `${fileEmoji} ${file.name}`,
                     lastMessageTime: new Date().toISOString(),
                   }
                 : conv,
@@ -1701,7 +1706,12 @@ const Chats = () => {
       case "image":
         return (
           <div className="message-file image-message">
-            <img src={msg.fileData.url || "/placeholder.svg"} alt={msg.fileData.name} className="message-image" />
+            <img
+              src={msg.fileData.url || "/placeholder.svg"}
+              alt={msg.fileData.name}
+              className="message-image"
+              onClick={() => setImageModal({ isOpen: true, src: msg.fileData.url, name: msg.fileData.name })}
+            />
             <div className="file-info">
               <span className="file-name">{msg.fileData.name}</span>
               <span className="file-size">{msg.fileData.size}</span>
@@ -1712,11 +1722,16 @@ const Chats = () => {
       case "video":
         return (
           <div className="message-file video-message">
-            <div className="video-thumbnail">
-              <video src={msg.fileData.url} className="message-video" />
-              <div className="video-overlay">
-                <Play size={24} />
-              </div>
+            <div className="video-container">
+              <video
+                src={msg.fileData.url}
+                className="message-video"
+                controls
+                preload="metadata"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
             <div className="file-info">
               <span className="file-name">{msg.fileData.name}</span>
@@ -1728,18 +1743,48 @@ const Chats = () => {
       case "file":
         const getFileIcon = (type) => {
           if (type?.includes("pdf")) return <FileText size={24} color="#e53e3e" />
-          if (type?.includes("word")) return <FileText size={24} color="#2b6cb0" />
+          if (type?.includes("word") || type?.includes("document")) return <FileText size={24} color="#2b6cb0" />
+          if (type?.includes("text")) return <FileText size={24} color="#4a5568" />
           return <FileText size={24} color="#4a5568" />
         }
 
+        const getFileTypeLabel = (type) => {
+          if (type?.includes("pdf")) return "PDF"
+          if (type?.includes("word") || type?.includes("document")) return "DOCX"
+          if (type?.includes("text")) return "TXT"
+          return "FILE"
+        }
+
+        const handleDocumentClick = () => {
+          if (msg.fileData.url) {
+            window.open(msg.fileData.url, "_blank")
+          }
+        }
+
+        const handleDownload = (e) => {
+          e.stopPropagation()
+          if (msg.fileData.url) {
+            const link = document.createElement("a")
+            link.href = msg.fileData.url
+            link.download = msg.fileData.name
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+          }
+        }
+
         return (
-          <div className="message-file document-message">
+          <div className="message-file document-message" onClick={handleDocumentClick}>
             <div className="file-icon">{getFileIcon(msg.fileData.type)}</div>
             <div className="file-info">
-              <span className="file-name">{msg.fileData.name}</span>
+              <div className="file-header">
+                <span className="file-name">{msg.fileData.name}</span>
+                <span className="file-type-label">{getFileTypeLabel(msg.fileData.type)}</span>
+              </div>
               <span className="file-size">{msg.fileData.size}</span>
+              <span className="file-action-hint">Click to open</span>
             </div>
-            <button className="download-btn">
+            <button className="download-btn" onClick={handleDownload} title="Download">
               <Download size={16} />
             </button>
           </div>
@@ -2039,6 +2084,42 @@ const Chats = () => {
             <MessageSquare size={64} />
             <h3>Select a conversation</h3>
             <p>Choose a conversation from the sidebar to start messaging</p>
+          </div>
+        )}
+        {/* Image Modal */}
+        {imageModal.isOpen && (
+          <div className="image-modal-overlay" onClick={() => setImageModal({ isOpen: false, src: "", name: "" })}>
+            <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="image-modal-header">
+                <span className="image-modal-title">{imageModal.name}</span>
+                <div className="image-modal-actions">
+                  <button
+                    className="image-modal-download"
+                    onClick={() => {
+                      const link = document.createElement("a")
+                      link.href = imageModal.src
+                      link.download = imageModal.name
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }}
+                    title="Download"
+                  >
+                    <Download size={20} />
+                  </button>
+                  <button
+                    className="image-modal-close"
+                    onClick={() => setImageModal({ isOpen: false, src: "", name: "" })}
+                    title="Close"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="image-modal-body">
+                <img src={imageModal.src || "/placeholder.svg"} alt={imageModal.name} className="modal-image" />
+              </div>
+            </div>
           </div>
         )}
       </div>
