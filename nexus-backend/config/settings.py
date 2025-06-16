@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'channels',
     
     # Local apps
     'users.apps.UsersConfig',
