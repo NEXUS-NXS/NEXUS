@@ -10,7 +10,6 @@ import HelpCenter from "./pages/HelpCenter"
 import StudyGroups from "./pages/StudyGroups"
 import Chats from "./pages/Chats"
 import Resources from "./pages/Resources"
-import MyCourses from "./pages/MyCourses"
 import MyCertificates from "./pages/MyCertificates"
 import WellBeingCenter from "./pages/WellBeingCenter"
 import CareerGuidance from "./pages/CareerGuidance"
@@ -33,16 +32,28 @@ function AppContent({ isMobile }) {
   const noLayoutRoutes = ["/login", "/register"]
   const isNoLayoutRoute = noLayoutRoutes.includes(location.pathname)
 
+  // State for mobile sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const handleMenuToggle = () => {
+    console.log("Menu toggle called, current state:", isSidebarOpen)
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
+  const handleSidebarClose = () => {
+    console.log("Sidebar close called")
+    setIsSidebarOpen(false)
+  }
+
   return isNoLayoutRoute ? (
     <Routes>
       <Route path="/login" element={<Login />} />
-      
     </Routes>
   ) : (
     <>
-      <Sidebar isMobile={isMobile} />
+      <Sidebar isMobile={isMobile} isOpen={isSidebarOpen} onClose={handleSidebarClose} />
       <div className="main-content">
-        <Header />
+        <Header onMenuToggle={handleMenuToggle} isSidebarOpen={isSidebarOpen} />
         <div className="page-container">
           <Routes>
             <Route
@@ -118,37 +129,37 @@ function AppContent({ isMobile }) {
               }
             />
             <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/help"
-                    element={
-                      <ProtectedRoute>
-                        <HelpCenter />
-                      </ProtectedRoute>
-                    }
-                  />
-                   <Route
-                    path="/video-call"
-                    element={
-                      <ProtectedRoute>
-                        <VideoCall />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/audio-call"
-                    element={
-                      <ProtectedRoute>
-                        <AudioCall />
-                      </ProtectedRoute>
-                    }
-                  />
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <HelpCenter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/video-call"
+              element={
+                <ProtectedRoute>
+                  <VideoCall />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/audio-call"
+              element={
+                <ProtectedRoute>
+                  <AudioCall />
+                </ProtectedRoute>
+              }
+            />
             {/* <Route
               path="/simulations"
               element={
@@ -170,7 +181,9 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      console.log("Mobile check:", mobile, "Width:", window.innerWidth)
     }
 
     window.addEventListener("resize", handleResize)
