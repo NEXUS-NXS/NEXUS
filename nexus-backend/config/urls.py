@@ -27,7 +27,7 @@ urlpatterns = [
     # path('api/', include('apps.users.urls')),
     # path('api/courses/', include('apps.courses.urls')),
     # Add other app URLs here
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Serve static and media files in development
 # if settings.DEBUG:
