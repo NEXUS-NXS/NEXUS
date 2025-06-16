@@ -494,6 +494,62 @@
   color: #dc2626;
 }
 
+
+
+
+
+
+
+.profile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  width: 100%;
+  transition: color 0.2s ease;
+}
+
+.profile-menu-link:hover {
+  color: var(--primary-color, #6366f1);
+}
+
+.profile-menu li {
+  display: flex;
+  align-items: center;
+}
+
+.profile-menu-link-top-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  width: 100%;
+  transition: color 0.2s ease;
+}
+
+.profile-menu-link-top-nav:hover {
+  color: var(--primary-color, #6366f1);
+}
+
+.profile-menu-top-nav li {
+  display: flex;
+  align-items: center;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 @media (max-width: 1024px) {
   .browse-content-top-nav {
     grid-template-columns: 1fr 1fr;

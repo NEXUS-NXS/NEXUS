@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Search, Plus, MessageSquare, Users, Video, Phone, MoreVertical } from "lucide-react"
 import { useUser } from "../context/UserContext"
 import "./Chats.css"
 
 const Chats = () => {
   const { user } = useUser()
+  const navigate = useNavigate()
   const [activeChat, setActiveChat] = useState(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [message, setMessage] = useState("")
@@ -109,7 +111,7 @@ const Chats = () => {
           senderName: "Mike Chen",
           message: "Let's schedule our next session",
           timestamp: "2024-01-11T14:45:00Z",
-          avatar: "assets/monte-carlo.jpg",
+          avatar: "/placeholder.svg?height=32&width=32",
         },
       ],
     }
@@ -153,6 +155,18 @@ const Chats = () => {
           : conv,
       ),
     )
+  }
+
+  const handleVideoCall = () => {
+    if (activeChat) {
+      navigate(`/video-call?participant=${encodeURIComponent(activeChat.name)}&id=${activeChat.id}`)
+    }
+  }
+
+  const handleAudioCall = () => {
+    if (activeChat) {
+      navigate(`/audio-call?participant=${encodeURIComponent(activeChat.name)}&id=${activeChat.id}`)
+    }
   }
 
   const formatTime = (timestamp) => {
@@ -255,13 +269,13 @@ const Chats = () => {
               </div>
 
               <div className="chat-actions">
-                <button className="chat-action-btn">
+                <button className="chat-action-btn" onClick={handleAudioCall} title="Audio Call">
                   <Phone size={20} />
                 </button>
-                <button className="chat-action-btn">
+                <button className="chat-action-btn" onClick={handleVideoCall} title="Video Call">
                   <Video size={20} />
                 </button>
-                <button className="chat-action-btn">
+                <button className="chat-action-btn" title="More Options">
                   <MoreVertical size={20} />
                 </button>
               </div>
