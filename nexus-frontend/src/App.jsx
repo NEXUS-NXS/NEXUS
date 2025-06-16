@@ -5,6 +5,8 @@ import { useState, useEffect } from "react"
 import Sidebar from "./components/layout/Sidebar"
 import Header from "./components/layout/Header"
 import Dashboard from "./pages/Dashboard"
+import Profile from "./pages/Profile"
+import HelpCenter from "./pages/HelpCenter"
 import StudyGroups from "./pages/StudyGroups"
 import Chats from "./pages/Chats"
 import Resources from "./pages/Resources"
@@ -12,6 +14,8 @@ import MyCourses from "./pages/MyCourses"
 import MyCertificates from "./pages/MyCertificates"
 import WellBeingCenter from "./pages/WellBeingCenter"
 import CareerGuidance from "./pages/CareerGuidance"
+import VideoCall from "./pages/VideoCall"
+import AudioCall from "./pages/AudioCall"
 // import Simulations from "./pages/Simulations"
 // import CourseDetail from "./pages/CourseDetail"
 import Login from "./pages/Login"
@@ -113,6 +117,38 @@ function AppContent({ isMobile }) {
                 </ProtectedRoute>
               }
             />
+            <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/help"
+                    element={
+                      <ProtectedRoute>
+                        <HelpCenter />
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+                    path="/video-call"
+                    element={
+                      <ProtectedRoute>
+                        <VideoCall />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/audio-call"
+                    element={
+                      <ProtectedRoute>
+                        <AudioCall />
+                      </ProtectedRoute>
+                    }
+                  />
             {/* <Route
               path="/simulations"
               element={

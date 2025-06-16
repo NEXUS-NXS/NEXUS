@@ -16,6 +16,7 @@ import {
   MoreVertical,
 } from "lucide-react"
 import "./GroupDetail.css"
+import GroupSettingsModal from "./GroupSettingsModal"
 
 const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
   const [activeTab, setActiveTab] = useState("chat")
@@ -101,6 +102,8 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
     },
   ])
 
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+
   const isOwner = group.ownerId === currentUser?.id
 
   const handleSendMessage = (e) => {
@@ -178,7 +181,7 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
               Start Call
             </button>
             {isOwner ? (
-              <button className="settings-btn">
+              <button className="settings-btn" onClick={() => setShowSettingsModal(true)}>
                 <Settings size={16} />
                 Settings
               </button>
@@ -340,6 +343,18 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
           </div>
         )}
       </div>
+      {showSettingsModal && (
+        <GroupSettingsModal
+          group={group}
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          onUpdateGroup={(updatedGroup) => {
+            // Handle group update logic here
+            console.log("Updated group:", updatedGroup)
+          }}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   )
 }
