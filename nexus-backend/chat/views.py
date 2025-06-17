@@ -67,7 +67,7 @@ class StudyGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
     
 
 
-#handles join requests
+#handles creation of join requests
 class JoinRequestCreateView(generics.CreateAPIView):
     serializer_class = JoinRequestSerializer
     permission_classes = [IsAuthenticated]

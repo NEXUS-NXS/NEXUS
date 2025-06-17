@@ -150,10 +150,10 @@ class StudyGroupSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Invalid file type. Only JPG and PNG are allowed.")
         return value
     
-    
+
 class JoinRequestSerializer(serializers.ModelSerializer):
-    user = ChatUserSerializer()
-    group = StudyGroupSerializer()
+    user = ChatUserSerializer(read_only=True)
+    group = StudyGroupSerializer(read_only=True)
     class Meta:
         model = JoinRequest
         fields = ['id', 'group', 'user', 'status', 'created_at']

@@ -98,8 +98,7 @@ class JoinRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=(('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')), default='PENDING')
 
-    class Meta:
-        unique_together = ('group', 'user')
+
 
     def __str__(self):
         return f"{self.user.chat_username} -> {self.group.name}"
