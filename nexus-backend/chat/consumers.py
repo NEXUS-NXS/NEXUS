@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from .models import ChatUser, StudyGroup, Message, Notification, GroupMembership
 from .serializers import MessageSerializer
 from django.shortcuts import get_object_or_404
+from channels.layers import get_channel_layer
 
 class ChatConsumer(AsyncWebsocketConsumer):
 
