@@ -3,7 +3,7 @@ from .views import (CategoryListView, ExamFocusListView, TagListView,
                      ChatUserSearchView, StudyGroupListCreateView,
                      StudyGroupDetailView, JoinRequestCreateView,JoinRequestManageView,
                      GroupMembershipManageView, MessageListCreateView, MessageDeleteView,
-                     NotificationListView, LeaveGroupView, JoinGroupByLinkView
+                     NotificationListView, LeaveGroupView, JoinGroupByLinkView, PendingJoinRequestsView,
                      )
 
 urlpatterns = [
@@ -15,15 +15,16 @@ urlpatterns = [
     path('groups/', StudyGroupListCreateView.as_view(), name='group-list-create'),#tested
     path('groups/<int:pk>/', StudyGroupDetailView.as_view(), name='group-detail'),#tested
     path('groups/<int:group_id>/join/', JoinRequestCreateView.as_view(), name='join-request-create'),#tested
+    path('groups/<int:group_id>/pending-requests/', PendingJoinRequestsView.as_view(), name='pending-join-requests'),#tested
     path('groups/<int:group_id>/members/<int:user_id>/manage/', GroupMembershipManageView.as_view(), name='group-membership-manage'),#tested
-    path('groups/<int:group_id>/messages/', MessageListCreateView.as_view(), name='group-messages'),
-    path('groups/<int:group_id>/leave/', LeaveGroupView.as_view(), name='leave-group'),
+    path('groups/<int:group_id>/messages/', MessageListCreateView.as_view(), name='group-messages'),#tested
+    path('groups/<int:group_id>/leave/', LeaveGroupView.as_view(), name='leave-group'),#tested
 
     path('join-requests/<int:join_request_id>/manage/', JoinRequestManageView.as_view(), name='join-request-manage'),#tested
     path('join/<str:invite_link>/', JoinGroupByLinkView.as_view(), name='join-by-link'),
 
     path('messages/<int:pk>/delete/', MessageDeleteView.as_view(), name='message-delete'),
-    path('dm/<int:recipient_id>/messages/', MessageListCreateView.as_view(), name='dm-view'),
-    path('notifications/', NotificationListView.as_view(), name='notification-list'),
+    path('dm/<int:recipient_id>/messages/', MessageListCreateView.as_view(), name='dm-view'),#tested
+    path('notifications/', NotificationListView.as_view(), name='notification-list'),#tested
     
 ]

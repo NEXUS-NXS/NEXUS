@@ -149,17 +149,27 @@ class StudyGroupSerializer(serializers.ModelSerializer):
             if ext not in valid_extensions:
                 raise serializers.ValidationError("Invalid file type. Only JPG and PNG are allowed.")
         return value
-    
+
+
+class PendingJoinRequestSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.chat_username', read_only=True)
+
+    class Meta:
+        model = JoinRequest
+        fields = ['id', 'user', 'user_username', 'group', 'message','status', 'created_at']
+        read_only_fields = fields
+
 
 class JoinRequestSerializer(serializers.ModelSerializer):
     user = ChatUserSerializer(read_only=True)
     group = StudyGroupSerializer(read_only=True)
     class Meta:
         model = JoinRequest
-        fields = ['id', 'group', 'user', 'status', 'created_at']
+        fields = ['id', 'group', 'user', 'status', 'message','created_at']
+        read_only_fields = ['id', 'group', 'user', 'status','created_at']
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = ChatUserSerializer()
+    sender = ChatUserSerializer(read_only=True)
     group = StudyGroupSerializer(required=False)
     recipient = ChatUserSerializer(required=False)
 

@@ -19,6 +19,14 @@ import {
   ImageIcon,
   Film,
   ArrowLeft,
+  Link,
+  Copy,
+  Check,
+  Settings,
+  UserPlus,
+  Bell,
+  Archive,
+  Trash2,
 } from "lucide-react"
 import { useUser } from "../context/UserContext"
 import "./Chats.css"
@@ -39,10 +47,14 @@ const Chats = () => {
   const [recentEmojis, setRecentEmojis] = useState(["😊", "👍", "❤️", "😂", "🎉"])
   const [showMobileChat, setShowMobileChat] = useState(false)
   const [imageModal, setImageModal] = useState({ isOpen: false, src: "", name: "" })
+  const [showMoreOptions, setShowMoreOptions] = useState(false)
+  const [showGroupLinkModal, setShowGroupLinkModal] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const fileInputRef = useRef(null)
   const emojiPickerRef = useRef(null)
   const chatInputRef = useRef(null)
+  const moreOptionsRef = useRef(null)
 
   // Emoji data organized by categories
   const emojiCategories = {
@@ -1335,6 +1347,9 @@ const Chats = () => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
         setShowEmojiPicker(false)
       }
+      if (moreOptionsRef.current && !moreOptionsRef.current.contains(event.target)) {
+        setShowMoreOptions(false)
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside)
@@ -1365,6 +1380,8 @@ const Chats = () => {
         lastMessageTime: "2024-01-11T14:45:00Z",
         unreadCount: 5,
         memberCount: 24,
+        groupLink: "https://nexus.app/groups/soa-exam-p-study",
+        isPrivate: false,
       },
       {
         id: 3,
@@ -1385,6 +1402,8 @@ const Chats = () => {
         lastMessageTime: "2024-01-11T10:15:00Z",
         unreadCount: 1,
         memberCount: 18,
+        groupLink: "https://nexus.app/groups/actuarial-python-coding",
+        isPrivate: true,
       },
       {
         id: 5,
@@ -1535,6 +1554,37 @@ const Chats = () => {
   const handleAudioCall = () => {
     if (activeChat) {
       navigate(`/audio-call?participant=${encodeURIComponent(activeChat.name)}&id=${activeChat.id}`)
+    }
+  }
+
+  const handleMoreOptions = () => {
+    setShowMoreOptions(!showMoreOptions)
+  }
+
+  const handleGroupLink = () => {
+    if (activeChat && activeChat.type === "group") {
+      setShowGroupLinkModal(true)
+      setShowMoreOptions(false)
+    }
+  }
+
+  const handleCopyGroupLink = async () => {
+    if (activeChat && activeChat.groupLink) {
+      try {
+        await navigator.clipboard.writeText(activeChat.groupLink)
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 2000)
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea")
+        textArea.value = activeChat.groupLink
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textArea)
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 2000)
+      }
     }
   }
 
@@ -1878,9 +1928,45 @@ const Chats = () => {
                 <button className="chat-action-btn" onClick={handleVideoCall} title="Video Call">
                   <Video size={20} />
                 </button>
-                <button className="chat-action-btn" title="More Options">
-                  <MoreVertical size={20} />
-                </button>
+                <div className="more-options-container" ref={moreOptionsRef}>
+                  <button className="chat-action-btn" onClick={handleMoreOptions} title="More Options">
+                    <MoreVertical size={20} />
+                  </button>
+                  {showMoreOptions && (
+                    <div className="more-options-dropdown">
+                      {activeChat.type === "group" && (
+                        <>
+                          <button className="dropdown-item" onClick={handleGroupLink}>
+                            <Link size={16} />
+                            <span>Group Link</span>
+                          </button>
+                          <button className="dropdown-item">
+                            <UserPlus size={16} />
+                            <span>Add Members</span>
+                          </button>
+                          <button className="dropdown-item">
+                            <Settings size={16} />
+                            <span>Group Settings</span>
+                          </button>
+                          <div className="dropdown-divider"></div>
+                        </>
+                      )}
+                      <button className="dropdown-item">
+                        <Bell size={16} />
+                        <span>Mute Notifications</span>
+                      </button>
+                      <button className="dropdown-item">
+                        <Archive size={16} />
+                        <span>Archive Chat</span>
+                      </button>
+                      <div className="dropdown-divider"></div>
+                      <button className="dropdown-item danger">
+                        <Trash2 size={16} />
+                        <span>Delete Chat</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2086,6 +2172,7 @@ const Chats = () => {
             <p>Choose a conversation from the sidebar to start messaging</p>
           </div>
         )}
+
         {/* Image Modal */}
         {imageModal.isOpen && (
           <div className="image-modal-overlay" onClick={() => setImageModal({ isOpen: false, src: "", name: "" })}>
@@ -2118,6 +2205,53 @@ const Chats = () => {
               </div>
               <div className="image-modal-body">
                 <img src={imageModal.src || "/placeholder.svg"} alt={imageModal.name} className="modal-image" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Group Link Modal */}
+        {showGroupLinkModal && activeChat && activeChat.type === "group" && (
+          <div className="link-group-link-modal-overlay" onClick={() => setShowGroupLinkModal(false)}>
+            <div className="link-group-link-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="link-group-link-modal-header">
+                <h3>Group Link</h3>
+                <button className="link-modal-close-btn" onClick={() => setShowGroupLinkModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="link-group-link-modal-body">
+                <div className="link-group-info">
+                  <div className="link-group-avatar-small">
+                    <img src={activeChat.avatar || "/placeholder.svg"} alt={activeChat.name} />
+                  </div>
+                  <div className="link-group-details-small">
+                    <h4>{activeChat.name}</h4>
+                    <p>{activeChat.memberCount} members</p>
+                  </div>
+                </div>
+                <div className="link-link-section">
+                  <label>Share this link to invite people to this group:</label>
+                  <div className="link-link-input-container">
+                    <input type="link-text" value={activeChat.groupLink || ""} readOnly className="group-link-input" />
+                    <button
+                      className={`link-copy-link-btn ${linkCopied ? "copied" : ""}`}
+                      onClick={handleCopyGroupLink}
+                      title={linkCopied ? "Copied!" : "Copy Link"}
+                    >
+                      {linkCopied ? <Check size={16} /> : <Copy size={16} />}
+                      {linkCopied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  {linkCopied && <p className="link-copy-success">Link copied to clipboard!</p>}
+                </div>
+                <div className="link-link-info">
+                  <p className="link-link-note">
+                    {activeChat.isPrivate
+                      ? "🔒 This is a private group. Only people with this link can join."
+                      : "🌐 This is a public group. Anyone with this link can join."}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
