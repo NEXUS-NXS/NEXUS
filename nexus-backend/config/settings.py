@@ -66,7 +66,6 @@ MIDDLEWARE = [
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 CORS_ALLOWED_ORIGINS = [
     'https://127.0.0.1:5173',
-    "https://127.0.0.1:8000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -74,6 +73,12 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'x-csrftoken',
+    'authorization',
+]
+
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -94,8 +99,8 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_COOKIE": 'access_token',
     "AUTH_COOKIE_REFRESH": "refresh_token",
-    "AUTH_COOKIE_HTTP_ONLY": True,#prevents javascript access
-    "AUTH_COOKIE_SECURE": False,#use in production with https
+    "AUTH_COOKIE_HTTP_ONLY": False,#prevents javascript access ##################################
+    "AUTH_COOKIE_SECURE": True,#use in production with https ################################
     "AUTH_COOKIE_SAME_SITE": 'None',
 }
 
@@ -195,6 +200,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+CORS_EXPOSE_HEADERS = ['Set-Cookie']
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_HTTPONLY = False  # must be False so frontend JS can access it
 CSRF_COOKIE_SAMESITE = 'None'  # Or 'None' if you're working across domains
@@ -202,3 +208,24 @@ CSRF_COOKIE_SECURE = True  # True in production (when using https)
 
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'None'
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'channels': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}

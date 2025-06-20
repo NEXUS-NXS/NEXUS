@@ -1,37 +1,14 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
-import { useUser } from "../context/UserContext"
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useUser } from '../context/UserContext'
 import axios from 'axios'
 import {
-  Search,
-  Plus,
-  MessageSquare,
-  Users,
-  Video,
-  Phone,
-  MoreVertical,
-  Smile,
-  Paperclip,
-  Send,
-  X,
-  Download,
-  FileText,
-  ImageIcon,
-  Film,
-  ArrowLeft,
-  Link,
-  Copy,
-  Check,
-  Settings,
-  UserPlus,
-  Bell,
-  Archive,
-  Trash2,
-} from "lucide-react"
-
-import "./Chats.css"
+  Search, Plus, MessageSquare, Users, Video, Phone, MoreVertical, Smile,
+  Paperclip, Send, X, Download, FileText, ImageIcon, Film, ArrowLeft, Link, Copy, Check, Settings, UserPlus, Bell, Archive, Trash2
+} from 'lucide-react'
+import './Chats.css'
 
 const Chats = () => {
   const { user } = useUser()
@@ -1342,12 +1319,6 @@ const Chats = () => {
     },
   }
 
-  const api = axios.create({
-    baseURL: 'https://127.0.0.1:8000/chats/',
-    withCredentials: true,
-  })
-
-  // Get cookie
   const getCookie = (name) => {
     const value = `; ${document.cookie}`
     const parts = value.split(`; ${name}=`)
@@ -1355,15 +1326,22 @@ const Chats = () => {
     return null
   }
 
-  // WebSocket connection
+  const api = axios.create({
+    baseURL: 'https://127.0.0.1:8000/chats/',
+    withCredentials: true,
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+      'Content-Type': 'application/json',
+    },
+  })
+
   useEffect(() => {
     if (activeChat && user) {
       const accessToken = getCookie('access_token')
-      const websocket = new WebSocket('ws://127.0.0.1:8000/chats/ws/chat/')
+      const websocket = new WebSocket(`wss://127.0.0.1:8000/chats/ws/chat/?access_token=${accessToken}`)
       
       websocket.onopen = () => {
         console.log('WebSocket connected')
-        // Join room
         const joinData = activeChat.type === 'group'
           ? { type: 'join_room', group_id: activeChat.id }
           : { type: 'join_room', recipient_id: activeChat.id }
@@ -1397,7 +1375,7 @@ const Chats = () => {
 
       websocket.onclose = () => console.log('WebSocket disconnected')
       websocket.onerror = (err) => {
-        setError('WebSocket error')
+        setError('WebSocket connection failed')
         console.error('WebSocket error:', err)
       }
 
@@ -1455,16 +1433,21 @@ const Chats = () => {
     }
   }
 
+
   const fetchMessages = async (conversation) => {
     try {
       setError(null)
       let response
+      console.log('Fetching messages for conversation:', conversation)
       if (conversation.type === 'group') {
         response = await api.get(`groups/${conversation.id}/messages/`)
       } else {
         response = await api.get(`dm/${conversation.id}/messages/`)
       }
-      const fetchedMessages = response.data.map(msg => ({
+      console.log('Messages response:', response.data)
+      // Handle both paginated and non-paginated responses
+      const messages = response.data.results || response.data || []
+      const fetchedMessages = messages.map(msg => ({
         id: msg.id,
         senderId: msg.sender.id,
         senderName: msg.sender.chat_username,
@@ -1481,15 +1464,93 @@ const Chats = () => {
       }))
       setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
     } catch (err) {
-      setError('Failed to load messages')
-      console.error(err)
+      console.error('Fetch messages error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        headers: err.response?.headers,
+      })
+      setError(`Failed to load messages: ${err.response?.status || err.message}`)
     }
   }
+
+
+  // const fetchMessages = async (conversation) => {
+  //   try {
+  //     setError(null)
+  //     let response
+  //     console.log('Fetching messages for conversation:', conversation)
+  //     if (conversation.type === 'group') {
+  //       response = await api.get(`groups/${conversation.id}/messages/`)
+  //     } else {
+  //       response = await api.get(`dm/${conversation.id}/messages/`)
+  //     }
+  //     console.log('Messages response:', response.data)
+  //     const fetchedMessages = response.data.results.map(msg => ({
+  //       id: msg.id,
+  //       senderId: msg.sender.id,
+  //       senderName: msg.sender.chat_username,
+  //       message: msg.content,
+  //       timestamp: msg.timestamp,
+  //       avatar: '/placeholder.svg?height=32&width=32',
+  //       type: msg.message_type.toLowerCase(),
+  //       fileData: msg.file ? {
+  //         name: msg.file.split('/').pop(),
+  //         size: 'Unknown',
+  //         url: msg.file,
+  //         type: msg.message_type.toLowerCase(),
+  //       } : null,
+  //     }))
+  //     setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
+  //   } catch (err) {
+  //     console.error('Fetch messages error:', {
+  //       message: err.message,
+  //       response: err.response?.data,
+  //       status: err.response?.status,
+  //       headers: err.response?.headers,
+  //     })
+  //     setError(`Failed to load messages: ${err.response?.status || err.message}`)
+  //   }
+  // }
+
+  // const fetchMessages = async (conversation) => {
+  //   try {
+  //     setError(null)
+  //     let response
+  //     if (conversation.type === 'group') {
+  //       response = await api.get(`groups/${conversation.id}/messages/`)
+  //     } else {
+  //       response = await api.get(`dm/${conversation.id}/messages/`)
+  //     }
+  //     const fetchedMessages = response.data.results.map(msg => ({
+  //       id: msg.id,
+  //       senderId: msg.sender.id,
+  //       senderName: msg.sender.chat_username,
+  //       message: msg.content,
+  //       timestamp: msg.timestamp,
+  //       avatar: '/placeholder.svg?height=32&width=32',
+  //       type: msg.message_type.toLowerCase(),
+  //       fileData: msg.file ? {
+  //         name: msg.file.split('/').pop(),
+  //         size: 'Unknown',
+  //         url: msg.file,
+  //         type: msg.message_type.toLowerCase(),
+  //       } : null,
+  //     }))
+  //     setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
+  //   } catch (err) {
+  //     setError('Failed to load messages')
+  //     console.error(err)
+  //   }
+  // }
 
   const deleteMessage = async (messageId) => {
     try {
       setError(null)
-      await api.delete(`messages/${messageId}/delete/`)
+      const csrfToken = getCookie('csrftoken')
+      await api.delete(`messages/${messageId}/delete/`, {
+        headers: { 'X-CSRFToken': csrfToken },
+      })
       setMessages(prev => {
         const updated = { ...prev }
         for (const convId in updated) {
@@ -1557,6 +1618,7 @@ const Chats = () => {
       setUploadingFiles(prev => [...prev, { id: fileId, name: file.name, progress: 0 }])
 
       try {
+        const csrfToken = getCookie('csrftoken')
         const formData = new FormData()
         formData.append('file', file)
         formData.append('message_type', fileType.toUpperCase())
@@ -1567,7 +1629,10 @@ const Chats = () => {
         }
 
         const response = await api.post('messages/', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-CSRFToken': csrfToken,
+          },
           onUploadProgress: (progressEvent) => {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
             setUploadingFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress } : f))
@@ -1575,7 +1640,6 @@ const Chats = () => {
         })
 
         setUploadingFiles(prev => prev.filter(f => f.id !== fileId))
-        // Message will be received via WebSocket
       } catch (err) {
         setError(`Failed to upload ${file.name}`)
         console.error(err)
@@ -1600,9 +1664,7 @@ const Chats = () => {
     const now = new Date()
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60))
     if (diffInHours < 1) return 'Just now'
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    }
+    if (diffInHours < 24) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
