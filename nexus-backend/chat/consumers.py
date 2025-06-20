@@ -4,21 +4,42 @@ from channels.db import database_sync_to_async
 from .models import ChatUser, StudyGroup, Message, Notification, GroupMembership
 from .serializers import MessageSerializer
 from django.shortcuts import get_object_or_404
-from channels.layers import get_channel_layer
+from django.conf import settings
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class ChatConsumer(AsyncWebsocketConsumer):
 
-    async def connect(self, request):
-        self.user = self.scope['user']
-
-        if self.user.is_anonymous:
+    # async def connect(self, request):
+    #     self.user = self.scope['user']
+    #     print(">>> WebSocket connection successful >>>")
+    #     if self.user.is_anonymous:
+    #         await self.close()
+    #         return 
+    async def connect(self):
+        user = await self.get_user()
+        if user.is_anonymous:
             await self.close()
-            return 
-        
+            return
+        self.user = user
+        await self.accept()
         
         self.room_group_name=None 
         await self.update_user_status(True)
         await self.accept()
+    
+
+    @database_sync_to_async
+    def get_user(self):
+        try:
+            jwt_auth = JWTAuthentication()
+            token = self.scope['cookies'].get(settings.SIMPLE_JWT['AUTH_COOKIE'])
+            if not token:
+                return f">>>>>>>>>>>>>>>>auth token cookie>>>>>>>>>>>>>>>>>>>>>>>"
+            validated_token = jwt_auth.get_validated_token(token)
+            user = jwt_auth.get_user(validated_token)
+            return user
+        except:
+            return f">>>>>>>>>>>>>>>>>>tested>>>>>>>>>>>>>>>>>>>>>"
 
     async def disconnect(self, close_code):
         if self.user.is_authenticated:
@@ -28,7 +49,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.room_group_name,
                     self.channel_name
                 )
-    
+        print(f"<<< WebSocket connection closed. Close code: {close_code} <<<")
+
+
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_type = data.get('type')

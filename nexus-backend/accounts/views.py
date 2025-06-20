@@ -41,7 +41,7 @@ class RegisterView(APIView):
                 key="access_token",
                 value=str(refresh.access_token),
                 httponly=True,
-                secure=False,  # Set to True in production
+                secure=True,  # Set to True in production
                 samesite="None",
                 max_age=3600,  # 1 hour
             )
@@ -49,7 +49,7 @@ class RegisterView(APIView):
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
-                secure=False,
+                secure=True,
                 samesite="None",
                 max_age=86400,  # 1 day
             )
@@ -83,7 +83,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 key="access_token",
                 value=str(refresh.access_token),
                 httponly=True,
-                secure=False,
+                secure=True,
                 samesite="None",
                 max_age=3600,
             )
@@ -91,7 +91,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
-                secure=False,
+                secure=True,
                 samesite="None",
                 max_age=86400,
             )
@@ -110,4 +110,26 @@ class LogoutView(APIView):
         response = Response({"message": "Logged out"}, status=status.HTTP_200_OK)
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
+        return response
+    
+# auth/views.py
+from django.middleware.csrf import get_token
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny  # Add this import
+
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        csrf_token = get_token(request)
+        response = Response({'csrf_token': csrf_token})
+        response.set_cookie(
+            key='csrftoken',
+            value=csrf_token,
+            httponly=False,
+            secure=True,
+            samesite='None',
+            max_age=86400,
+        )
         return response
