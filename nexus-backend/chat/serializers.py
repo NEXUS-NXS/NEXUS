@@ -110,16 +110,29 @@ Most recent activity (timestamp)
 ✅ Clean and maintainable: logic is separated and clear
 """
 class StudyGroupSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    exam_focus = ExamFocusSerializer()
-    tags = TagSerializer(many=True)
-    owner = ChatUserSerializer()
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source='category', write_only=True
+    )
+    exam_focus = ExamFocusSerializer(read_only=True)
+    exam_focus_id = serializers.PrimaryKeyRelatedField(
+        queryset=ExamFocus.objects.all(), source='exam_focus', write_only=True
+    )
+    tags = TagSerializer(many=True, read_only=True)
+    tag_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), source='tags', many=True, write_only=True
+    )
+    owner = ChatUserSerializer(read_only=True)
     members = serializers.SerializerMethodField()
     last_message_timestamp = serializers.SerializerMethodField()
 
     class Meta:
         model = StudyGroup
-        fields = ['id', 'name', 'description', 'category', 'exam_focus', 'max_members', 'status', 'tags', 'owner', 'icon', 'created_at', 'invite_link', 'members', 'last_message_timestamp']
+        fields = [
+            'id', 'name', 'description', 'category', 'category_id', 'exam_focus',
+            'exam_focus_id', 'max_members', 'status', 'tags', 'tag_ids', 'owner',
+            'icon', 'created_at', 'invite_link', 'members', 'last_message_timestamp'
+        ]
 
     def get_members(self, obj):
         memberships = obj.memberships.all()
@@ -137,15 +150,26 @@ class StudyGroupSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Invalid file type. Only JPG and PNG are allowed.")
         return value
 
-class JoinRequestSerializer(serializers.ModelSerializer):
-    user = ChatUserSerializer()
-    group = StudyGroupSerializer()
+
+class PendingJoinRequestSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.chat_username', read_only=True)
+
     class Meta:
         model = JoinRequest
-        fields = ['id', 'group', 'user', 'status', 'created_at']
+        fields = ['id', 'user', 'user_username', 'group', 'message','status', 'created_at']
+        read_only_fields = fields
+
+
+class JoinRequestSerializer(serializers.ModelSerializer):
+    user = ChatUserSerializer(read_only=True)
+    group = StudyGroupSerializer(read_only=True)
+    class Meta:
+        model = JoinRequest
+        fields = ['id', 'group', 'user', 'status', 'message','created_at']
+        read_only_fields = ['id', 'group', 'user', 'status','created_at']
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = ChatUserSerializer()
+    sender = ChatUserSerializer(read_only=True)
     group = StudyGroupSerializer(required=False)
     recipient = ChatUserSerializer(required=False)
 

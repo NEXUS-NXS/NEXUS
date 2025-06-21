@@ -1,150 +1,214 @@
 // context/UserContext.jsx
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect } from "react"
-import axios from 'axios'
+import { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
-// enable cookies in axios requests
-axios.defaults.withCredentials=true
+axios.defaults.withCredentials = true;
 
-const UserContext = createContext(undefined)
+const UserContext = createContext(undefined);
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem("nexus_user")
-    
-    if (storedUser) {
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+
+  const fetchCsrfToken = async (retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
       try {
-        const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
-        setIsAuthenticated(true)
+        // Trigger Django to set the csrf cookie
+        await axios.get("https://127.0.0.1:8000/auth/csrf/", {
+          withCredentials: true,
+        });
 
-        // verify authentication with a protected end
-        checkAuth()
+        console.log("Document cookie:", document.cookie);
+
+        const csrfToken = getCookie("csrftoken");
+        if (csrfToken) return csrfToken;
+
+        throw new Error("CSRF cookie not set");
       } catch (error) {
-        console.error("Failed to parse stored user data", error)
-        localStorage.removeItem("nexus_user")
-        setIsAuthenticated(false)
+        console.error(`CSRF fetch attempt ${i + 1} failed:`, error);
+        if (i < retries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
     }
-  }, [])
+    return null;
+  };
 
-  const checkAuth = async()=>{
-    try{
-      // call a protected endpoint to verify authentication
-      await axios.get("http://127.0.0.1:8000/auth/protected/")
-      setIsAuthenticated(true)
-
-    }catch (error){
-      console.error("Authentication check failed", error) 
-      isAuthenticated(false)
-      localStorage.removeItem("nexus_user")
+  useEffect(() => {
+    const storedUser = localStorage.getItem("nexus_user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        checkAuth();
+      } catch (error) {
+        console.error("Failed to parse stored user data:", error);
+        localStorage.removeItem("nexus_user");
+        setIsAuthenticated(false);
+      }
     }
-  }
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      await axios.get("https://127.0.0.1:8000/auth/protected/", {
+        withCredentials: true,
+      });
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Authentication check failed:", error);
+      setIsAuthenticated(false);
+      localStorage.removeItem("nexus_user");
+      setUser(null);
+    }
+  };
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post("http://127.0.0.1:8000/auth/token/", {
-        email,
-        password,
-      })
-      console.log("Login response:", response.data) // Debug response
-      const { user } = response.data
-      if (!user) {
-        throw new Error("User data not found in response")
-      }
-     
-      // store userdata 
-      localStorage.setItem("nexus_user", JSON.stringify(user))
+      const csrfToken = await fetchCsrfToken();
+      if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
-      // update context state
-      setUser(user)
-      setIsAuthenticated(true)
+      const response = await axios.post(
+        "https://127.0.0.1:8000/auth/token/",
+        { email, password },
+        {
+          headers: { "X-CSRFToken": csrfToken },
+          withCredentials: true,
+        }
+      );
+      console.log("Login response:", response.data);
+      const { user } = response.data;
+      if (!user) throw new Error("User data not found in response");
 
-      return true
+      localStorage.setItem("nexus_user", JSON.stringify(user));
+      setUser(user);
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
-      console.error("Login failed", error)
-      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).flat().join(" ") || "login failed"
-
-      throw new Error(errorMessage)
-
+      console.error("Login failed:", error);
+      const errorMessage =
+        error.response?.data?.detail ||
+        Object.values(error.response?.data || {})
+          .flat()
+          .join(" ") ||
+        error.message ||
+        "Login failed";
+      throw new Error(errorMessage);
     }
-  }
+  };
+
+  const register = async (
+    fullName,
+    email,
+    password,
+    confirmPassword,
+    gender,
+    education
+  ) => {
+    try {
+      const csrfToken = await fetchCsrfToken();
+      if (!csrfToken) throw new Error("Failed to fetch CSRF token");
+
+      const response = await axios.post(
+        "https://127.0.0.1:8000/auth/register/",
+        {
+          full_name: fullName,
+          email,
+          password,
+          password2: confirmPassword,
+          gender,
+          education,
+        },
+        {
+          headers: { "X-CSRFToken": csrfToken },
+          withCredentials: true,
+        }
+      );
+      console.log("Register response:", response.data);
+      const { user: userData } = response.data;
+
+      localStorage.setItem("nexus_user", JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+      return true;
+    } catch (error) {
+      console.error("Registration failed:", error);
+      const errorMessage =
+        error.response?.data?.detail ||
+        Object.values(error.response?.data || {})
+          .flat()
+          .join(" ") ||
+        error.message ||
+        "Registration failed";
+      throw new Error(errorMessage);
+    }
+  };
 
   const logout = async () => {
-    try{
-      await axios.post("http://127.0.0.1:8000/auth/logout/")
-
-    } catch (error) {
-      console.error("Logout failed", error)
-    }
-
-    setUser(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem("nexus_user")
-  } 
-    
-    
-
-  const register = async (fullName, email, password, confirmPassword, gender, education) => {
-    // In a real app, this would make an API call to register
     try {
-      const response = await axios.post("http://127.0.0.1:8000/auth/register/", {
-       full_name: fullName,
-        email,
-        password,
-        password2: confirmPassword,
-        gender, 
-        education,
-      })
-
-      const {user:userData} = response.data
-      
-      // store userdata
-      localStorage.setItem("nexus_user", JSON.stringify(userData))
-
-      // update context state
-      setUser(userData)
-      setIsAuthenticated(true)
-
-      return true
-
+      const csrfToken = await fetchCsrfToken();
+      if (csrfToken) {
+        await axios.post(
+          "https://127.0.0.1:8000/auth/logout/",
+          {},
+          {
+            headers: { "X-CSRFToken": csrfToken },
+            withCredentials: true,
+          }
+        );
+      }
     } catch (error) {
-      console.error("Registration failed", error)
-      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).flat().join(" ") || "Registration failed"
-
-      throw new Error(errorMessage)
-
+      console.error("Logout failed:", error);
     }
-  }
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem("nexus_user");
+  };
 
   const refreshToken = async () => {
     try {
-      const response = await axios.post("http://127.0.0.1:8000/auth/token/refresh/")
-      setIsAuthenticated(true)
-      return true
+      const csrfToken = await fetchCsrfToken();
+      if (!csrfToken) throw new Error("Failed to fetch CSRF token");
+      await axios.post(
+        "https://127.0.0.1:8000/auth/token/refresh/",
+        {},
+        {
+          headers: { "X-CSRFToken": csrfToken },
+          withCredentials: true,
+        }
+      );
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
-      console.error("Token refresh failed", error)
-      logout()
-      return false
+      console.error("Token refresh failed:", error);
+      logout();
+      return false;
     }
-  }
+  };
 
   return (
-    <UserContext.Provider value={{ user, isAuthenticated, login, logout, register, refreshToken }}>{children}</UserContext.Provider>
-  )
-}
+    <UserContext.Provider
+      value={{ user, isAuthenticated, login, logout, register, refreshToken }}
+    >
+      {children}
+    </UserContext.Provider>
+  );
+};
 
-const useUser = () => {
-  const context = useContext(UserContext)
+export const useUser = () => {
+  const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider")
+    throw new Error("useUser must be used within a UserProvider");
   }
-  return context
-}
-
-export { useUser }
+  return context;
+};

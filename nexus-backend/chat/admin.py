@@ -20,7 +20,7 @@ class ChatUserAdmin(admin.ModelAdmin):
 
 @admin.register(StudyGroup)
 class StudyGroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description', 'owner', 'category', 'exam_focus', 'status', 'created_at')
+    list_display = ('name', 'description', 'owner', 'category', 'exam_focus', 'status', 'created_at', 'invite_link')
     list_filter = ('status', 'category', 'exam_focus')
     search_fields = ('name', 'description')
 
@@ -47,4 +47,3 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'content', 'is_read', 'created_at')
     list_filter = ('is_read',)
     search_fields = ('content', 'user__chat_username')
-    

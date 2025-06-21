@@ -95,11 +95,11 @@ class GroupMembership(models.Model):
 class JoinRequest(models.Model):
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='join_requests')
     user = models.ForeignKey(ChatUser, on_delete=models.CASCADE)
+    message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=(('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')), default='PENDING')
 
-    class Meta:
-        unique_together = ('group', 'user')
+
 
     def __str__(self):
         return f"{self.user.chat_username} -> {self.group.name}"

@@ -4,7 +4,7 @@ from rest_framework import status, generics
 from .models import Category, ExamFocus, Tag, ChatUser, StudyGroup, GroupMembership, JoinRequest, Message, Notification
 from .serializers import (CategorySerializer, ExamFocusSerializer, TagSerializer, ChatUserSerializer,
                          StudyGroupSerializer, GroupMembershipSerializer, JoinRequestSerializer,
-                         MessageSerializer, NotificationSerializer)
+                         MessageSerializer, NotificationSerializer, PendingJoinRequestSerializer)
 from .permissions import IsGroupMember, IsGroupAdminOrOwner, IsGroupOwner, IsMessageSender
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
@@ -66,8 +66,18 @@ class StudyGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsGroupMember()]
     
 
+#list all join requests
+class PendingJoinRequestsView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
+    serializer_class = PendingJoinRequestSerializer
 
-#handles join requests
+    def get_queryset(self):
+        group_id = self.kwargs['group_id']
+        group = get_object_or_404(StudyGroup, id=group_id)
+        return JoinRequest.objects.filter(group=group, status='PENDING')
+
+
+#handles creation of join requests
 class JoinRequestCreateView(generics.CreateAPIView):
     serializer_class = JoinRequestSerializer
     permission_classes = [IsAuthenticated]
