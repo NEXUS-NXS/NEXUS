@@ -143,9 +143,11 @@ class GroupMembershipManageView(APIView):
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
 
+from rest_framework.parsers import MultiPartParser, FormParser
 class MessageListCreateView(generics.ListCreateAPIView):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         group_id = self.kwargs.get('group_id')

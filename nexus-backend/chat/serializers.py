@@ -172,6 +172,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender = ChatUserSerializer(read_only=True)
     group = StudyGroupSerializer(required=False)
     recipient = ChatUserSerializer(required=False)
+    timestamp = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S.%fZ", read_only=True)
 
     class Meta:
         model = Message
@@ -182,8 +183,22 @@ class MessageSerializer(serializers.ModelSerializer):
             ext = os.path.splitext(value.name)[1].lower()
             valid_extensions = ['.jpg', '.jpeg', '.pdf', '.csv', '.docx', '.txt', '.mp4']
             if ext not in valid_extensions:
-                raise serializers.ValidationError("Invalid file type. Allowed types: jpg, jpeg, pdf, csv, docx, txt, mp4")
+                raise serializers.ValidationError(f"Invalid file type: {ext}. Allowed types: {', '.join(valid_extensions)}")
+            max_size = 100 * 1024 * 1024  # 10MB
+            if value.size > max_size:
+                raise serializers.ValidationError(f"File too large. Max size: {max_size / (1024 * 1024)}MB")
         return value
+    
+    def validate(self, data):
+        group = data.get('group')
+        recipient = data.get('recipient')
+        content = data.get('content')
+        file = data.get('file')
+        if not content and not file:
+            raise serializers.ValidationError("Either content or file must be provided.")
+        if group and recipient:
+            raise serializers.ValidationError("Cannot specify both group and recipient.")
+        return data
 
 class NotificationSerializer(serializers.ModelSerializer):
     user = ChatUserSerializer()
