@@ -19,11 +19,15 @@ import {
   Database,
   Brain,
   Target,
+  Settings,
+  HelpCircle,
+  LogOut,
+  X,
 } from "lucide-react"
 import { useUser } from "../../context/UserContext"
 import "./Header.css"
 
-const Header = () => {
+const Header = ({ onMenuToggle, isSidebarOpen }) => {
   const { user } = useUser()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showBrowseMenu, setShowBrowseMenu] = useState(false)
@@ -34,6 +38,23 @@ const Header = () => {
 
   const toggleBrowseMenu = () => {
     setShowBrowseMenu(!showBrowseMenu)
+  }
+
+  const handleMenuToggle = () => {
+    if (onMenuToggle) {
+      onMenuToggle()
+    }
+  }
+
+  const handleProfileNavigation = (path) => {
+    window.location.href = path
+    setShowProfileMenu(false)
+  }
+
+  const handleLogout = () => {
+    // Add logout logic here
+    console.log("Logging out...")
+    setShowProfileMenu(false)
   }
 
   const browseMenuData = {
@@ -70,9 +91,13 @@ const Header = () => {
   return (
     <header className="header-top-nav">
       <div className="header-left-top-nav">
-        {/* <button className="menu-button-top-nav">
-          <Menu size={20} />
-        </button> */}
+        <button
+          className="menu-button-top-nav"
+          onClick={handleMenuToggle}
+          aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
+        >
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
 
         <div className="browse-container-top-nav">
           <button className="browse-button-top-nav" onClick={toggleBrowseMenu}>
@@ -114,7 +139,7 @@ const Header = () => {
                           <div className="course-meta-top-nav">
                             <span className={`level-top-nav ${course.level.toLowerCase()}`}>{course.level}</span>
                             <div className="rating-top-nav">
-                              <Star size={12} fill="currentColor-top-nav" />
+                              <Star size={12} fill="currentColor" />
                               <span>{course.rating}</span>
                             </div>
                             <div className="students-top-nav">
@@ -196,14 +221,34 @@ const Header = () => {
           {showProfileMenu && (
             <div className="profile-menu-top-nav">
               <div className="profile-header-top-nav">
-                <p className="profile-name-top-nav">{user?.name}</p>
-                <p className="profile-email-top-nav">{user?.email}</p>
+                <p className="profile-name-top-nav">{user?.name || "John Doe"}</p>
+                <p className="profile-email-top-nav">{user?.email || "john.doe@example.com"}</p>
               </div>
               <ul>
-                <li>Profile Settings</li>
-                <li>Account</li>
-                <li>Help Center</li>
-                <li className="logout-top-nav">Logout</li>
+                <li onClick={() => handleProfileNavigation("/profile")}>
+                  <div className="profile-menu-link-top-nav">
+                    <User size={14} />
+                    <span>My Profile</span>
+                  </div>
+                </li>
+                <li onClick={() => handleProfileNavigation("/profile?tab=settings")}>
+                  <div className="profile-menu-link-top-nav">
+                    <Settings size={14} />
+                    <span>Account Settings</span>
+                  </div>
+                </li>
+                <li onClick={() => handleProfileNavigation("/help")}>
+                  <div className="profile-menu-link-top-nav">
+                    <HelpCircle size={14} />
+                    <span>Help Center</span>
+                  </div>
+                </li>
+                <li className="logout-top-nav" onClick={handleLogout}>
+                  <div className="profile-menu-link-top-nav">
+                    <LogOut size={14} />
+                    <span>Logout</span>
+                  </div>
+                </li>
               </ul>
             </div>
           )}

@@ -22,6 +22,11 @@ import {
   Share2,
 } from "lucide-react"
 
+import { AddTeamMemberDialog } from "@/components/add-team-member-dialog"
+import { AddTaskDialog } from "@/components/add-task-dialog"
+import { UploadFileDialog } from "@/components/upload-file-dialog"
+import { NewDiscussionDialog } from "@/components/new-discussion-dialog"
+
 export const metadata: Metadata = {
   title: "Project Details | Nexus Learning Hub",
   description: "Detailed information and collaboration tools for the selected project.",
@@ -60,10 +65,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
               <Share2 className="mr-2 h-4 w-4" />
               Share
             </Button>
-            <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Task
-            </Button>
+            <AddTaskDialog>
+              <Button size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Task
+              </Button>
+            </AddTaskDialog>
           </div>
         </div>
 
@@ -169,10 +176,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       <CardTitle>Tasks</CardTitle>
                       <CardDescription>Manage and track project tasks</CardDescription>
                     </div>
-                    <Button size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      New Task
-                    </Button>
+                    <AddTaskDialog>
+                      <Button size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Task
+                      </Button>
+                    </AddTaskDialog>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-4">
@@ -219,10 +228,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       <CardTitle>Files</CardTitle>
                       <CardDescription>Project documents and resources</CardDescription>
                     </div>
-                    <Button size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Upload File
-                    </Button>
+                    <UploadFileDialog>
+                      <Button size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Upload File
+                      </Button>
+                    </UploadFileDialog>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-4">
@@ -253,15 +264,21 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       <CardTitle>Discussions</CardTitle>
                       <CardDescription>Project conversations and threads</CardDescription>
                     </div>
-                    <Button size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      New Discussion
-                    </Button>
+                    <NewDiscussionDialog>
+                      <Button size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Discussion
+                      </Button>
+                    </NewDiscussionDialog>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-4">
                       {project.discussions.map((discussion) => (
-                        <div key={discussion.id} className="flex flex-col gap-2 rounded-md border p-4">
+                        <Link
+                          key={discussion.id}
+                          href={`/collaborate/projects/${params.projectId}/discussions/${discussion.id}`}
+                          className="flex flex-col gap-2 rounded-md border p-4 hover:bg-muted/50 transition-colors"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="font-medium">{discussion.title}</div>
                             <Badge variant="outline">{discussion.category}</Badge>
@@ -283,7 +300,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                               <span>{discussion.lastActivity}</span>
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </CardContent>
@@ -296,9 +313,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       <CardTitle>Models</CardTitle>
                       <CardDescription>Project simulation models and results</CardDescription>
                     </div>
-                    <Button size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      New Model
+                    <Button size="sm" asChild>
+                      <Link href="/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Model
+                      </Link>
                     </Button>
                   </CardHeader>
                   <CardContent>
@@ -365,9 +384,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
                             <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                           </Avatar>
                         ))}
-                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-full p-0">
-                          <Plus className="h-4 w-4" />
-                        </Button>
+                        <AddTeamMemberDialog>
+                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full p-0">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </AddTeamMemberDialog>
                       </div>
                     </div>
                   </div>

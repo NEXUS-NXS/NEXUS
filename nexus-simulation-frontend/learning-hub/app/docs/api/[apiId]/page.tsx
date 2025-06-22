@@ -501,7 +501,7 @@ data = {
 response = requests.post(url, headers=headers, json=data)
 result = response.json()
 
-print(f\"Annual Premium: ${result['data\'][\'annual_premium\']:.2f}")`,
+print(f\"Annual Premium: \${result['data\'][\'annual_premium\']:.2f}")`,
         output: `Annual Premium: $245.67`
       },
       {

@@ -1,0 +1,582 @@
+.vid-video-call-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.vid-video-call-container.fullscreen {
+  z-index: 10000;
+}
+
+/* Call Header */
+.vid-video-call-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vid-call-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.vid-participant-info h2 {
+  color: white;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.vid-call-status {
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.vid-call-duration {
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  font-family: "Courier New", monospace;
+}
+
+.vid-call-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.vid-header-action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.vid-header-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Video Area */
+.vid-video-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  width: 100%;
+  height: 70%;
+}
+
+
+.vid-remote-video-container {
+  position: relative;
+  width: 80%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vid-remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.vid-remote-video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3) 0%,
+    transparent 20%,
+    transparent 80%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.vid-participant-name {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.vid-connection-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: white;
+  text-align: center;
+}
+
+.vid-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.vid-local-video-container {
+  position: absolute;
+  bottom: 100px;
+  right: 100px;
+  width: 400px;
+  height: 250px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.vid-local-video-container:hover {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.vid-local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Mirror effect */
+}
+
+.vid-local-video-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vid-local-video-overlay span {
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.vid-video-off-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Call Controls */
+.vid-video-call-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.vid-control-group {
+  display: flex;
+  gap: 16px;
+}
+
+.vid-control-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.vid-control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.vid-control-btn.active {
+  background: #ef4444;
+}
+
+.vid-control-btn.active:hover {
+  background: #dc2626;
+}
+
+.vid-end-call-btn {
+  background: #ef4444;
+  border: none;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.vid-end-call-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6);
+}
+
+/* Chat Sidebar */
+.vid-chat-sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.vid-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vid-chat-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.vid-chat-header button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.vid-chat-header button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vid-chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vid-chat-message {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.vid-message-sender {
+  color: #3b82f6;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.vid-message-content {
+  color: white;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.vid-message-time {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+}
+
+.vid-chat-input-form {
+  display: flex;
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 8px;
+}
+
+.vid-chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-size: 14px;
+}
+
+.vid-chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.vid-chat-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.vid-chat-input-form button {
+  background: #3b82f6;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.vid-chat-input-form button:hover {
+  background: #2563eb;
+}
+
+/* Settings Panel */
+.vid-settings-panel {
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  width: 300px;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vid-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vid-settings-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.vid-settings-header button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.vid-settings-header button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vid-settings-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vid-setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vid-setting-group label {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.vid-setting-group select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  color: white;
+  font-size: 14px;
+}
+
+.vid-setting-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.vid-setting-group select option {
+  background: #1a1a2e;
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .vid-video-call-header {
+    padding: 15px 20px;
+  }
+
+  .vid-participant-info h2 {
+    font-size: 20px;
+  }
+
+  .vid-call-duration {
+    font-size: 16px;
+  }
+
+  .vid-local-video-container {
+    width: 120px;
+    height: 90px;
+    bottom: 100px;
+    right: 15px;
+  }
+
+  .vid-video-call-controls {
+    padding: 15px 20px;
+  }
+
+  .vid-control-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .vid-end-call-btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .vid-chat-sidebar {
+    width: 100%;
+  }
+
+  .vid-settings-panel {
+    width: calc(100% - 40px);
+    right: 20px;
+    left: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vid-video-call-header {
+    padding: 12px 15px;
+  }
+
+  .vid-call-header-actions {
+    gap: 8px;
+  }
+
+  .vid-header-action-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .vid-control-group {
+    gap: 12px;
+  }
+
+  .vid-control-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .vid-end-call-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
