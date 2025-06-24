@@ -217,3 +217,26 @@ class JoinGroupByLinkView(APIView):
         else:
             JoinRequest.objects.get_or_create(group=group, user=self.request.user.chat_user, status='PENDING')
             return Response({'status': 'Join request sent'}, status=status.HTTP_200_OK)
+        
+
+
+
+
+
+
+##########################################################################
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import ChatUser
+from .serializers import ChatUserSerializer
+
+class CurrentChatUserView(APIView):
+
+    def get(self, request):
+        try:
+            chat_user = request.user.chat_user  # OneToOne relationship
+            serializer = ChatUserSerializer(chat_user)
+            return Response(serializer.data)
+        except ChatUser.DoesNotExist:
+            return Response({"detail": "ChatUser not found."}, status=404)

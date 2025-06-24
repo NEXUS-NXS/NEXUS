@@ -3,7 +3,7 @@ from .views import (CategoryListView, ExamFocusListView, TagListView,
                      ChatUserSearchView, StudyGroupListCreateView,
                      StudyGroupDetailView, JoinRequestCreateView,JoinRequestManageView,
                      GroupMembershipManageView, MessageListCreateView, MessageDeleteView,
-                     NotificationListView, LeaveGroupView, JoinGroupByLinkView, PendingJoinRequestsView,
+                     NotificationListView, LeaveGroupView, JoinGroupByLinkView, PendingJoinRequestsView,CurrentChatUserView
                      )
 
 urlpatterns = [
@@ -26,5 +26,7 @@ urlpatterns = [
     path('messages/<int:pk>/delete/', MessageDeleteView.as_view(), name='message-delete'),
     path('dm/<int:recipient_id>/messages/', MessageListCreateView.as_view(), name='dm-view'),#tested
     path('notifications/', NotificationListView.as_view(), name='notification-list'),#tested
+
+    path('api/me/', CurrentChatUserView.as_view(), name='current_chat_user'),
     
 ]

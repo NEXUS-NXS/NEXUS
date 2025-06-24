@@ -23,7 +23,7 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         // Trigger Django to set the csrf cookie
-        await axios.get("https://127.0.0.1:8000/auth/csrf/", {
+        await axios.get("https://10.186.3.187:8000/auth/csrf/", {
           withCredentials: true,
         });
 
@@ -61,7 +61,7 @@ export const UserProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      await axios.get("https://127.0.0.1:8000/auth/protected/", {
+      await axios.get("https://10.186.3.187:8000/auth/protected/", {
         withCredentials: true,
       });
       setIsAuthenticated(true);
@@ -71,7 +71,30 @@ export const UserProvider = ({ children }) => {
       localStorage.removeItem("nexus_user");
       setUser(null);
     }
+
+    await fetchChatUserId();
+
   };
+
+
+  const fetchChatUserId = async () => {
+  try {
+    const response = await axios.get("https://10.186.3.187:8000/chats/api/me/", {
+      withCredentials: true,
+    });
+    const chatUserId = response.data.id;
+
+    // Update the user object with chat_user_id
+    setUser(prev => {
+      const updatedUser = { ...prev, chat_user_id: chatUserId };
+      localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  } catch (err) {
+    console.error("Failed to fetch ChatUser ID:", err);
+  }
+};
+
 
   const login = async (email, password) => {
     try {
@@ -79,7 +102,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/token/",
+        "https://10.186.3.187:8000/auth/token/",
         { email, password },
         {
           headers: { "X-CSRFToken": csrfToken },
@@ -93,6 +116,10 @@ export const UserProvider = ({ children }) => {
       localStorage.setItem("nexus_user", JSON.stringify(user));
       setUser(user);
       setIsAuthenticated(true);
+
+      // 👉 Fetch the ChatUser ID after login
+      await fetchChatUserId();
+
       return true;
     } catch (error) {
       console.error("Login failed:", error);
@@ -120,7 +147,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/register/",
+        "https://10.186.3.187:8000/auth/register/",
         {
           full_name: fullName,
           email,
@@ -159,7 +186,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (csrfToken) {
         await axios.post(
-          "https://127.0.0.1:8000/auth/logout/",
+          "https://10.186.3.187:8000/auth/logout/",
           {},
           {
             headers: { "X-CSRFToken": csrfToken },
@@ -180,7 +207,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
       await axios.post(
-        "https://127.0.0.1:8000/auth/token/refresh/",
+        "https://10.186.3.187:8000/auth/token/refresh/",
         {},
         {
           headers: { "X-CSRFToken": csrfToken },

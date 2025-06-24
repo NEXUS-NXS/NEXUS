@@ -1329,7 +1329,7 @@ const Chats = () => {
   }
 
   const api = axios.create({
-    baseURL: 'https://127.0.0.1:8000/chats/',
+    baseURL: 'https://10.186.3.187:8000/chats/',
     withCredentials: true,
     headers: {
       'X-CSRFToken': getCookie('csrftoken'),
@@ -1340,7 +1340,7 @@ const Chats = () => {
   useEffect(() => {
     if (activeChat && user) {
       const accessToken = getCookie('access_token')
-      const websocket = new WebSocket(`wss://127.0.0.1:8000/chats/ws/chat/?access_token=${accessToken}`)
+      const websocket = new WebSocket(`wss://10.186.3.187:8000/chats/ws/chat/?access_token=${accessToken}`)
       
       websocket.onopen = () => {
         console.log('WebSocket connected')
@@ -1447,6 +1447,7 @@ const Chats = () => {
         response = await api.get(`dm/${conversation.id}/messages/`)
       }
       console.log('Messages response:', response.data)
+      
       // Handle both paginated and non-paginated responses
       const messages = response.data.results || response.data || []
       const fetchedMessages = messages.map(msg => ({
@@ -1465,6 +1466,7 @@ const Chats = () => {
         } : null,
       }))
       setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
+
     } catch (err) {
       console.error('Fetch messages error:', {
         message: err.message,
@@ -1474,6 +1476,8 @@ const Chats = () => {
       })
       setError(`Failed to load messages: ${err.response?.status || err.message}`)
     }
+   
+
   }
 
 
@@ -1913,24 +1917,30 @@ const Chats = () => {
               </div>
             </div>
             <div className="chat-messages">
-              {(messages[activeChat.id] || []).map(msg => (
-                <div key={msg.id} className={`message ${msg.senderId === user.id ? 'own-message' : ''}`}>
-                  {msg.senderId !== user.id && (
-                    <div className="message-avatar">
-                      <img src={msg.avatar || '/placeholder.svg'} alt={msg.senderName} />
-                    </div>
-                  )}
-                  <div className="message-content">
-                    {msg.senderId !== user.id && activeChat.type === 'group' && (
-                      <div className="message-sender">{msg.senderName}</div>
-                    )}
-                    <div className="message-bubble">
-                      {renderMessage(msg)}
-                      <span className="message-time">{formatMessageTime(msg.timestamp)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+  {(messages[activeChat.id] || []).map(msg => {
+    // ✅ Add this console.log here to debug
+    console.log("msg.senderId:", msg.senderId, "chat_user_id:", user?.chat_user_id);
+
+    return (
+      <div key={msg.id} className={`message ${msg.senderId === user.chat_user_id ? 'own-message' : ''}`}>
+        {msg.senderId !== user?.id && (
+          <div className="message-avatar">
+            <img src={msg.avatar || '/placeholder.svg'} alt={msg.senderName} />
+          </div>
+        )}
+        <div className="message-content">
+          {msg.senderId !== user?.id && activeChat.type === 'group' && (
+            <div className="message-sender">{msg.senderName}</div>
+          )}
+          <div className="message-bubble">
+            {renderMessage(msg)}
+            <span className="message-time">{formatMessageTime(msg.timestamp)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  })}
+
               {uploadingFiles.map(file => (
                 <div key={file.id} className="message own-message">
                   <div className="message-content">
