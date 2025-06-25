@@ -1,486 +1,211 @@
-"use client"
-
-import { useState, useRef, useEffect } from "react"
-import {
-  ArrowLeft,
-  Users,
-  Calendar,
-  MessageSquare,
-  Settings,
-  Crown,
-  Lock,
-  Globe,
-  Send,
-  Paperclip,
-  Video,
-  MoreVertical,
-  Smile,
-  X,
-  Download,
-  FileText,
-  ImageIcon,
-  Film,
-  Phone,
+import { useState, useEffect, useRef } from "react"
+import { 
+  ArrowLeft, Users, Calendar, MessageSquare, Settings, Crown, Lock, Globe, 
+  Send, Paperclip, Video, MoreVertical, Smile, X, Download, FileText, 
+  ImageIcon, Film, Phone, Loader2
 } from "lucide-react"
-import "./GroupDetail.css"
+import { useUser } from "../../context/UserContext"
+import axios from "axios"
 import GroupSettingsModal from "./GroupSettingsModal"
+import "./GroupDetail.css"
 
 const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
   const [activeTab, setActiveTab] = useState("chat")
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
+  const [members, setMembers] = useState([])
+  const [upcomingSessions, setUpcomingSessions] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [socket, setSocket] = useState(null)
+  const [isSending, setIsSending] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState([])
   const [emojiSearchQuery, setEmojiSearchQuery] = useState("")
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState("smileys")
   const [recentEmojis, setRecentEmojis] = useState(["😊", "👍", "❤️", "😂", "🎉"])
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [showImageModal, setShowImageModal] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState(null)
-  const [showVideoModal, setShowVideoModal] = useState(false)
-
-  const fileInputRef = useRef(null)
-  const emojiPickerRef = useRef(null)
-  const chatInputRef = useRef(null)
-  const chatMessagesRef = useRef(null)
-
-  const [members] = useState([
-    {
-      id: "user123",
-      name: "Sarah Johnson",
-      role: "owner",
-      avatar: "/placeholder.svg?height=40&width=40",
-      status: "online",
-      joinDate: "2024-01-01",
-    },
-    {
-      id: "user456",
-      name: "Mike Chen",
-      role: "admin",
-      avatar: "/placeholder.svg?height=40&width=40",
-      status: "online",
-      joinDate: "2024-01-02",
-    },
-    {
-      id: "user789",
-      name: "Emily Rodriguez",
-      role: "member",
-      avatar: "/placeholder.svg?height=40&width=40",
-      status: "away",
-      joinDate: "2024-01-03",
-    },
-    {
-      id: "user101",
-      name: "David Kim",
-      role: "member",
-      avatar: "/placeholder.svg?height=40&width=40",
-      status: "offline",
-      joinDate: "2024-01-04",
-    },
-  ])
-
-  const [upcomingSessions] = useState([
-    {
-      id: 1,
-      title: "Probability Distributions Review",
-      date: "2024-01-15T18:00:00Z",
-      duration: "2 hours",
-      type: "study",
-      organizer: "Sarah Johnson",
-    },
-    {
-      id: 2,
-      title: "Mock Exam Practice",
-      date: "2024-01-17T19:00:00Z",
-      duration: "3 hours",
-      type: "exam",
-      organizer: "Mike Chen",
-    },
-  ])
-
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [accessToken, setAccessToken] = useState(null)
+  const chatMessagesRef = useRef(null)
+  const emojiPickerRef = useRef(null)
+  const fileInputRef = useRef(null)
 
-  // Emoji data organized by categories (same as Chats.jsx)
+ 
+
   const emojiCategories = {
     smileys: {
       name: "Smileys & People",
-      emojis: [
-        "😀",
-        "😃",
-        "😄",
-        "😁",
-        "😆",
-        "😅",
-        "🤣",
-        "😂",
-        "🙂",
-        "🙃",
-        "😉",
-        "😊",
-        "😇",
-        "🥰",
-        "😍",
-        "🤩",
-        "😘",
-        "😗",
-        "😚",
-        "😙",
-        "😋",
-        "😛",
-        "😜",
-        "🤪",
-        "😝",
-        "🤑",
-        "🤗",
-        "🤭",
-        "🤫",
-        "🤔",
-        "🤐",
-        "🤨",
-        "😐",
-        "😑",
-        "😶",
-        "😏",
-        "😒",
-        "🙄",
-        "😬",
-        "🤥",
-        "😔",
-        "😪",
-        "🤤",
-        "😴",
-        "😷",
-        "🤒",
-        "🤕",
-        "🤢",
-        "🤮",
-        "🤧",
-        "🥵",
-        "🥶",
-        "🥴",
-        "😵",
-        "🤯",
-        "🤠",
-        "🥳",
-        "😎",
-        "🤓",
-        "🧐",
-      ],
+      emojis: ["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃"],
     },
     animals: {
       name: "Animals & Nature",
-      emojis: [
-        "🐶",
-        "🐱",
-        "🐭",
-        "🐹",
-        "🐰",
-        "🦊",
-        "🐻",
-        "🐼",
-        "🐨",
-        "🐯",
-        "🦁",
-        "🐮",
-        "🐷",
-        "🐽",
-        "🐸",
-        "🐵",
-        "🙈",
-        "🙉",
-        "🙊",
-        "🐒",
-        "🐔",
-        "🐧",
-        "🐦",
-        "🐤",
-        "🐣",
-        "🐥",
-        "🦆",
-        "🦅",
-        "🦉",
-        "🦇",
-        "🐺",
-        "🐗",
-        "🐴",
-        "🦄",
-        "🐝",
-        "🐛",
-        "🦋",
-        "🐌",
-        "🐞",
-        "🐜",
-        "🦟",
-        "🦗",
-        "🕷",
-        "🕸",
-        "🦂",
-        "🐢",
-        "🐍",
-        "🦎",
-      ],
+      emojis: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯"],
     },
     food: {
       name: "Food & Drink",
-      emojis: [
-        "🍎",
-        "🍐",
-        "🍊",
-        "🍋",
-        "🍌",
-        "🍉",
-        "🍇",
-        "🍓",
-        "🫐",
-        "🍈",
-        "🍒",
-        "🍑",
-        "🥭",
-        "🍍",
-        "🥥",
-        "🥝",
-        "🍅",
-        "🍆",
-        "🥑",
-        "🥦",
-        "🥬",
-        "🥒",
-        "🌶",
-        "🫑",
-        "🌽",
-        "🥕",
-        "🫒",
-        "🧄",
-        "🧅",
-        "🥔",
-        "🍠",
-        "🥐",
-        "🥯",
-        "🍞",
-        "🥖",
-        "🥨",
-        "🧀",
-        "🥚",
-        "🍳",
-        "🧈",
-        "🥞",
-        "🧇",
-        "🥓",
-        "🥩",
-        "🍗",
-        "🍖",
-        "🦴",
-        "🌭",
-      ],
+      emojis: ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈"],
     },
     activities: {
       name: "Activities",
-      emojis: [
-        "⚽",
-        "🏀",
-        "🏈",
-        "⚾",
-        "🥎",
-        "🎾",
-        "🏐",
-        "🏉",
-        "🥏",
-        "🎱",
-        "🪀",
-        "🏓",
-        "🏸",
-        "🏒",
-        "🏑",
-        "🥍",
-        "🏏",
-        "🪃",
-        "🥅",
-        "⛳",
-        "🪁",
-        "🏹",
-        "🎣",
-        "🤿",
-        "🥊",
-        "🥋",
-        "🎽",
-        "🛹",
-        "🛷",
-        "⛸",
-        "🥌",
-        "🎿",
-        "⛷",
-        "🏂",
-        "🪂",
-        "🏋️‍♀️",
-        "🏋️",
-        "🏋️‍♂️",
-        "🤼‍♀️",
-        "🤼",
-        "🤼‍♂️",
-        "🤸‍♀️",
-        "🤸",
-        "🤸‍♂️",
-      ],
+      emojis: ["⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱"],
     },
     objects: {
       name: "Objects",
-      emojis: [
-        "⌚",
-        "📱",
-        "📲",
-        "💻",
-        "⌨️",
-        "🖥",
-        "🖨",
-        "🖱",
-        "🖲",
-        "🕹",
-        "🗜",
-        "💽",
-        "💾",
-        "💿",
-        "📀",
-        "📼",
-        "📷",
-        "📸",
-        "📹",
-        "🎥",
-        "📽",
-        "🎞",
-        "📞",
-        "☎️",
-        "📟",
-        "📠",
-        "📺",
-        "📻",
-        "🎙",
-        "🎚",
-        "🎛",
-        "🧭",
-        "⏱",
-        "⏲",
-        "⏰",
-        "🕰",
-        "⌛",
-        "⏳",
-        "📡",
-        "🔋",
-        "🔌",
-        "💡",
-        "🔦",
-        "🕯",
-        "🪔",
-        "🧯",
-        "🛢",
-        "💸",
-      ],
+      emojis: ["⌚", "📱", "📲", "💻", "⌨️", "🖥", "🖨", "🖱", "🖲", "🕹"],
     },
     symbols: {
       name: "Symbols",
-      emojis: [
-        "❤️",
-        "🧡",
-        "💛",
-        "💚",
-        "💙",
-        "💜",
-        "🖤",
-        "🤍",
-        "🤎",
-        "💔",
-        "❣️",
-        "💕",
-        "💞",
-        "💓",
-        "💗",
-        "💖",
-        "💘",
-        "💝",
-        "💟",
-        "☮️",
-        "✝️",
-        "☪️",
-        "🕉",
-        "☸️",
-        "✡️",
-        "🔯",
-        "🕎",
-        "☯️",
-        "☦️",
-        "🛐",
-        "⛎",
-        "♈",
-        "♉",
-        "♊",
-        "♋",
-        "♌",
-        "♍",
-        "♎",
-        "♏",
-        "♐",
-        "♑",
-        "♒",
-        "♓",
-        "🆔",
-        "⚛️",
-        "🉑",
-        "☢️",
-        "☣️",
-        "📴",
-      ],
+      emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔"],
     },
   }
 
-  const isOwner = group.ownerId === currentUser?.id
+ 
+
+
+
+
+
+
+
+// ✅ On mount, read token from localStorage
+useEffect(() => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    console.log('Access token is ready:', token);
+    setAccessToken(token);
+  } else {
+    console.log('Access token not yet available, waiting...');
+    setIsLoading(true);
+  }
+}, []);
+
+// ✅ Fetch group data
+useEffect(() => {
+  if (!currentUser || !group?.id) return;
+
+  const fetchGroupData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const messagesRes = await axios.get(
+        `https://127.0.0.1:8000/chats/groups/${group.id}/messages/`,
+        { withCredentials: true }
+      );
+      setMessages(messagesRes.data.map(msg => ({
+        id: msg.id,
+        sender: msg.sender,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        message_type: msg.message_type.toLowerCase(),
+        file: msg.file ? {
+          name: msg.file.split('/').pop(),
+          size: 'Unknown',
+          url: msg.file,
+          type: msg.message_type.toLowerCase(),
+        } : null,
+      })));
+
+      const membersRes = await axios.get(
+        `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
+        { withCredentials: true }
+      );
+      setMembers(membersRes.data.map(m => ({
+        ...m.user,
+        role: m.role,
+        joinDate: m.joined_at
+      })));
+
+      setUpcomingSessions([]);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to load group data");
+      console.error("Error fetching group data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchGroupData();
+}, [currentUser, group?.id]);
+
+// ✅ Connect WebSocket using token from state
+useEffect(() => {
+  if (!accessToken || !group?.id || !currentUser) return;
+
+  const wsUrl = `wss://127.0.0.1:8000/chats/ws/chat/?access_token=${accessToken}`;
+  console.log("Connecting WebSocket with:", wsUrl);
+  const newSocket = new WebSocket(wsUrl);
+
+  newSocket.onopen = () => {
+    console.log("WebSocket connected");
+    newSocket.send(JSON.stringify({
+      type: "join_room",
+      group_id: group.id
+    }));
+  };
+
+  newSocket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === "message") {
+      const msg = data.message;
+      setMessages(prev => [...prev, {
+        id: msg.id,
+        sender: msg.sender,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        message_type: msg.message_type.toLowerCase(),
+        file: msg.file ? {
+          name: msg.file.split("/").pop(),
+          size: "Unknown",
+          url: msg.file,
+          type: msg.message_type.toLowerCase(),
+        } : null,
+      }]);
+    }
+  };
+
+  newSocket.onclose = () => {
+    console.warn("WebSocket closed. Attempting to reconnect...");
+    setTimeout(() => {
+      const token = localStorage.getItem("access_token");
+      if (token) setAccessToken(token);
+    }, 3000);
+  };
+
+  newSocket.onerror = (err) => {
+    console.error("WebSocket error:", err);
+    setError("WebSocket connection failed.");
+  };
+
+  setSocket(newSocket);
+
+  return () => {
+    if (newSocket) newSocket.close();
+  };
+}, [accessToken, group?.id, currentUser]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
   useEffect(() => {
-    // Initialize with some sample messages
-    setMessages([
-      {
-        id: 1,
-        user: "Sarah Johnson",
-        userId: "user123",
-        message: "Hey everyone! Ready for today's study session?",
-        timestamp: "2024-01-11T10:30:00Z",
-        avatar: "/placeholder.svg?height=32&width=32",
-        type: "text",
-      },
-      {
-        id: 2,
-        user: "Mike Chen",
-        userId: "user456",
-        message: "Yes! I've prepared some practice problems for probability distributions.",
-        timestamp: "2024-01-11T10:32:00Z",
-        avatar: "/placeholder.svg?height=32&width=32",
-        type: "text",
-      },
-      {
-        id: 3,
-        user: "Emily Rodriguez",
-        userId: "user789",
-        message: "Great! I'll share my notes on conditional probability.",
-        timestamp: "2024-01-11T10:35:00Z",
-        avatar: "/placeholder.svg?height=32&width=32",
-        type: "text",
-      },
-      {
-        id: 4,
-        user: "Sarah Johnson",
-        userId: "user123",
-        message: "",
-        timestamp: "2024-01-11T10:40:00Z",
-        avatar: "/placeholder.svg?height=32&width=32",
-        type: "file",
-        fileData: {
-          name: "Probability_Notes.pdf",
-          size: "2.3 MB",
-          url: "#",
-          type: "pdf",
-        },
-      },
-    ])
-  }, [])
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
+    }
+  }, [messages])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -488,151 +213,134 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
         setShowEmojiPicker(false)
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    // Auto-scroll to bottom when new messages are added
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
-    }
-  }, [messages])
-
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault()
-    if (!message.trim()) return
+    if (!message.trim() || isSending || !socket || socket.readyState !== WebSocket.OPEN) return
 
-    const newMessage = {
-      id: messages.length + 1,
-      user: currentUser.name,
-      userId: currentUser.id,
-      message: message.trim(),
-      timestamp: new Date().toISOString(),
-      avatar: "/placeholder.svg?height=32&width=32",
-      type: "text",
+    setIsSending(true)
+    try {
+      const messageData = {
+        type: 'message',
+        content: message.trim(),
+        message_type: 'TEXT',
+        group_id: group.id
+      }
+      socket.send(JSON.stringify(messageData))
+      setMessage("")
+    } catch (err) {
+      console.error("Error sending message:", err)
+      setError("Failed to send message")
+    } finally {
+      setIsSending(false)
     }
-
-    setMessages([...messages, newMessage])
-    setMessage("")
-    setShowEmojiPicker(false)
   }
 
-  const handleEmojiSelect = (emoji) => {
-    const input = chatInputRef.current
-    if (input) {
-      const start = input.selectionStart
-      const end = input.selectionEnd
-      const newMessage = message.slice(0, start) + emoji + message.slice(end)
-      setMessage(newMessage)
-
-      setTimeout(() => {
-        input.focus()
-        input.setSelectionRange(start + emoji.length, start + emoji.length)
-      }, 0)
-    } else {
-      setMessage((prev) => prev + emoji)
-    }
-
-    setRecentEmojis((prev) => {
-      const newRecent = [emoji, ...prev.filter((e) => e !== emoji)].slice(0, 5)
-      return newRecent
-    })
-  }
-
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const files = Array.from(event.target.files)
+    const validTypes = {
+      image: [".jpg", ".jpeg", ".png"],
+      video: [".mp4"],
+      file: [".pdf", ".csv", ".docx", ".txt"],
+    }
+    const maxSize = 100 * 1024 * 1024 // 100MB
 
-    files.forEach((file) => {
-      const validTypes = {
-        image: ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"],
-        video: ["video/mp4", "video/mov", "video/avi", "video/webm", "video/quicktime"],
-        document: [
-          "application/pdf",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "application/msword",
-          "text/plain",
-          "text/csv",
-        ],
+    files.forEach(async (file) => {
+      const ext = file.name.toLowerCase().split('.').pop()
+      let fileType = "file"
+      if (validTypes.image.includes(`.${ext}`)) fileType = "image"
+      else if (validTypes.video.includes(`.${ext}`)) fileType = "video"
+      else if (!validTypes.file.includes(`.${ext}`)) {
+        alert(`Invalid file type: ${ext}`)
+        return
       }
 
-      const maxSizes = {
-        image: 10 * 1024 * 1024, // 10MB
-        video: 100 * 1024 * 1024, // 100MB
-        document: 25 * 1024 * 1024, // 25MB
-      }
-
-      let fileType = "file" // Default to file type
-      if (validTypes.image.includes(file.type)) fileType = "image"
-      else if (validTypes.video.includes(file.type)) fileType = "video"
-      else if (validTypes.document.includes(file.type)) fileType = "file"
-
-      if (file.size > maxSizes[fileType === "file" ? "document" : fileType]) {
-        const maxSizeMB = maxSizes[fileType === "file" ? "document" : fileType] / (1024 * 1024)
-        alert(`File too large. Maximum size for ${fileType === "file" ? "document" : fileType}s is ${maxSizeMB}MB`)
+      if (file.size > maxSize) {
+        alert(`File too large. Max size: ${maxSize / (1024 * 1024)}MB`)
         return
       }
 
       const fileId = Date.now() + Math.random()
-      setUploadingFiles((prev) => [...prev, { id: fileId, name: file.name, progress: 0 }])
+      setUploadingFiles(prev => [...prev, { id: fileId, name: file.name, progress: 0 }])
 
-      // Create object URL for the file
-      const fileUrl = URL.createObjectURL(file)
+      try {
+        const csrfToken = getCookie('csrftoken')
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('message_type', fileType.toUpperCase())
 
-      let progress = 0
-      const interval = setInterval(() => {
-        progress += 10
-        setUploadingFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, progress } : f)))
-
-        if (progress >= 100) {
-          clearInterval(interval)
-          setUploadingFiles((prev) => prev.filter((f) => f.id !== fileId))
-
-          const newMessage = {
-            id: messages.length + Date.now(),
-            user: currentUser.name,
-            userId: currentUser.id,
-            message: "",
-            timestamp: new Date().toISOString(),
-            avatar: "/placeholder.svg?height=32&width=32",
-            type: fileType,
-            fileData: {
-              name: file.name,
-              size: formatFileSize(file.size),
-              url: fileUrl,
-              type: file.type,
+        const response = await axios.post(
+          `https://127.0.0.1:8000/chats/groups/${group.id}/messages/`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'X-CSRFToken': csrfToken
             },
+            withCredentials: true,
+            onUploadProgress: (progressEvent) => {
+              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+              setUploadingFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress } : f))
+            }
           }
+        )
 
-          setMessages((prev) => [...prev, newMessage])
+        const messageData = {
+          type: 'message',
+          content: '',
+          message_type: fileType.toUpperCase(),
+          file_url: response.data.file,
+          group_id: group.id
         }
-      }, 200)
+        socket.send(JSON.stringify(messageData))
+        setUploadingFiles(prev => prev.filter(f => f.id !== fileId))
+      } catch (err) {
+        console.error("File upload error:", err)
+        setError(`Failed to upload ${file.name}`)
+        setUploadingFiles(prev => prev.filter(f => f.id !== fileId))
+      }
     })
 
     event.target.value = ""
     setShowFileUpload(false)
   }
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      const csrfToken = getCookie('csrftoken')
+      await axios.delete(
+        `https://127.0.0.1:8000/chats/messages/${messageId}/delete/`,
+        {
+          headers: { 'X-CSRFToken': csrfToken },
+          withCredentials: true
+        }
+      )
+      setMessages(prev => prev.filter(msg => msg.id !== messageId))
+    } catch (err) {
+      console.error("Error deleting message:", err)
+      setError("Failed to delete message")
+    }
   }
 
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp)
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
+  const handleEmojiSelect = (emoji) => {
+    setMessage(prev => prev + emoji)
+    setRecentEmojis(prev => {
+      const newRecent = [emoji, ...prev.filter(e => e !== emoji)].slice(0, 5)
+      return newRecent
     })
   }
 
+  const formatTime = (timestamp) => {
+    if (!timestamp) return ""
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+  }
+
   const formatSessionDate = (timestamp) => {
+    if (!timestamp) return ""
     const date = new Date(timestamp)
     return date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -643,116 +351,35 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
     })
   }
 
-  const getFilteredEmojis = () => {
-    const categoryEmojis = emojiCategories[selectedEmojiCategory]?.emojis || []
-    if (!emojiSearchQuery) return categoryEmojis
+  const isOwner = group.owner?.id === currentUser?.chat_user_id
+  const isAdmin = members.some(m => 
+    m.id === currentUser?.chat_user_id && 
+    (m.role === 'ADMIN' || m.role === 'OWNER')
+  )
 
-    return categoryEmojis.filter((emoji) => emoji.includes(emojiSearchQuery))
+  if (isLoading) {
+    return (
+      <div className="group-detail-page">
+        <div className="loading-spinner">
+          <Loader2 className="animate-spin" size={32} />
+          <p>Loading group data...</p>
+        </div>
+      </div>
+    )
   }
 
-  const renderMessage = (msg) => {
-    switch (msg.type) {
-      case "image":
-        return (
-          <div className="message-file image-message">
-            <img
-              src={msg.fileData.url || "/placeholder.svg"}
-              alt={msg.fileData.name}
-              className="message-image"
-              onClick={() => {
-                setSelectedImage(msg.fileData)
-                setShowImageModal(true)
-              }}
-            />
-            <div className="file-info">
-              <span className="file-name">{msg.fileData.name}</span>
-              <span className="file-size">{msg.fileData.size}</span>
-            </div>
-          </div>
-        )
-
-      case "video":
-        return (
-          <div className="message-file video-message">
-            <div className="video-container">
-              <video
-                src={msg.fileData.url}
-                className="message-video"
-                controls
-                preload="metadata"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-            <div className="file-info">
-              <span className="file-name">{msg.fileData.name}</span>
-              <span className="file-size">{msg.fileData.size}</span>
-            </div>
-          </div>
-        )
-
-      case "file":
-        const getFileIcon = (type, name) => {
-          if (type?.includes("pdf") || name?.toLowerCase().endsWith(".pdf"))
-            return <FileText size={24} color="#e53e3e" />
-          if (type?.includes("word") || name?.toLowerCase().endsWith(".docx"))
-            return <FileText size={24} color="#2b6cb0" />
-          if (type?.includes("text") || name?.toLowerCase().endsWith(".txt"))
-            return <FileText size={24} color="#4a5568" />
-          return <FileText size={24} color="#4a5568" />
-        }
-
-        const handleDocumentClick = () => {
-          if (msg.fileData.url && msg.fileData.url !== "#") {
-            // For real files, open in new tab
-            window.open(msg.fileData.url, "_blank")
-          } else {
-            // For demo purposes, show alert
-            alert(`Opening ${msg.fileData.name}...`)
-          }
-        }
-
-        return (
-          <div className="message-file document-message" onClick={handleDocumentClick}>
-            <div className="file-icon">{getFileIcon(msg.fileData.type, msg.fileData.name)}</div>
-            <div className="file-info">
-              <span className="file-name">{msg.fileData.name}</span>
-              <span className="file-size">{msg.fileData.size}</span>
-              <span className="file-type">
-                {msg.fileData.type?.split("/")[1]?.toUpperCase() ||
-                  msg.fileData.name?.split(".").pop()?.toUpperCase() ||
-                  "DOCUMENT"}
-              </span>
-            </div>
-            <button
-              className="download-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                if (msg.fileData.url && msg.fileData.url !== "#") {
-                  const link = document.createElement("a")
-                  link.href = msg.fileData.url
-                  link.download = msg.fileData.name
-                  link.click()
-                }
-              }}
-            >
-              <Download size={16} />
-            </button>
-          </div>
-        )
-
-      default:
-        return <p>{msg.message}</p>
-    }
-  }
-
-  const handleVideoCall = () => {
-    // Navigate to video call with group participants
-    window.location.href = `/video-call?group=${encodeURIComponent(group.name)}&id=${group.id}`
-  }
-
-  const handleAudioCall = () => {
-    // Navigate to audio call with group participants
-    window.location.href = `/audio-call?group=${encodeURIComponent(group.name)}&id=${group.id}`
+  if (error) {
+    return (
+      <div className="group-detail-page">
+        <div className="error-message">
+          <p>{error}</p>
+          <button onClick={onBack} className="back-btn">
+            <ArrowLeft size={20} />
+            Back to Groups
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -765,8 +392,12 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
 
         <div className="group-header-info">
           <div className="group-avatar-large">
-            <img src={group.avatar || "/placeholder.svg"} alt={group.name} />
-            {group.isPrivate && (
+            <img 
+              src={group.icon || "/placeholder.svg"} 
+              alt={group.name}
+              onError={(e) => { e.target.src = "/placeholder.svg" }}
+            />
+            {group.status === 'PRIVATE' && (
               <div className="privacy-badge">
                 <Lock size={16} />
               </div>
@@ -779,21 +410,21 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
             <div className="group-meta">
               <span className="member-count">
                 <Users size={16} />
-                {group.members} members
+                {members.length} members
               </span>
               <span className="privacy-status">
-                {group.isPrivate ? <Lock size={16} /> : <Globe size={16} />}
-                {group.isPrivate ? "Private" : "Public"}
+                {group.status === 'PRIVATE' ? <Lock size={16} /> : <Globe size={16} />}
+                {group.status === 'PRIVATE' ? "Private" : "Public"}
               </span>
             </div>
           </div>
 
           <div className="group-actions">
-            <button className="video-call-btn" onClick={handleVideoCall}>
+            <button className="video-call-btn">
               <Video size={16} />
               Start Call
             </button>
-            <button className="audio-call-btn" onClick={handleAudioCall}>
+            <button className="audio-call-btn">
               <Phone size={16} />
               Audio Call
             </button>
@@ -812,7 +443,10 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
       </div>
 
       <div className="group-detail-tabs">
-        <button className={`tab-btn ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
+        <button 
+          className={`tab-btn ${activeTab === "chat" ? "active" : ""}`} 
+          onClick={() => setActiveTab("chat")}
+        >
           <MessageSquare size={16} />
           Chat
         </button>
@@ -821,14 +455,14 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
           onClick={() => setActiveTab("members")}
         >
           <Users size={16} />
-          Members
+          Members ({members.length})
         </button>
         <button
           className={`tab-btn ${activeTab === "sessions" ? "active" : ""}`}
           onClick={() => setActiveTab("sessions")}
         >
           <Calendar size={16} />
-          Sessions
+          Sessions ({upcomingSessions.length})
         </button>
       </div>
 
@@ -837,30 +471,51 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
           <div className="chat-tab">
             <div className="chat-messages" ref={chatMessagesRef}>
               {messages.map((msg) => (
-                <div key={msg.id} className={`message ${msg.userId === currentUser.id ? "own-message" : ""}`}>
-                  {msg.userId !== currentUser.id && (
+                <div 
+                  key={msg.id} 
+                  className={`message ${msg.sender?.id === currentUser?.chat_user_id ? "own-message" : ""}`}
+                >
+                  {msg.sender?.id !== currentUser?.chat_user_id && (
                     <div className="message-avatar">
-                      <img src={msg.avatar || "/placeholder.svg"} alt={msg.user} />
+                      <img 
+                        src="/placeholder.svg" 
+                        alt={msg.sender?.chat_username}
+                      />
                     </div>
                   )}
                   <div className="message-content">
-                    {msg.userId !== currentUser.id && (
+                    {msg.sender?.id !== currentUser?.chat_user_id && (
                       <div className="message-header">
-                        <span className="message-user">{msg.user}</span>
+                        <span className="message-user">{msg.sender?.chat_username}</span>
                         <span className="message-time">{formatTime(msg.timestamp)}</span>
                       </div>
                     )}
                     <div className="message-bubble">
-                      {renderMessage(msg)}
-                      {msg.userId === currentUser.id && (
-                        <span className="message-time">{formatTime(msg.timestamp)}</span>
+                      {msg.message_type === 'text' && <p>{msg.content}</p>}
+                      {msg.message_type === 'image' && (
+                        <img src={msg.file.url} alt={msg.file.name} className="message-image" />
+                      )}
+                      {msg.message_type === 'video' && (
+                        <video src={msg.file.url} className="message-video" controls />
+                      )}
+                      {msg.message_type === 'file' && (
+                        <div className="message-file">
+                          <FileText size={24} />
+                          <a href={msg.file.url} download>{msg.file.name}</a>
+                        </div>
+                      )}
+                      {msg.sender?.id === currentUser?.chat_user_id && (
+                        <>
+                          <span className="message-time">{formatTime(msg.timestamp)}</span>
+                          <button onClick={() => handleDeleteMessage(msg.id)}>
+                            <X size={16} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
               ))}
-
-              {/* Show uploading files */}
               {uploadingFiles.map((file) => (
                 <div key={file.id} className="message own-message">
                   <div className="message-content">
@@ -893,7 +548,6 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                   >
                     <Paperclip size={20} />
                   </button>
-
                   <button
                     type="button"
                     className="input-action-btn"
@@ -905,27 +559,34 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                 </div>
 
                 <input
-                  ref={chatInputRef}
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type a message..."
                   className="chat-input"
+                  disabled={isSending}
                 />
 
-                <button type="submit" className="send-btn" disabled={!message.trim()}>
-                  <Send size={20} />
+                <button 
+                  type="submit" 
+                  className="send-btn" 
+                  disabled={!message.trim() || isSending}
+                >
+                  {isSending ? (
+                    <Loader2 className="animate-spin" size={20} />
+                  ) : (
+                    <Send size={20} />
+                  )}
                 </button>
               </div>
 
-              {/* File Upload Options */}
               {showFileUpload && (
                 <div className="file-upload-options">
                   <input
                     ref={fileInputRef}
                     type="file"
                     multiple
-                    accept="image/*,video/*,.pdf,.docx,.txt"
+                    accept=".jpg,.jpeg,.png,.mp4,.pdf,.csv,.docx,.txt"
                     onChange={handleFileUpload}
                     style={{ display: "none" }}
                   />
@@ -933,7 +594,7 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                     type="button"
                     className="file-option"
                     onClick={() => {
-                      fileInputRef.current.accept = "image/*"
+                      fileInputRef.current.accept = ".jpg,.jpeg,.png"
                       fileInputRef.current.click()
                     }}
                   >
@@ -944,7 +605,7 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                     type="button"
                     className="file-option"
                     onClick={() => {
-                      fileInputRef.current.accept = "video/*"
+                      fileInputRef.current.accept = ".mp4"
                       fileInputRef.current.click()
                     }}
                   >
@@ -955,7 +616,7 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                     type="button"
                     className="file-option"
                     onClick={() => {
-                      fileInputRef.current.accept = ".pdf,.docx,.txt"
+                      fileInputRef.current.accept = ".pdf,.csv,.docx,.txt"
                       fileInputRef.current.click()
                     }}
                   >
@@ -965,7 +626,6 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                 </div>
               )}
 
-              {/* Emoji Picker */}
               {showEmojiPicker && (
                 <div className="emoji-picker" ref={emojiPickerRef}>
                   <div className="emoji-picker-header">
@@ -981,7 +641,6 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                     </button>
                   </div>
 
-                  {/* Recent Emojis */}
                   {recentEmojis.length > 0 && (
                     <div className="emoji-section">
                       <div className="emoji-section-title">Recently Used</div>
@@ -1000,7 +659,6 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                     </div>
                   )}
 
-                  {/* Category Tabs */}
                   <div className="emoji-categories">
                     {Object.entries(emojiCategories).map(([key, category]) => (
                       <button
@@ -1015,11 +673,12 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
                     ))}
                   </div>
 
-                  {/* Emoji Grid */}
                   <div className="emoji-section">
                     <div className="emoji-section-title">{emojiCategories[selectedEmojiCategory]?.name}</div>
                     <div className="emoji-grid">
-                      {getFilteredEmojis().map((emoji, index) => (
+                      {(emojiCategories[selectedEmojiCategory]?.emojis || []).filter(emoji => 
+                        emojiSearchQuery ? emoji.includes(emojiSearchQuery) : true
+                      ).map((emoji, index) => (
                         <button
                           key={`${selectedEmojiCategory}-${index}`}
                           type="button"
@@ -1041,7 +700,7 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
           <div className="members-tab">
             <div className="members-header">
               <h3>Members ({members.length})</h3>
-              {isOwner && (
+              {(isOwner || isAdmin) && (
                 <button className="invite-btn">
                   <Users size={16} />
                   Invite Members
@@ -1053,21 +712,26 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
               {members.map((member) => (
                 <div key={member.id} className="member-item">
                   <div className="member-avatar">
-                    <img src={member.avatar || "/placeholder.svg"} alt={member.name} />
-                    <div className={`status-indicator ${member.status}`}></div>
+                    <img 
+                      src="/placeholder.svg" 
+                      alt={member.chat_username}
+                    />
+                    <div className={`status-indicator ${member.is_online ? 'online' : 'offline'}`}></div>
                   </div>
                   <div className="member-info">
                     <div className="member-name">
-                      {member.name}
-                      {member.role === "owner" && <Crown size={14} className="role-icon owner" />}
-                      {member.role === "admin" && <Settings size={14} className="role-icon admin" />}
+                      {member.chat_username}
+                      {member.role === "OWNER" && <Crown size={14} className="role-icon owner" />}
+                      {member.role === "ADMIN" && <Settings size={14} className="role-icon admin" />}
                     </div>
                     <div className="member-details">
-                      <span className="member-role">{member.role}</span>
-                      <span className="join-date">Joined {new Date(member.joinDate).toLocaleDateString()}</span>
+                      <span className="member-role">{member.role.toLowerCase()}</span>
+                      <span className="join-date">
+                        Joined {new Date(member.joinDate).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                  {isOwner && member.id !== currentUser.id && (
+                  {(isOwner || isAdmin) && member.id !== currentUser?.chat_user_id && (
                     <button className="member-options">
                       <MoreVertical size={16} />
                     </button>
@@ -1082,7 +746,7 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
           <div className="sessions-tab">
             <div className="sessions-header">
               <h3>Upcoming Sessions</h3>
-              {isOwner && (
+              {(isOwner || isAdmin) && (
                 <button className="schedule-btn">
                   <Calendar size={16} />
                   Schedule Session
@@ -1091,40 +755,41 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
             </div>
 
             <div className="sessions-list">
-              {upcomingSessions.map((session) => (
-                <div key={session.id} className="session-item">
-                  <div className="session-info">
-                    <h4>{session.title}</h4>
-                    <div className="session-details">
-                      <span className="session-date">
-                        <Calendar size={14} />
-                        {formatSessionDate(session.date)}
-                      </span>
-                      <span className="session-duration">Duration: {session.duration}</span>
-                      <span className="session-organizer">Organized by {session.organizer}</span>
+              {upcomingSessions.length > 0 ? (
+                upcomingSessions.map((session) => (
+                  <div key={session.id} className="session-item">
+                    <div className="session-info">
+                      <h4>{session.title}</h4>
+                      <div className="session-details">
+                        <span className="session-date">
+                          <Calendar size={14} />
+                          {formatSessionDate(session.date)}
+                        </span>
+                        <span className="session-duration">Duration: {session.duration}</span>
+                        <span className="session-organizer">Organized by {session.organizer}</span>
+                      </div>
+                    </div>
+                    <div className="session-actions">
+                      <button className="join-session-btn">Join Session</button>
                     </div>
                   </div>
-                  <div className="session-actions">
-                    <button className="join-session-btn">Join Session</button>
-                  </div>
+                ))
+              ) : (
+                <div className="no-sessions">
+                  <p>No upcoming sessions scheduled.</p>
+                  {(isOwner || isAdmin) && (
+                    <button className="schedule-first-btn">
+                      <Calendar size={16} />
+                      Schedule First Session
+                    </button>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
-
-            {upcomingSessions.length === 0 && (
-              <div className="no-sessions">
-                <p>No upcoming sessions scheduled.</p>
-                {isOwner && (
-                  <button className="schedule-first-btn">
-                    <Calendar size={16} />
-                    Schedule First Session
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
+
       {showSettingsModal && (
         <GroupSettingsModal
           group={group}
@@ -1135,33 +800,6 @@ const GroupDetail = ({ group, onBack, onLeave, currentUser }) => {
           }}
           currentUser={currentUser}
         />
-      )}
-      {/* Image Modal */}
-      {showImageModal && selectedImage && (
-        <div className="media-modal" onClick={() => setShowImageModal(false)}>
-          <div className="media-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowImageModal(false)}>
-              <X size={24} />
-            </button>
-            <img src={selectedImage.url || "/placeholder.svg"} alt={selectedImage.name} className="modal-image" />
-            <div className="modal-info">
-              <h3>{selectedImage.name}</h3>
-              <p>{selectedImage.size}</p>
-              <button
-                className="modal-download"
-                onClick={() => {
-                  const link = document.createElement("a")
-                  link.href = selectedImage.url
-                  link.download = selectedImage.name
-                  link.click()
-                }}
-              >
-                <Download size={16} />
-                Download
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

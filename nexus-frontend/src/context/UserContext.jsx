@@ -23,7 +23,7 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         // Trigger Django to set the csrf cookie
-        await axios.get("https://10.186.3.187:8000/auth/csrf/", {
+        await axios.get("https://127.0.0.1:8000/auth/csrf/", {
           withCredentials: true,
         });
 
@@ -61,7 +61,7 @@ export const UserProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      await axios.get("https://10.186.3.187:8000/auth/protected/", {
+      await axios.get("https://127.0.0.1:8000/auth/protected/", {
         withCredentials: true,
       });
       setIsAuthenticated(true);
@@ -79,7 +79,7 @@ export const UserProvider = ({ children }) => {
 
   const fetchChatUserId = async () => {
   try {
-    const response = await axios.get("https://10.186.3.187:8000/chats/api/me/", {
+    const response = await axios.get("https://127.0.0.1:8000/chats/api/me/", {
       withCredentials: true,
     });
     const chatUserId = response.data.id;
@@ -102,7 +102,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       const response = await axios.post(
-        "https://10.186.3.187:8000/auth/token/",
+        "https://127.0.0.1:8000/auth/token/",
         { email, password },
         {
           headers: { "X-CSRFToken": csrfToken },
@@ -110,10 +110,13 @@ export const UserProvider = ({ children }) => {
         }
       );
       console.log("Login response:", response.data);
-      const { user } = response.data;
-      if (!user) throw new Error("User data not found in response");
+      const { user, access } = response.data;
+      if (!user || !access) throw new Error("Incomplete login response");
 
+      // Store user and access token in localStorage
       localStorage.setItem("nexus_user", JSON.stringify(user));
+      localStorage.setItem("access_token", access);
+
       setUser(user);
       setIsAuthenticated(true);
 
@@ -147,7 +150,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       const response = await axios.post(
-        "https://10.186.3.187:8000/auth/register/",
+        "https://127.0.0.1:8000/auth/register/",
         {
           full_name: fullName,
           email,
@@ -186,7 +189,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (csrfToken) {
         await axios.post(
-          "https://10.186.3.187:8000/auth/logout/",
+          "https://127.0.0.1:8000/auth/logout/",
           {},
           {
             headers: { "X-CSRFToken": csrfToken },
@@ -200,6 +203,7 @@ export const UserProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem("nexus_user");
+    localStorage.removeItem("access_token");
   };
 
   const refreshToken = async () => {
@@ -207,7 +211,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
       await axios.post(
-        "https://10.186.3.187:8000/auth/token/refresh/",
+        "https://127.0.0.1:8000/auth/token/refresh/",
         {},
         {
           headers: { "X-CSRFToken": csrfToken },
@@ -239,3 +243,4 @@ export const useUser = () => {
   }
   return context;
 };
+const getAccessToken = () => localStorage.getItem("access_token");

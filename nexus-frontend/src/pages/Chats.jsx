@@ -1329,7 +1329,7 @@ const Chats = () => {
   }
 
   const api = axios.create({
-    baseURL: 'https://10.186.3.187:8000/chats/',
+    baseURL: 'https://127.0.0.1:8000/chats/',
     withCredentials: true,
     headers: {
       'X-CSRFToken': getCookie('csrftoken'),
@@ -1340,7 +1340,7 @@ const Chats = () => {
   useEffect(() => {
     if (activeChat && user) {
       const accessToken = getCookie('access_token')
-      const websocket = new WebSocket(`wss://10.186.3.187:8000/chats/ws/chat/?access_token=${accessToken}`)
+      const websocket = new WebSocket(`wss://127.0.0.1:8000/chats/ws/chat/?access_token=${accessToken}`)
       
       websocket.onopen = () => {
         console.log('WebSocket connected')

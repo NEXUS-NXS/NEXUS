@@ -65,12 +65,12 @@ MIDDLEWARE = [
 # CORS settings
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 CORS_ALLOWED_ORIGINS = [
-    'https://10.186.3.187:5173',
-    'http://10.186.3.187:5173',
+    'https://127.0.0.1:5173',
+    'http://127.0.0.1:5173',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://10.186.3.187:5173',
+    'https://127.0.0.1:5173',
 ]
 
 CORS_ALLOW_CREDENTIALS = True

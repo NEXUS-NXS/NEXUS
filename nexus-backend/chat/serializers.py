@@ -210,18 +210,6 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'message', 'group', 'content', 'is_read', 'created_at']
 
 
-
-
-
-
-
-
-
-
-
-
-
-######################################
 class ChatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatUser

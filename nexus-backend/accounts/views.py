@@ -59,15 +59,18 @@ class RegisterView(APIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
-        # Override to allow email login
         email = request.data.get('email')
         password = request.data.get('password')
         user = User.objects.filter(email=email.lower()).first()
+
         if user and user.check_password(password):
             refresh = RefreshToken.for_user(user)
             profile = Profile.objects.get(user=user)
 
+            # Include tokens in the JSON response
             response_data = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
                 "user": {
                     "id": user.id,
                     "email": user.email,
@@ -79,6 +82,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             }
 
             response = Response(response_data, status=status.HTTP_200_OK)
+
+            # Also set HTTP-only cookies (optional redundancy for security)
             response.set_cookie(
                 key="access_token",
                 value=str(refresh.access_token),
@@ -95,7 +100,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 samesite="None",
                 max_age=86400,
             )
+
             return response
+
         return Response({"detail": "Invalid email or password"}, status=status.HTTP_401_UNAUTHORIZED)
 
 # Optional: Protected view for checkAuth

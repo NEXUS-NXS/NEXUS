@@ -45,6 +45,14 @@ class StudyGroupListCreateView(generics.ListCreateAPIView):
         group = serializer.save(owner=self.request.user.chat_user)
         GroupMembership.objects.create(group=group, user=self.request.user.chat_user, role='OWNER')
 
+
+class MyStudyGroupsView(generics.ListAPIView):
+    serializer_class = StudyGroupSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return StudyGroup.objects.filter(memberships__user=self.request.user.chat_user).distinct()
+
 """
 it is designed to :
     fetch the full details of a specific studygroup GET
@@ -240,3 +248,16 @@ class CurrentChatUserView(APIView):
             return Response(serializer.data)
         except ChatUser.DoesNotExist:
             return Response({"detail": "ChatUser not found."}, status=404)
+
+
+
+
+
+class GroupMembersView(generics.ListAPIView):
+    serializer_class = GroupMembershipSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        group_id = self.kwargs['group_id']
+        group = get_object_or_404(StudyGroup, id=group_id)
+        return GroupMembership.objects.filter(group=group)

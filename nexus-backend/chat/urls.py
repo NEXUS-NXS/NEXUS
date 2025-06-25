@@ -3,7 +3,8 @@ from .views import (CategoryListView, ExamFocusListView, TagListView,
                      ChatUserSearchView, StudyGroupListCreateView,
                      StudyGroupDetailView, JoinRequestCreateView,JoinRequestManageView,
                      GroupMembershipManageView, MessageListCreateView, MessageDeleteView,
-                     NotificationListView, LeaveGroupView, JoinGroupByLinkView, PendingJoinRequestsView,CurrentChatUserView
+                     NotificationListView, LeaveGroupView, JoinGroupByLinkView, PendingJoinRequestsView,
+                     CurrentChatUserView, MyStudyGroupsView,GroupMembersView,
                      )
 
 urlpatterns = [
@@ -13,9 +14,13 @@ urlpatterns = [
     path('users/search/', ChatUserSearchView.as_view(), name='user-search'),#tested
 
     path('groups/', StudyGroupListCreateView.as_view(), name='group-list-create'),#tested
+    path('my-groups/', MyStudyGroupsView.as_view(), name='my-groups'),
     path('groups/<int:pk>/', StudyGroupDetailView.as_view(), name='group-detail'),#tested
     path('groups/<int:group_id>/join/', JoinRequestCreateView.as_view(), name='join-request-create'),#tested
     path('groups/<int:group_id>/pending-requests/', PendingJoinRequestsView.as_view(), name='pending-join-requests'),#tested
+    
+    path('groups/<int:group_id>/members/', GroupMembersView.as_view(), name='group-members'),
+
     path('groups/<int:group_id>/members/<int:user_id>/manage/', GroupMembershipManageView.as_view(), name='group-membership-manage'),#tested
     path('groups/<int:group_id>/messages/', MessageListCreateView.as_view(), name='group-messages'),#tested
     path('groups/<int:group_id>/leave/', LeaveGroupView.as_view(), name='leave-group'),#tested
