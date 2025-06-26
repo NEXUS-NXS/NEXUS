@@ -133,7 +133,8 @@ const GroupCard = ({ group, onJoin, onLeave, onViewDetails, currentUser, showMan
       <div className="group-stats">
         <div className="stat">
           <Users size={16} />
-          <span>{group.memberships?.length || 0}/{group.max_members}</span>
+          <span>{group.members?.length || 0}/{group.max_members}</span>
+
         </div>
         <div className="stat">
           <Calendar size={16} />
