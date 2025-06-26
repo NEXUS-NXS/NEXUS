@@ -146,19 +146,32 @@ const StudyGroups = () => {
 
   const handleJoinGroup = async (groupId) => {
     try {
+      
       const csrfToken = getCookie('csrftoken')
+      const token = localStorage.getItem("access_token"); // Get JWT token
+
       const response = await axios.post(
         `https://127.0.0.1:8000/chats/groups/${groupId}/join/`,
         {},
-        { 
-          headers: { 'X-CSRFToken': csrfToken },
-          withCredentials: true 
-        }
+        {
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Authorization": `Bearer ${token}`,  // ✅ Send JWT token
+        },
+        withCredentials: true,
+      }
       )
-      // Update the group in the groups state
+
+      // Group is returned in response whether it's public (auto-joined) or private (request sent)
       const updatedGroup = response.data.group || response.data
-      setGroups(groups.map(g => g.id === groupId ? updatedGroup : g))
+
+      // Update local state to reflect changes
+      setGroups(prevGroups =>
+        prevGroups.map(g => g.id === groupId ? updatedGroup : g)
+      )
+
       return { success: true, group: updatedGroup }
+
     } catch (err) {
       console.error("Error joining group:", err)
       return {
@@ -167,6 +180,7 @@ const StudyGroups = () => {
       }
     }
   }
+
 
   const handleLeaveGroup = async (groupId) => {
     try {

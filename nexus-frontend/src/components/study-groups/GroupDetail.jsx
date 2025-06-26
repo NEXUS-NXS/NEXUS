@@ -195,6 +195,26 @@ useEffect(() => {
 
 
 
+const handleUpdateGroup = (updatedGroup) => {
+    if (updatedGroup === null) {
+      // Group was deleted, navigate back to groups list
+      onBack();
+    } else {
+      // Update group data in parent or refetch group data
+      console.log("Group updated:", updatedGroup);
+      // Optionally refetch group data or update local state
+    }
+    setShowSettingsModal(false);
+  };
+
+
+
+
+
+
+
+
+
 
 
 
@@ -795,9 +815,7 @@ useEffect(() => {
           group={group}
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
-          onUpdateGroup={(updatedGroup) => {
-            console.log("Updated group:", updatedGroup)
-          }}
+          onUpdateGroup={handleUpdateGroup}
           currentUser={currentUser}
         />
       )}

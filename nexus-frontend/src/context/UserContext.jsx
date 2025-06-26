@@ -149,7 +149,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
-      const response = await axios.post(
+      const response = await axios.post(  
         "https://127.0.0.1:8000/auth/register/",
         {
           full_name: fullName,

@@ -90,12 +90,40 @@ class JoinRequestCreateView(generics.CreateAPIView):
     serializer_class = JoinRequestSerializer
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        group = get_object_or_404(StudyGroup, id=self.kwargs['group_id'])
-        if group.status == 'PRIVATE' and not GroupMembership.objects.filter(group=group, user=self.request.user.chat_user).exists():
-            serializer.save(user=self.request.user.chat_user, group=group)
-        else:
-            raise serializers.ValidationError("Cannot send join request to a public group or if already a member.")
+    def create(self, request, *args, **kwargs):
+        group = get_object_or_404(StudyGroup, id=kwargs['group_id'])
+        user = request.user.chat_user
+
+        # Check if already a member
+        if GroupMembership.objects.filter(group=group, user=user).exists():
+            return Response({"detail": "You are already a member of this group."}, status=400)
+
+        if group.status == 'PRIVATE':
+            # Save the join request
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=user, group=group)
+            return Response({"status": "Join request sent", "group_id": group.id}, status=201)
+
+        elif group.status == 'PUBLIC':
+            # Add directly to group
+            GroupMembership.objects.create(group=group, user=user, role='MEMBER')
+            return Response({"status": "Joined public group", "group_id": group.id}, status=201)
+
+        return Response({"detail": "Invalid group status."}, status=400)
+
+# class JoinRequestCreateView(generics.CreateAPIView):
+#     serializer_class = JoinRequestSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         group = get_object_or_404(StudyGroup, id=self.kwargs['group_id'])
+#         if group.status == 'PRIVATE' and not GroupMembership.objects.filter(group=group, user=self.request.user.chat_user).exists():
+#             serializer.save(user=self.request.user.chat_user, group=group)
+#         elif group.status == 'PUBLIC' and not GroupMembership.objects.filter(group=group, user=self.request.user_chat_user).exists():
+#             GroupMembership.objects.create(group=group, user=self.request.user.chat_user, role='MEMBER')
+#         else:
+#             raise serializers.ValidationError("Cannot send join request to a group if already a member.")
 
 #handles approval or rejection of join requests
 class JoinRequestManageView(APIView):
