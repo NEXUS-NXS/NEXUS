@@ -48,6 +48,9 @@ const StudyGroups = () => {
       }
       const response = await axios.get(url, { withCredentials: true })
       setGroups(response.data)
+      
+      console.log("Fetched groups:", response.data)
+
       setFilteredGroups(response.data)
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to fetch groups")
@@ -144,7 +147,7 @@ const StudyGroups = () => {
   const handleJoinGroup = async (groupId) => {
     try {
       const csrfToken = getCookie('csrftoken')
-      await axios.post(
+      const response = await axios.post(
         `https://127.0.0.1:8000/chats/groups/${groupId}/join/`,
         {},
         { 
@@ -152,13 +155,39 @@ const StudyGroups = () => {
           withCredentials: true 
         }
       )
-      fetchGroups()
-      return { success: true }
+      // Update the group in the groups state
+      const updatedGroup = response.data.group || response.data
+      setGroups(groups.map(g => g.id === groupId ? updatedGroup : g))
+      return { success: true, group: updatedGroup }
     } catch (err) {
       console.error("Error joining group:", err)
       return {
         success: false,
         error: err.response?.data || { detail: "Failed to join group" }
+      }
+    }
+  }
+
+  const handleLeaveGroup = async (groupId) => {
+    try {
+      const csrfToken = getCookie('csrftoken')
+      const response = await axios.post(
+        `https://127.0.0.1:8000/chats/groups/${groupId}/leave/`,
+        {},
+        { 
+          headers: { 'X-CSRFToken': csrfToken },
+          withCredentials: true 
+        }
+      )
+      // Update the group in the groups state
+      const updatedGroup = response.data.group || response.data
+      setGroups(groups.map(g => g.id === groupId ? updatedGroup : g))
+      return { success: true, group: updatedGroup }
+    } catch (err) {
+      console.error("Error leaving group:", err)
+      return {
+        success: false,
+        error: err.response?.data || { detail: "Failed to leave group" }
       }
     }
   }
@@ -174,7 +203,7 @@ const StudyGroups = () => {
           withCredentials: true 
         }
       )
-      fetchGroups()
+      fetchGroups() // Refresh all groups since we don't know which group was joined
       return { 
         success: true,
         message: response.data.status
@@ -184,28 +213,6 @@ const StudyGroups = () => {
       return {
         success: false,
         error: err.response?.data || { detail: "Failed to join group by link" }
-      }
-    }
-  }
-
-  const handleLeaveGroup = async (groupId) => {
-    try {
-      const csrfToken = getCookie('csrftoken')
-      await axios.post(
-        `https://127.0.0.1:8000/chats/groups/${groupId}/leave/`,
-        {},
-        { 
-          headers: { 'X-CSRFToken': csrfToken },
-          withCredentials: true 
-        }
-      )
-      fetchGroups()
-      return { success: true }
-    } catch (err) {
-      console.error("Error leaving group:", err)
-      return {
-        success: false,
-        error: err.response?.data || { detail: "Failed to leave group" }
       }
     }
   }
@@ -282,7 +289,7 @@ const StudyGroups = () => {
       {activeTab === "discover" && (
         <>
           <div className="study-groups-filters">
-            <div className="search-container-std-grp">
+            <div className="search-container-std-grp"> {/* Fixed <post> to <div> */}
               <Search size={18} />
               <input
                 type="text"
@@ -291,7 +298,6 @@ const StudyGroups = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-
             <div className="filter-container">
               <Filter size={18} />
               <select 
@@ -306,7 +312,6 @@ const StudyGroups = () => {
                 ))}
               </select>
             </div>
-
             <div className="filter-container">
               <BookOpen size={18} />
               <select 
@@ -329,8 +334,8 @@ const StudyGroups = () => {
                 <GroupCard
                   key={group.id}
                   group={group}
-                  onJoin={() => handleJoinGroup(group.id)}
-                  onLeave={() => handleLeaveGroup(group.id)}
+                  onJoin={handleJoinGroup}
+                  onLeave={handleLeaveGroup}
                   onViewDetails={() => setSelectedGroup(group)}
                   currentUser={user}
                   showManageButton={group.owner?.id === user?.chat_user_id}
@@ -358,8 +363,8 @@ const StudyGroups = () => {
                 <GroupCard
                   key={group.id}
                   group={group}
-                  onJoin={() => handleJoinGroup(group.id)}
-                  onLeave={() => handleLeaveGroup(group.id)}
+                  onJoin={handleJoinGroup}
+                  onLeave={handleLeaveGroup}
                   onViewDetails={() => setSelectedGroup(group)}
                   currentUser={user}
                   showManageButton={group.owner?.id === user?.chat_user_id}
