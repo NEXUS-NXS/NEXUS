@@ -48,7 +48,7 @@ const StudyGroups = () => {
       }
       const response = await axios.get(url, { withCredentials: true })
       setGroups(response.data)
-      
+
       console.log("Fetched groups:", response.data)
 
       setFilteredGroups(response.data)
@@ -218,8 +218,9 @@ const StudyGroups = () => {
   }
 
   const myGroups = groups.filter(group => 
-    group.memberships?.some(membership => membership.user.id === user?.chat_user_id)
+    group.members?.some(member => member.user.id === user?.chat_user_id)
   )
+
 
   if (selectedGroup) {
     return (
