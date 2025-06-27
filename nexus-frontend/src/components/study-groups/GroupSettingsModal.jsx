@@ -45,6 +45,24 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Helper to get CSRF token from cookies
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+
+  // Helper to get access token from localStorage
+  const getAccessToken = () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      console.error("No access token found in localStorage");
+      setError("Authentication error: Please log in again");
+    }
+    return token;
+  };
+
   // Fetch pending join requests and members on mount
   useEffect(() => {
     if (!isOpen || !isAuthenticated || !group?.id) return;
@@ -53,10 +71,16 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       setIsLoading(true);
       setError(null);
       try {
+        const accessToken = getAccessToken();
+        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+
         // Fetch pending join requests
         const requestsRes = await axios.get(
           `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
-          { withCredentials: true }
+          { 
+            headers,
+            withCredentials: true 
+          }
         );
         console.log("Join requests response:", JSON.stringify(requestsRes.data, null, 2));
         setJoinRequests(
@@ -76,7 +100,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         // Fetch group members
         const membersRes = await axios.get(
           `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
-          { withCredentials: true }
+          { 
+            headers,
+            withCredentials: true 
+          }
         );
         console.log("Members response:", JSON.stringify(membersRes.data, null, 2));
         setMembers(
@@ -102,14 +129,32 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     fetchData();
   }, [isOpen, group?.id, isAuthenticated]);
 
-  // Helper to get CSRF token
-  const getCsrfToken = async () => {
-    const token = await fetchCsrfToken();
-    if (!token) {
-      console.error("CSRF token fetch failed");
-      throw new Error("Failed to fetch CSRF token");
+  // Helper to get CSRF token with fallback to fetchCsrfToken
+  const getCsrfToken = async (retries = 3, delay = 1000) => {
+    let csrfToken = getCookie("csrftoken");
+    if (csrfToken) {
+      console.log("CSRF token retrieved from cookies:", csrfToken);
+      return csrfToken;
     }
-    return token;
+
+    console.warn("CSRF token not found in cookies, attempting to fetch...");
+    for (let i = 0; i < retries; i++) {
+      try {
+        csrfToken = await fetchCsrfToken();
+        if (csrfToken) {
+          console.log("CSRF token fetched successfully:", csrfToken);
+          return csrfToken;
+        }
+        throw new Error("CSRF token not received");
+      } catch (err) {
+        console.error(`CSRF token fetch attempt ${i + 1} failed:`, err);
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    setError("Failed to fetch CSRF token after retries");
+    throw new Error("Failed to fetch CSRF token");
   };
 
   // Handle approve/reject join request
@@ -117,21 +162,33 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     try {
       setIsLoading(true);
       setError(null);
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        throw new Error("No access token available");
+      }
       const csrfToken = await getCsrfToken();
-      console.log(`Managing join request ${requestId} with action ${action}`);
-      await axios.post(
+      const headers = {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json",
+      };
+      console.log(`Sending join request action: ${action} for ID ${requestId}`, { headers });
+      const response = await axios.post(
         `https://127.0.0.1:8000/chats/join-requests/${requestId}/manage/`,
         { action },
         {
-          headers: { "X-CSRFToken": csrfToken },
+          headers,
           withCredentials: true,
         }
       );
-      console.log(`Join request ${action} successful for ID ${requestId}`);
+      console.log(`Join request ${action} response:`, JSON.stringify(response.data, null, 2));
       // Refetch both join requests and members
       const requestsRes = await axios.get(
         `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
-        { withCredentials: true }
+        { 
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true 
+        }
       );
       setJoinRequests(
         requestsRes.data.map(req => ({
@@ -148,7 +205,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       );
       const membersRes = await axios.get(
         `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
-        { withCredentials: true }
+        { 
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true 
+        }
       );
       setMembers(
         membersRes.data.map(m => ({
@@ -162,7 +222,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         }))
       );
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || `Failed to ${action.toLowerCase()} join request`;
+      const errorMsg = err.response?.data?.detail || err.response?.data?.error || `Failed to ${action.toLowerCase()} join request`;
       setError(errorMsg);
       console.error(`Error managing join request ${requestId}:`, err, "Response:", JSON.stringify(err.response?.data, null, 2));
     } finally {
@@ -181,13 +241,22 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     try {
       setIsLoading(true);
       setError(null);
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        throw new Error("No access token available");
+      }
       const csrfToken = await getCsrfToken();
-      console.log(`Managing member ${memberId} with action ${action}`);
+      const headers = {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json",
+      };
+      console.log(`Managing member ${memberId} with action ${action}`, { headers });
       await axios.post(
         `https://127.0.0.1:8000/chats/groups/${group.id}/members/${memberId}/manage/`,
         { action },
         {
-          headers: { "X-CSRFToken": csrfToken },
+          headers,
           withCredentials: true,
         }
       );
@@ -221,6 +290,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     try {
       setIsLoading(true);
       setError(null);
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        throw new Error("No access token available");
+      }
       const csrfToken = await getCsrfToken();
       const formData = new FormData();
       formData.append("name", groupData.name);
@@ -240,14 +313,17 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         console.log(`${key}: ${value}`);
       }
 
+      const headers = {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "multipart/form-data",
+      };
+
       const response = await axios.put(
         `https://127.0.0.1:8000/chats/groups/${group.id}/`,
         formData,
         {
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "multipart/form-data",
-          },
+          headers,
           withCredentials: true,
         }
       );
@@ -279,11 +355,19 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     try {
       setIsLoading(true);
       setError(null);
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        throw new Error("No access token available");
+      }
       const csrfToken = await getCsrfToken();
+      const headers = { 
+        "Authorization": `Bearer ${accessToken}`,
+        "X-CSRFToken": csrfToken 
+      };
       await axios.delete(
         `https://127.0.0.1:8000/chats/groups/${group.id}/`,
         {
-          headers: { "X-CSRFToken": csrfToken },
+          headers,
           withCredentials: true,
         }
       );
@@ -317,12 +401,20 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       try {
         setIsLoading(true);
         setError(null);
+        const accessToken = getAccessToken();
+        if (!accessToken) {
+          throw new Error("No access token available");
+        }
         const csrfToken = await getCsrfToken();
+        const headers = { 
+          "Authorization": `Bearer ${accessToken}`,
+          "X-CSRFToken": csrfToken 
+        };
         const response = await axios.post(
           `https://127.0.0.1:8000/chats/tags/`,
           { name: newTag.trim() },
           {
-            headers: { "X-CSRFToken": csrfToken },
+            headers,
             withCredentials: true,
           }
         );
