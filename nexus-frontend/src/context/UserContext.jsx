@@ -71,7 +71,30 @@ export const UserProvider = ({ children }) => {
       localStorage.removeItem("nexus_user");
       setUser(null);
     }
+
+    await fetchChatUserId();
+
   };
+
+
+  const fetchChatUserId = async () => {
+  try {
+    const response = await axios.get("https://127.0.0.1:8000/chats/api/me/", {
+      withCredentials: true,
+    });
+    const chatUserId = response.data.id;
+
+    // Update the user object with chat_user_id
+    setUser(prev => {
+      const updatedUser = { ...prev, chat_user_id: chatUserId };
+      localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  } catch (err) {
+    console.error("Failed to fetch ChatUser ID:", err);
+  }
+};
+
 
   const login = async (email, password) => {
     try {
@@ -87,12 +110,19 @@ export const UserProvider = ({ children }) => {
         }
       );
       console.log("Login response:", response.data);
-      const { user } = response.data;
-      if (!user) throw new Error("User data not found in response");
+      const { user, access } = response.data;
+      if (!user || !access) throw new Error("Incomplete login response");
 
+      // Store user and access token in localStorage
       localStorage.setItem("nexus_user", JSON.stringify(user));
+      localStorage.setItem("access_token", access);
+
       setUser(user);
       setIsAuthenticated(true);
+
+      // 👉 Fetch the ChatUser ID after login
+      await fetchChatUserId();
+
       return true;
     } catch (error) {
       console.error("Login failed:", error);
@@ -119,7 +149,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
-      const response = await axios.post(
+      const response = await axios.post(  
         "https://127.0.0.1:8000/auth/register/",
         {
           full_name: fullName,
@@ -173,6 +203,7 @@ export const UserProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem("nexus_user");
+    localStorage.removeItem("access_token");
   };
 
   const refreshToken = async () => {
@@ -212,3 +243,4 @@ export const useUser = () => {
   }
   return context;
 };
+const getAccessToken = () => localStorage.getItem("access_token");

@@ -36,6 +36,8 @@ const Chats = () => {
   const emojiPickerRef = useRef(null)
   const chatInputRef = useRef(null)
   const moreOptionsRef = useRef(null)
+  const wsRef = useRef(null);
+
 
   // Emoji data organized by categories
   const emojiCategories = {
@@ -1445,6 +1447,7 @@ const Chats = () => {
         response = await api.get(`dm/${conversation.id}/messages/`)
       }
       console.log('Messages response:', response.data)
+      
       // Handle both paginated and non-paginated responses
       const messages = response.data.results || response.data || []
       const fetchedMessages = messages.map(msg => ({
@@ -1463,6 +1466,7 @@ const Chats = () => {
         } : null,
       }))
       setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
+
     } catch (err) {
       console.error('Fetch messages error:', {
         message: err.message,
@@ -1472,78 +1476,12 @@ const Chats = () => {
       })
       setError(`Failed to load messages: ${err.response?.status || err.message}`)
     }
+   
+
   }
 
 
-  // const fetchMessages = async (conversation) => {
-  //   try {
-  //     setError(null)
-  //     let response
-  //     console.log('Fetching messages for conversation:', conversation)
-  //     if (conversation.type === 'group') {
-  //       response = await api.get(`groups/${conversation.id}/messages/`)
-  //     } else {
-  //       response = await api.get(`dm/${conversation.id}/messages/`)
-  //     }
-  //     console.log('Messages response:', response.data)
-  //     const fetchedMessages = response.data.results.map(msg => ({
-  //       id: msg.id,
-  //       senderId: msg.sender.id,
-  //       senderName: msg.sender.chat_username,
-  //       message: msg.content,
-  //       timestamp: msg.timestamp,
-  //       avatar: '/placeholder.svg?height=32&width=32',
-  //       type: msg.message_type.toLowerCase(),
-  //       fileData: msg.file ? {
-  //         name: msg.file.split('/').pop(),
-  //         size: 'Unknown',
-  //         url: msg.file,
-  //         type: msg.message_type.toLowerCase(),
-  //       } : null,
-  //     }))
-  //     setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
-  //   } catch (err) {
-  //     console.error('Fetch messages error:', {
-  //       message: err.message,
-  //       response: err.response?.data,
-  //       status: err.response?.status,
-  //       headers: err.response?.headers,
-  //     })
-  //     setError(`Failed to load messages: ${err.response?.status || err.message}`)
-  //   }
-  // }
-
-  // const fetchMessages = async (conversation) => {
-  //   try {
-  //     setError(null)
-  //     let response
-  //     if (conversation.type === 'group') {
-  //       response = await api.get(`groups/${conversation.id}/messages/`)
-  //     } else {
-  //       response = await api.get(`dm/${conversation.id}/messages/`)
-  //     }
-  //     const fetchedMessages = response.data.results.map(msg => ({
-  //       id: msg.id,
-  //       senderId: msg.sender.id,
-  //       senderName: msg.sender.chat_username,
-  //       message: msg.content,
-  //       timestamp: msg.timestamp,
-  //       avatar: '/placeholder.svg?height=32&width=32',
-  //       type: msg.message_type.toLowerCase(),
-  //       fileData: msg.file ? {
-  //         name: msg.file.split('/').pop(),
-  //         size: 'Unknown',
-  //         url: msg.file,
-  //         type: msg.message_type.toLowerCase(),
-  //       } : null,
-  //     }))
-  //     setMessages(prev => ({ ...prev, [conversation.id]: fetchedMessages }))
-  //   } catch (err) {
-  //     setError('Failed to load messages')
-  //     console.error(err)
-  //   }
-  // }
-
+  
   const deleteMessage = async (messageId) => {
     try {
       setError(null)
@@ -1591,65 +1529,67 @@ const Chats = () => {
     }
   }
 
-  const handleFileUpload = async (event) => {
-    const files = Array.from(event.target.files)
-    files.forEach(async (file) => {
-      const validTypes = {
-        image: ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'],
-        video: ['video/mp4', 'video/mov', 'video/avi', 'video/webm'],
-        document: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'],
+  const handleFileUpload = async (file, fileType, fileId) => {
+    try {
+      const csrfToken = getCookie('csrftoken');
+      const formData = new FormData();
+      // Sanitize filename to avoid issues with special characters
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      formData.append('file', file, sanitizedName);
+      formData.append('message_type', fileType.toUpperCase());
+      let endpoint = '';
+      if (activeChat.type === 'group') {
+        endpoint = `groups/${activeChat.id}/messages/`;
+      } else {
+        endpoint = `dm/${activeChat.id}/messages/`;
       }
-      const maxSizes = {
-        image: 10 * 1024 * 1024,
-        video: 100 * 1024 * 1024,
-        document: 25 * 1024 * 1024,
+      console.log('Uploading file:', {
+        fileName: file.name,
+        sanitizedName,
+        fileType,
+        formData: [...formData.entries()],
+      });
+
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-CSRFToken': csrfToken,
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadingFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress } : f));
+        },
+      });
+      console.log('Upload response:', response.data);
+      const { id, content, file: fileUrl, message_type, timestamp } = response.data;
+      const messageData = {
+        type: 'message',
+        content: content || '',
+        message_type,
+        file_url: fileUrl,
+        ...(activeChat.type === 'group' ? { group_id: activeChat.id } : { recipient_id: activeChat.id }),
+      };
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(messageData));
+      } else {
+        console.warn('WebSocket not connected, cannot send file message');
       }
 
-      let fileType = 'document'
-      if (validTypes.image.includes(file.type)) fileType = 'image'
-      else if (validTypes.video.includes(file.type)) fileType = 'video'
+      setUploadingFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch (err) {
+      console.error('File upload error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        headers: err.response?.headers,
+      });
+      setError(`Failed to upload ${file.name}: ${err.response?.data?.detail || err.response?.data?.file || err.message}`);
+      setUploadingFiles(prev => prev.filter(f => f.id !== fileId));
+    }
+  };
 
-      if (file.size > maxSizes[fileType]) {
-        alert(`File too large. Maximum size for ${fileType}s is ${maxSizes[fileType] / (1024 * 1024)}MB`)
-        return
-      }
 
-      const fileId = Date.now() + Math.random()
-      setUploadingFiles(prev => [...prev, { id: fileId, name: file.name, progress: 0 }])
 
-      try {
-        const csrfToken = getCookie('csrftoken')
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('message_type', fileType.toUpperCase())
-        if (activeChat.type === 'group') {
-          formData.append('group', activeChat.id)
-        } else {
-          formData.append('recipient', activeChat.id)
-        }
-
-        const response = await api.post('messages/', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'X-CSRFToken': csrfToken,
-          },
-          onUploadProgress: (progressEvent) => {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            setUploadingFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress } : f))
-          },
-        })
-
-        setUploadingFiles(prev => prev.filter(f => f.id !== fileId))
-      } catch (err) {
-        setError(`Failed to upload ${file.name}`)
-        console.error(err)
-        setUploadingFiles(prev => prev.filter(f => f.id !== fileId))
-      }
-    })
-
-    event.target.value = ''
-    setShowFileUpload(false)
-  }
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes'
@@ -1977,24 +1917,30 @@ const Chats = () => {
               </div>
             </div>
             <div className="chat-messages">
-              {(messages[activeChat.id] || []).map(msg => (
-                <div key={msg.id} className={`message ${msg.senderId === user.id ? 'own-message' : ''}`}>
-                  {msg.senderId !== user.id && (
-                    <div className="message-avatar">
-                      <img src={msg.avatar || '/placeholder.svg'} alt={msg.senderName} />
-                    </div>
-                  )}
-                  <div className="message-content">
-                    {msg.senderId !== user.id && activeChat.type === 'group' && (
-                      <div className="message-sender">{msg.senderName}</div>
-                    )}
-                    <div className="message-bubble">
-                      {renderMessage(msg)}
-                      <span className="message-time">{formatMessageTime(msg.timestamp)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+  {(messages[activeChat.id] || []).map(msg => {
+    // ✅ Add this console.log here to debug
+    console.log("msg.senderId:", msg.senderId, "chat_user_id:", user?.chat_user_id);
+
+    return (
+      <div key={msg.id} className={`message ${msg.senderId === user.chat_user_id ? 'own-message' : ''}`}>
+        {msg.senderId !== user?.id && (
+          <div className="message-avatar">
+            <img src={msg.avatar || '/placeholder.svg'} alt={msg.senderName} />
+          </div>
+        )}
+        <div className="message-content">
+          {msg.senderId !== user?.id && activeChat.type === 'group' && (
+            <div className="message-sender">{msg.senderName}</div>
+          )}
+          <div className="message-bubble">
+            {renderMessage(msg)}
+            <span className="message-time">{formatMessageTime(msg.timestamp)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  })}
+
               {uploadingFiles.map(file => (
                 <div key={file.id} className="message own-message">
                   <div className="message-content">
@@ -2054,9 +2000,25 @@ const Chats = () => {
                     type="file"
                     multiple
                     accept="image/*,video/*,.pdf,.docx,.txt"
-                    onChange={handleFileUpload}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      const fileType = fileInputRef.current.accept.includes('image')
+                        ? 'image'
+                        : fileInputRef.current.accept.includes('video')
+                        ? 'video'
+                        : 'document';
+
+                      files.forEach((file) => {
+                        const uniqueId = crypto.randomUUID(); // or your ID generator
+                        handleFileUpload(file, fileType, uniqueId);
+                      });
+
+                      // Optional: reset the input so you can re-select same file
+                      fileInputRef.current.value = '';
+                    }}
                     style={{ display: 'none' }}
                   />
+
                   <button
                     type="button"
                     className="file-option"

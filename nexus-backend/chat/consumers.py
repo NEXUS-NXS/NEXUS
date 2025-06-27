@@ -1,3 +1,4 @@
+#consumers.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -7,6 +8,7 @@ from django.contrib.auth.models import AnonymousUser
 from .models import ChatUser, StudyGroup, Message, Notification, GroupMembership
 from .serializers import MessageSerializer
 from django.shortcuts import get_object_or_404
+import datetime
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -36,7 +38,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_chat_user(self):
-        return getattr(self.user, 'chat_user', None)
+        # return getattr(self.user, 'chat_user', None)
+        return ChatUser.objects.get_or_create(user=self.user)[0]
 
     async def disconnect(self, close_code):
         if self.user.is_authenticated and self.room_group_name:
@@ -72,15 +75,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.room_group_name,
                     {
                         'type': 'chat_message',
-                        'message': serialized_message,
+                        'message': json.loads(json.dumps(serialized_message, default=str)),
                     }
                 )
+                print(f"[group_send] Sent to room: {self.room_group_name}")
+
 
     async def chat_message(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'message',
-            'message': event['message'],
-        }))
+        try:
+            await self.send(text_data=json.dumps({
+                'type': 'message',
+                'message': event['message'],
+            }))
+        except Exception as e:
+            print(f"[chat_message error] {e}")
+            await self.close()
 
     @database_sync_to_async
     def create_message(self, content, group_id, recipient_id, file_url, message_type):
@@ -115,9 +124,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         return message
 
+    # @database_sync_to_async
+    # def serialize_message(self, message):
+    #     return MessageSerializer(message).data
     @database_sync_to_async
     def serialize_message(self, message):
-        return MessageSerializer(message).data
+        data = MessageSerializer(message).data
+        if isinstance(data.get("timestamp"), datetime.datetime):
+            data["timestamp"] = data["timestamp"].isoformat()
+        return data
+
 
     @database_sync_to_async
     def update_user_status(self, is_online):

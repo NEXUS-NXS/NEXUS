@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom" // Add this import
+
 import {
   Bell,
   User,
@@ -29,6 +31,7 @@ import "./Header.css"
 
 const Header = ({ onMenuToggle, isSidebarOpen }) => {
   const { user } = useUser()
+  const navigate = useNavigate()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showBrowseMenu, setShowBrowseMenu] = useState(false)
 
@@ -47,7 +50,8 @@ const Header = ({ onMenuToggle, isSidebarOpen }) => {
   }
 
   const handleProfileNavigation = (path) => {
-    window.location.href = path
+    console.log("Navigating to:", path) // Add debug log
+    navigate(path) // Use navigate instead of window.location.href
     setShowProfileMenu(false)
   }
 
@@ -55,6 +59,7 @@ const Header = ({ onMenuToggle, isSidebarOpen }) => {
     // Add logout logic here
     console.log("Logging out...")
     setShowProfileMenu(false)
+    // Add logout logic here, e.g., call logout from UserContext
   }
 
   const browseMenuData = {
