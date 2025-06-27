@@ -32,7 +32,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     description: group?.description || "",
     isPrivate: group?.status === "PRIVATE" || false,
     maxMembers: group?.max_members || 50,
-    tags: group?.tags?.map(tag => tag.name) || ["Probability", "Statistics"],
+    tags: group?.tags?.map(tag => ({ id: tag.id, name: tag.name })) || [],
     avatar: group?.icon || null,
     category_id: group?.category?.id || 1,
     exam_focus_id: group?.exam_focus?.id || 1,
@@ -47,7 +47,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
   // Fetch pending join requests and members on mount
   useEffect(() => {
-    if (!isOpen || !isAuthenticated) return;
+    if (!isOpen || !isAuthenticated || !group?.id) return;
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -58,57 +58,67 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
           { withCredentials: true }
         );
-        setJoinRequests(requestsRes.data.map(req => ({
-          id: req.id,
-          user: {
-            id: req.user.id,
-            name: req.user.chat_username,
-            email: req.user.email,
-            avatar: req.user.avatar || "/placeholder.svg",
-            university: req.user.university || "Unknown",
-            year: req.user.year || "Unknown",
-          },
-          message: req.message || "No message provided",
-          requestDate: req.created_at,
-        })));
+        console.log("Join requests response:", JSON.stringify(requestsRes.data, null, 2));
+        setJoinRequests(
+          requestsRes.data.map(req => ({
+            id: req.id,
+            user: {
+              id: req.user.id,
+              name: req.user.chat_username || req.user.email || "Unknown User",
+              email: req.user.email || "No email provided",
+              avatar: req.user.avatar || "/placeholder.svg",
+            },
+            message: req.message || "No message provided",
+            requestDate: req.created_at || new Date().toISOString(),
+          }))
+        );
 
         // Fetch group members
         const membersRes = await axios.get(
           `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
           { withCredentials: true }
         );
-        setMembers(membersRes.data.map(m => ({
-          id: m.user.id,
-          name: m.user.chat_username,
-          email: m.user.email,
-          role: m.role.toLowerCase(),
-          avatar: m.user.avatar || "/placeholder.svg",
-          status: m.user.is_online ? "online" : "offline",
-          joinDate: m.joined_at,
-          university: m.user.university || "Unknown",
-        })));
+        console.log("Members response:", JSON.stringify(membersRes.data, null, 2));
+        setMembers(
+          membersRes.data.map(m => ({
+            id: m.user.id,
+            name: m.user.chat_username || m.user.email || "Unknown User",
+            email: m.user.email || "No email provided",
+            role: m.role.toLowerCase(),
+            avatar: m.user.avatar || "/placeholder.svg",
+            status: m.user.is_online ? "online" : "offline",
+            joinDate: m.joined_at ? formatDate(m.joined_at) : new Date().toISOString(),
+          }))
+        );
       } catch (err) {
-        setError(err.response?.data?.detail || "Failed to load group data");
-        console.error("Error fetching data:", err);
+        const errorMsg = err.response?.data?.detail || "Failed to load group data";
+        setError(errorMsg);
+        console.error("Error fetching data:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [isOpen, group.id, isAuthenticated]);
+  }, [isOpen, group?.id, isAuthenticated]);
 
   // Helper to get CSRF token
   const getCsrfToken = async () => {
     const token = await fetchCsrfToken();
-    if (!token) throw new Error("Failed to fetch CSRF token");
+    if (!token) {
+      console.error("CSRF token fetch failed");
+      throw new Error("Failed to fetch CSRF token");
+    }
     return token;
   };
 
   // Handle approve/reject join request
   const handleManageRequest = async (requestId, action) => {
     try {
+      setIsLoading(true);
+      setError(null);
       const csrfToken = await getCsrfToken();
+      console.log(`Managing join request ${requestId} with action ${action}`);
       await axios.post(
         `https://127.0.0.1:8000/chats/join-requests/${requestId}/manage/`,
         { action },
@@ -117,27 +127,46 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           withCredentials: true,
         }
       );
-      setJoinRequests(prev => prev.filter(req => req.id !== requestId));
-      if (action === "APPROVE") {
-        // Optionally refetch members to update the list
-        const membersRes = await axios.get(
-          `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
-          { withCredentials: true }
-        );
-        setMembers(membersRes.data.map(m => ({
+      console.log(`Join request ${action} successful for ID ${requestId}`);
+      // Refetch both join requests and members
+      const requestsRes = await axios.get(
+        `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
+        { withCredentials: true }
+      );
+      setJoinRequests(
+        requestsRes.data.map(req => ({
+          id: req.id,
+          user: {
+            id: req.user.id,
+            name: req.user.chat_username || req.user.email || "Unknown User",
+            email: req.user.email || "No email provided",
+            avatar: req.user.avatar || "/placeholder.svg",
+          },
+          message: req.message || "No message provided",
+          requestDate: req.created_at || new Date().toISOString(),
+        }))
+      );
+      const membersRes = await axios.get(
+        `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
+        { withCredentials: true }
+      );
+      setMembers(
+        membersRes.data.map(m => ({
           id: m.user.id,
-          name: m.user.chat_username,
-          email: m.user.email,
+          name: m.user.chat_username || m.user.email || "Unknown User",
+          email: m.user.email || "No email provided",
           role: m.role.toLowerCase(),
           avatar: m.user.avatar || "/placeholder.svg",
           status: m.user.is_online ? "online" : "offline",
-          joinDate: m.joined_at,
-          university: m.user.university || "Unknown",
-        })));
-      }
+          joinDate: m.joined_at ? formatDate(m.joined_at) : new Date().toISOString(),
+        }))
+      );
     } catch (err) {
-      setError(err.response?.data?.detail || `Failed to ${action.toLowerCase()} join request`);
-      console.error(`Error managing join request:`, err);
+      const errorMsg = err.response?.data?.detail || `Failed to ${action.toLowerCase()} join request`;
+      setError(errorMsg);
+      console.error(`Error managing join request ${requestId}:`, err, "Response:", JSON.stringify(err.response?.data, null, 2));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -150,7 +179,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       return;
     }
     try {
+      setIsLoading(true);
+      setError(null);
       const csrfToken = await getCsrfToken();
+      console.log(`Managing member ${memberId} with action ${action}`);
       await axios.post(
         `https://127.0.0.1:8000/chats/groups/${group.id}/members/${memberId}/manage/`,
         { action },
@@ -159,6 +191,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           withCredentials: true,
         }
       );
+      console.log(`Member ${action} successful for ID ${memberId}`);
       if (action === "REMOVE") {
         setMembers(prev => prev.filter(member => member.id !== memberId));
       } else {
@@ -169,8 +202,11 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         );
       }
     } catch (err) {
-      setError(err.response?.data?.detail || `Failed to ${action.toLowerCase()} member`);
-      console.error(`Error managing member:`, err);
+      const errorMsg = err.response?.data?.detail || `Failed to ${action.toLowerCase()} member`;
+      setError(errorMsg);
+      console.error(`Error managing member ${memberId}:`, err, "Response:", JSON.stringify(err.response?.data, null, 2));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -183,6 +219,8 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
   // Handle group update
   const handleSaveSettings = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
       const csrfToken = await getCsrfToken();
       const formData = new FormData();
       formData.append("name", groupData.name);
@@ -191,10 +229,15 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       formData.append("exam_focus_id", groupData.exam_focus_id);
       formData.append("max_members", groupData.maxMembers);
       formData.append("status", groupData.isPrivate ? "PRIVATE" : "PUBLIC");
-      formData.append("tag_ids", JSON.stringify(groupData.tags.map(tag => parseInt(tag.id, 10) || 1))); // Assuming tags have IDs
+      formData.append("tag_ids", JSON.stringify(groupData.tags.map(tag => tag.id).filter(id => id)));
 
       if (fileInputRef.current?.files[0]) {
         formData.append("icon", fileInputRef.current.files[0]);
+      }
+
+      console.log("Sending group update with data:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
       }
 
       const response = await axios.put(
@@ -208,18 +251,23 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           withCredentials: true,
         }
       );
+      console.log("Group update response:", JSON.stringify(response.data, null, 2));
 
       onUpdateGroup({
         ...groupData,
+        id: group.id,
         icon: response.data.icon || groupData.avatar,
         status: groupData.isPrivate ? "PRIVATE" : "PUBLIC",
-        tags: groupData.tags,
+        tags: response.data.tags || groupData.tags,
         max_members: groupData.maxMembers,
       });
       onClose();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update group");
-      console.error("Error updating group:", err);
+      const errorMsg = err.response?.data?.detail || "Failed to update group";
+      setError(errorMsg);
+      console.error("Error updating group:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -229,6 +277,8 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       return;
     }
     try {
+      setIsLoading(true);
+      setError(null);
       const csrfToken = await getCsrfToken();
       await axios.delete(
         `https://127.0.0.1:8000/chats/groups/${group.id}/`,
@@ -237,12 +287,15 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           withCredentials: true,
         }
       );
+      console.log("Group deleted successfully");
+      onUpdateGroup(null);
       onClose();
-      // Optionally trigger a callback to navigate away or update parent state
-      onUpdateGroup(null); // Signal parent to remove group
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete group");
-      console.error("Error deleting group:", err);
+      const errorMsg = err.response?.data?.detail || "Failed to delete group";
+      setError(errorMsg);
+      console.error("Error deleting group:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -259,20 +312,39 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
   };
 
   // Handle tags
-  const handleAddTag = () => {
-    if (newTag.trim() && !groupData.tags.includes(newTag.trim())) {
-      setGroupData({
-        ...groupData,
-        tags: [...groupData.tags, newTag.trim()],
-      });
-      setNewTag("");
+  const handleAddTag = async () => {
+    if (newTag.trim() && !groupData.tags.some(tag => tag.name.toLowerCase() === newTag.trim().toLowerCase())) {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const csrfToken = await getCsrfToken();
+        const response = await axios.post(
+          `https://127.0.0.1:8000/chats/tags/`,
+          { name: newTag.trim() },
+          {
+            headers: { "X-CSRFToken": csrfToken },
+            withCredentials: true,
+          }
+        );
+        console.log("Tag created:", JSON.stringify(response.data, null, 2));
+        setGroupData({
+          ...groupData,
+          tags: [...groupData.tags, { id: response.data.id, name: response.data.name }],
+        });
+        setNewTag("");
+      } catch (err) {
+        setError(err.response?.data?.detail || "Failed to add tag");
+        console.error("Error adding tag:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleRemoveTag = (tagToRemove) => {
+  const handleRemoveTag = (tagId) => {
     setGroupData({
       ...groupData,
-      tags: groupData.tags.filter((tag) => tag !== tagToRemove),
+      tags: groupData.tags.filter((tag) => tag.id !== tagId),
     });
   };
 
@@ -370,15 +442,11 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                     <div key={request.id} className="set-request-item">
                       <div className="set-request-user">
                         <div className="set-user-avatar">
-                          <img src={request.user.avatar || "/placeholder.svg"} alt={request.user.name} />
+                          <img src={request.user.avatar} alt={request.user.name} />
                         </div>
                         <div className="set-user-info">
                           <h4>{request.user.name}</h4>
                           <p className="set-user-email">{request.user.email}</p>
-                          <div className="set-user-details">
-                            <span>{request.user.university}</span>
-                            <span>{request.user.year}</span>
-                          </div>
                         </div>
                       </div>
 
@@ -388,11 +456,19 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                       </div>
 
                       <div className="set-request-actions">
-                        <button className="set-approve-btn" onClick={() => handleApproveRequest(request.id)}>
+                        <button
+                          className="set-approve-btn"
+                          onClick={() => handleApproveRequest(request.id)}
+                          disabled={isLoading}
+                        >
                           <Check size={16} />
                           Approve
                         </button>
-                        <button className="set-reject-btn" onClick={() => handleRejectRequest(request.id)}>
+                        <button
+                          className="set-reject-btn"
+                          onClick={() => handleRejectRequest(request.id)}
+                          disabled={isLoading}
+                        >
                           <X size={16} />
                           Reject
                         </button>
@@ -424,7 +500,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                   <div key={member.id} className="set-member-item">
                     <div className="set-member-user">
                       <div className="set-user-avatar">
-                        <img src={member.avatar || "/placeholder.svg"} alt={member.name} />
+                        <img src={member.avatar} alt={member.name} />
                         <div className={`set-status-indicator ${member.status}`}></div>
                       </div>
                       <div className="set-user-info">
@@ -434,7 +510,6 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                         </div>
                         <p className="set-user-email">{member.email}</p>
                         <div className="set-user-details">
-                          <span>{member.university}</span>
                           <span>Joined {formatDate(member.joinDate)}</span>
                         </div>
                       </div>
@@ -446,6 +521,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                           value={member.role}
                           onChange={(e) => handleChangeRole(member.id, e.target.value)}
                           className="set-role-select"
+                          disabled={isLoading}
                         >
                           <option value="member">Member</option>
                           <option value="admin">Admin</option>
@@ -455,6 +531,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                           className="set-remove-btn"
                           onClick={() => handleRemoveMember(member.id)}
                           title="Remove member"
+                          disabled={isLoading}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -565,11 +642,11 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                 <div className="set-setting-item">
                   <label>Study Topics</label>
                   <div className="set-tags-container">
-                    {groupData.tags.map((tag, index) => (
-                      <div key={index} className="set-tag-item">
+                    {groupData.tags.map((tag) => (
+                      <div key={tag.id} className="set-tag-item">
                         <Hash size={12} />
-                        {tag}
-                        <button className="set-remove-tag" onClick={() => handleRemoveTag(tag)}>
+                        {tag.name}
+                        <button className="set-remove-tag" onClick={() => handleRemoveTag(tag.id)}>
                           <X size={12} />
                         </button>
                       </div>
@@ -584,7 +661,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                       placeholder="Add a topic tag"
                       onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                     />
-                    <button className="set-add-tag-btn" onClick={handleAddTag}>
+                    <button className="set-add-tag-btn" onClick={handleAddTag} disabled={isLoading}>
                       <Plus size={16} />
                     </button>
                   </div>
@@ -595,7 +672,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                 <h3>Danger Zone</h3>
                 <div className="set-setting-item">
                   <label>Delete Group</label>
-                  <button className="set-delete-btn" onClick={handleDeleteGroup}>
+                  <button className="set-delete-btn" onClick={handleDeleteGroup} disabled={isLoading}>
                     <Trash2 size={16} />
                     Delete Group
                   </button>
@@ -603,10 +680,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
               </div>
 
               <div className="set-settings-actions">
-                <button className="set-cancel-btn" onClick={onClose}>
+                <button className="set-cancel-btn" onClick={onClose} disabled={isLoading}>
                   Cancel
                 </button>
-                <button className="set-save-btn" onClick={handleSaveSettings}>
+                <button className="set-save-btn" onClick={handleSaveSettings} disabled={isLoading}>
                   <Save size={16} />
                   Save Changes
                 </button>

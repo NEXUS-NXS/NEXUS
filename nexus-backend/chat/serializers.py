@@ -19,9 +19,10 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class ChatUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email')  # Include email from User model
     class Meta:
         model = ChatUser
-        fields = ['id', 'chat_username', 'is_online']
+        fields = ['id', 'chat_username', 'is_online', 'email']
 
 class GroupMembershipSerializer(serializers.ModelSerializer):
     user = ChatUserSerializer()
@@ -152,13 +153,15 @@ class StudyGroupSerializer(serializers.ModelSerializer):
 
 
 class PendingJoinRequestSerializer(serializers.ModelSerializer):
-    user_username = serializers.CharField(source='user.chat_username', read_only=True)
+    user = ChatUserSerializer(read_only=True)
+    # Optionally include group if needed, but frontend doesn't use it
+    group = StudyGroupSerializer(read_only=True)
 
     class Meta:
         model = JoinRequest
-        fields = ['id', 'user', 'user_username', 'group', 'message','status', 'created_at']
-        read_only_fields = fields
-
+        fields = ['id', 'user', 'group', 'message', 'status', 'created_at']
+        read_only_fields = ['id', 'user', 'group', 'status', 'created_at']
+        
 
 class JoinRequestSerializer(serializers.ModelSerializer):
     user = ChatUserSerializer(read_only=True)

@@ -19,7 +19,7 @@ class ExamFocusListView(generics.ListAPIView):
     queryset = ExamFocus.objects.all()
     serializer_class = ExamFocusSerializer
 
-class TagListView(generics.ListAPIView):
+class TagListCreateView(generics.ListCreateAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
@@ -125,28 +125,103 @@ class JoinRequestCreateView(generics.CreateAPIView):
 #         else:
 #             raise serializers.ValidationError("Cannot send join request to a group if already a member.")
 
+
+
 #handles approval or rejection of join requests
 class JoinRequestManageView(APIView):
     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
 
     def post(self, request, join_request_id):
         join_request = get_object_or_404(JoinRequest, id=join_request_id)
+
+        # Check if the request is still pending
+        if join_request.status != 'PENDING':
+            return Response(
+                {'detail': f'Join request is already {join_request.status.lower()}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         action = request.data.get('action')
         if action not in ['APPROVE', 'REJECT']:
-            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {'detail': 'Invalid action. Must be "APPROVE" or "REJECT"'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update join request status
         join_request.status = 'APPROVED' if action == 'APPROVE' else 'REJECTED'
         join_request.save()
-        
+
         if action == 'APPROVE':
-            GroupMembership.objects.create(group=join_request.group, user=join_request.user, role='MEMBER')
-            Notification.objects.create(
-                user=join_request.user,
+            # Check for existing membership
+            if GroupMembership.objects.filter(
                 group=join_request.group,
-                content=f"Your join request to {join_request.group.name} has been approved."
+                user=join_request.user
+            ).exists():
+                return Response(
+                    {'detail': 'User is already a member of this group'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Check group member limit
+            if (join_request.group.max_members and
+                GroupMembership.objects.filter(group=join_request.group).count() >= join_request.group.max_members):
+                return Response(
+                    {'detail': 'Group has reached its maximum member limit'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create membership
+            GroupMembership.objects.create(
+                group=join_request.group,
+                user=join_request.user,
+                role='MEMBER'
             )
-        
+
+            # Create notification
+            try:
+                Notification.objects.create(
+                    user=join_request.user,
+                    group=join_request.group,
+                    content=f"Your join request to {join_request.group.name} has been approved."
+                )
+            except Exception as e:
+                # Log error but don't fail the request
+                print(f"Failed to create notification: {str(e)}")
+
+        # Create notification for rejection (optional)
+        if action == 'REJECT':
+            try:
+                Notification.objects.create(
+                    user=join_request.user,
+                    group=join_request.group,
+                    content=f"Your join request to {join_request.group.name} has been rejected."
+                )
+            except Exception as e:
+                print(f"Failed to create notification: {str(e)}")
+
         return Response({'status': join_request.status}, status=status.HTTP_200_OK)
+# class JoinRequestManageView(APIView):
+#     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
+
+#     def post(self, request, join_request_id):
+#         join_request = get_object_or_404(JoinRequest, id=join_request_id)
+#         action = request.data.get('action')
+#         if action not in ['APPROVE', 'REJECT']:
+#             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         join_request.status = 'APPROVED' if action == 'APPROVE' else 'REJECTED'
+#         join_request.save()
+        
+#         if action == 'APPROVE':
+#             GroupMembership.objects.create(group=join_request.group, user=join_request.user, role='MEMBER')
+#             Notification.objects.create(
+#                 user=join_request.user,
+#                 group=join_request.group,
+#                 content=f"Your join request to {join_request.group.name} has been approved."
+#             )
+        
+#         return Response({'status': join_request.status}, status=status.HTTP_200_OK)
 
 
 #handles role management in groups
