@@ -37,6 +37,14 @@
     rgba(16, 185, 129, 0.3) 75%,
     rgba(245, 158, 11, 0.3) 100%
   );
+  /* background: linear-gradient(
+    135deg,
+    #0d9488 0%,
+    #22d3ee 25%,
+    #facc15 50%,
+    #f97316 75%,
+    #c2410c 100%
+  ); */
 }
 
 .hero-pattern {
