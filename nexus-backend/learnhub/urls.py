@@ -4,7 +4,9 @@
 # from .views import (
 #     ExpertiseViewSet, InstructorViewSet, TagViewSet, LearningObjectiveViewSet,
 #     PrerequisiteViewSet, CourseViewSet, ModuleViewSet, LessonViewSet,
-#     KeyPointViewSet, BulletPointViewSet, CodeExampleViewSet, QuestionViewSet
+#     KeyPointViewSet, BulletPointViewSet, CodeExampleViewSet, QuestionViewSet,CourseEnrollmentViewSet,
+#     EnrolledCourseViewSet, CourseRatingViewSet,QuizSubmissionViewSet, UserLessonProgressViewSet,
+    
 # )
 
 # router = DefaultRouter()
@@ -20,8 +22,10 @@
 # router.register(r'bullets', BulletPointViewSet)
 # router.register(r'code-examples', CodeExampleViewSet)
 # router.register(r'questions', QuestionViewSet)
+# router.register(r'enrollments', CourseEnrollmentViewSet)
 
-# app_name = "learnhub"
-# urlpatterns = [
-#     path('api/', include((router.urls, 'learnhub'), namespace='learnhub')),
-# ]
+# # These need `basename` because they likely don't have a `.queryset`
+# router.register(r'enrolled-courses', EnrolledCourseViewSet, basename='enrolled-courses')
+# router.register(r'ratings', CourseRatingViewSet, basename='ratings')
+# router.register(r'quiz-submissions', QuizSubmissionViewSet, basename='quiz-submissions')
+# router.register(r'progress', UserLessonProgressViewSet, basename='progress')

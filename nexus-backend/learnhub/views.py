@@ -3,15 +3,19 @@
 # from rest_framework.decorators import action
 # from rest_framework.response import Response
 # from django_filters.rest_framework import DjangoFilterBackend
+# from rest_framework.permissions import IsAuthenticated, AllowAny
+
 # from .models import (
 #     Expertise, Instructor, Tag, LearningObjective, Prerequisite,
-#     Course, Module, Lesson, KeyPoint, BulletPoint, CodeExample, Question
+#     Course, Module, Lesson, KeyPoint, BulletPoint, CodeExample, Question, CourseEnrollment,
+#     CourseRating, QuizSubmission,
 # )
 # from .serializers import (
 #     ExpertiseSerializer, InstructorSerializer, TagSerializer,
 #     LearningObjectiveSerializer, PrerequisiteSerializer, CourseSerializer,
 #     ModuleSerializer, LessonSerializer, KeyPointSerializer,
-#     BulletPointSerializer, CodeExampleSerializer, QuestionSerializer
+#     BulletPointSerializer, CodeExampleSerializer, QuestionSerializer, CourseEnrollmentSerializer,
+#     EnrolledCourseSerializer, CourseRatingSerializer, QuizSubmissionSerializer,
 # )
 # from .permissions import IsInstructor, IsInstructorOrReadOnly
 
@@ -63,6 +67,14 @@
 #         serializer = self.get_serializer(course)
 #         return Response(serializer.data)
 
+
+#     @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+#     def preview(self, request, pk=None):
+#         course = self.get_object()
+#         serializer = CourseSerializer(course, context={'request': request})
+#         return Response(serializer.data)
+    
+
 # class ModuleViewSet(viewsets.ModelViewSet):
 #     queryset = Module.objects.all()
 #     serializer_class = ModuleSerializer
@@ -104,3 +116,62 @@
 #     queryset = Question.objects.all()
 #     serializer_class = QuestionSerializer
 #     permission_classes = [IsInstructorOrReadOnly]
+
+
+
+# class CourseEnrollmentViewSet(viewsets.ModelViewSet):
+#     queryset = CourseEnrollment.objects.all()
+#     serializer_class = CourseEnrollmentSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def get_queryset(self):
+#         return CourseEnrollment.objects.filter(user=self.request.user)
+
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user)
+
+
+
+# class EnrolledCourseViewSet(viewsets.ReadOnlyModelViewSet):
+#     serializer_class = EnrolledCourseSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def get_queryset(self):
+#         return Course.objects.filter(enrollments__user=self.request.user)
+    
+
+# class CourseRatingViewSet(viewsets.ModelViewSet):
+#     queryset = CourseRating.objects.all()
+#     serializer_class = CourseRatingSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user)
+
+
+
+# class QuizSubmissionViewSet(viewsets.ModelViewSet):
+#     queryset = QuizSubmission.objects.all()
+#     serializer_class = QuizSubmissionSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def get_queryset(self):
+#         return QuizSubmission.objects.filter(user=self.request.user)
+    
+
+
+
+
+# from .models import UserLessonProgress
+# from .serializers import UserLessonProgressSerializer
+
+# class UserLessonProgressViewSet(viewsets.ModelViewSet):
+#     queryset = UserLessonProgress.objects.all()
+#     serializer_class = UserLessonProgressSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def get_queryset(self):
+#         return UserLessonProgress.objects.filter(user=self.request.user)
+
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user)

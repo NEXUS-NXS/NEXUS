@@ -1,7 +1,7 @@
 # # learnhub/signals.py
 # from django.db.models.signals import post_save, post_delete
 # from django.dispatch import receiver
-# from .models import Lesson, Course
+# from .models import Lesson, Course, UserLessonProgress, CourseEnrollment
 
 # @receiver([post_save, post_delete], sender=Lesson)
 # def update_course_totals(sender, instance, **kwargs):
@@ -16,4 +16,16 @@
 #             except (ValueError, AttributeError):
 #                 continue
 #     course.total_duration = total_duration // 60  # Convert to minutes
+#     course.save()
+
+
+# @receiver([post_save, post_delete], sender=UserLessonProgress)
+# def update_module_progress(sender, instance, **kwargs):
+#     module = instance.lesson.module
+#     module.update_progress()
+
+# @receiver(post_save, sender=CourseEnrollment)
+# def update_enrolled_students(sender, instance, **kwargs):
+#     course = instance.course
+#     course.enrolled_students = CourseEnrollment.objects.filter(course=course).count()
 #     course.save()

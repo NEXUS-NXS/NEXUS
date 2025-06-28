@@ -2,7 +2,8 @@
 # from rest_framework import serializers
 # from .models import (
 #     Expertise, Instructor, Tag, LearningObjective, Prerequisite,
-#     Course, Module, Lesson, KeyPoint, BulletPoint, CodeExample, Question
+#     Course, Module, Lesson, KeyPoint, BulletPoint, CodeExample, Question, CourseEnrollment,
+#     CourseRating, QuizSubmission, UserLessonProgress,
 # )
 # from django.contrib.auth import get_user_model
 
@@ -124,15 +125,33 @@
 
 #         return instance
 
+
 # class ModuleSerializer(serializers.ModelSerializer):
+#     progress = serializers.SerializerMethodField()
+#     is_completed = serializers.SerializerMethodField()
+
+#     def get_progress(self, obj):
+#         lessons = obj.lessons.all()
+#         if not lessons:
+#             return 0.0
+#         completed = UserLessonProgress.objects.filter(
+#             user=self.context['request'].user, lesson__in=lessons, is_completed=True
+#         ).count()
+#         return (completed / lessons.count()) * 100
+
+#     def get_is_completed(self, obj):
+#         lessons = obj.lessons.all()
+#         if not lessons:
+#             return False
+#         completed = UserLessonProgress.objects.filter(
+#             user=self.context['request'].user, lesson__in=lessons, is_completed=True
+#         ).count()
+#         return completed == lessons.count()
+
 #     class Meta:
 #         model = Module
-#         fields = ['id', 'course', 'title', 'description', 'order']
+#         fields = ['id', 'course', 'title', 'description', 'order', 'progress', 'is_completed']
 
-#     def validate(self, data):
-#         if not data.get('title'):
-#             raise serializers.ValidationError({"title": "This field is required."})
-#         return data
 
 # class BulletPointSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -246,3 +265,91 @@
 #                 Question.objects.create(lesson=instance, **q_data)
 
 #         return instance
+
+
+# class CourseEnrollmentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CourseEnrollment
+#         fields = ['id', 'course', 'enrolled_at']
+
+#     def validate(self, data):
+#         if CourseEnrollment.objects.filter(user=self.context['request'].user, course=data['course']).exists():
+#             raise serializers.ValidationError({"course": "Already enrolled in this course."})
+#         return data
+    
+
+
+# class EnrolledCourseSerializer(CourseSerializer):
+#     progress = serializers.SerializerMethodField()
+#     completed_lessons = serializers.SerializerMethodField()
+#     next_lesson_id = serializers.SerializerMethodField()
+#     next_lesson = serializers.SerializerMethodField()
+
+#     def get_progress(self, obj):
+#         lessons = Lesson.objects.filter(module__course=obj)
+#         if not lessons:
+#             return 0.0
+#         completed = UserLessonProgress.objects.filter(
+#             user=self.context['request'].user, lesson__in=lessons, is_completed=True
+#         ).count()
+#         return (completed / lessons.count()) * 100
+
+#     def get_completed_lessons(self, obj):
+#         return UserLessonProgress.objects.filter(
+#             user=self.context['request'].user, lesson__module__course=obj, is_completed=True
+#         ).count()
+
+#     def get_next_lesson_id(self, obj):
+#         lessons = Lesson.objects.filter(module__course=obj).order_by('order')
+#         for lesson in lessons:
+#             if not UserLessonProgress.objects.filter(
+#                 user=self.context['request'].user, lesson=lesson, is_completed=True
+#             ).exists():
+#                 return str(lesson.id)
+#         return None
+
+#     def get_next_lesson(self, obj):
+#         next_lesson_id = self.get_next_lesson_id(obj)
+#         if next_lesson_id:
+#             lesson = Lesson.objects.get(id=next_lesson_id)
+#             return lesson.title
+#         return None
+
+#     class Meta(CourseSerializer.Meta):
+#         fields = CourseSerializer.Meta.fields + ['progress', 'completed_lessons', 'next_lesson_id', 'next_lesson']
+
+
+
+
+# class CourseRatingSerializer(serializers.ModelSerializer):
+#     def validate(self, data):
+#         if not CourseEnrollment.objects.filter(user=self.context['request'].user, course=data['course']).exists():
+#             raise serializers.ValidationError({"course": "You must be enrolled to rate this course."})
+#         if CourseRating.objects.filter(user=self.context['request'].user, course=data['course']).exists():
+#             raise serializers.ValidationError({"course": "You have already rated this course."})
+#         return data
+
+
+
+# class QuizSubmissionSerializer(serializers.ModelSerializer):
+#     def validate(self, data):
+#         lesson = data['lesson']
+#         course = lesson.module.course
+#         if not CourseEnrollment.objects.filter(user=self.context['request'].user, course=course).exists():
+#             raise serializers.ValidationError({"lesson": "You must be enrolled in the course to submit this quiz."})
+#         if lesson.type != 'quiz':
+#             raise serializers.ValidationError({"lesson": "This lesson is not a quiz."})
+#         if QuizSubmission.objects.filter(user=self.context['request'].user, lesson=lesson).exists():
+#             raise serializers.ValidationError({"lesson": "Quiz already submitted."})
+#         questions = Question.objects.filter(lesson=lesson)
+#         answers = data['answers']
+#         if not all(str(q.id) in answers for q in questions):
+#             raise serializers.ValidationError({"answers": "Answers for all questions required."})
+#         return data
+
+
+
+# class UserLessonProgressSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserLessonProgress
+#         fields = ['id', 'lesson', 'is_completed', 'completed_at', 'video_progress', 'video_current_time']

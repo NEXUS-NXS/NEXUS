@@ -2,6 +2,7 @@
 # from django.contrib.auth import get_user_model
 # from django.db.models import JSONField
 # import uuid
+# from django.core.validators import MinValueValidator, MaxValueValidator
 
 # User = get_user_model()
 
@@ -46,20 +47,20 @@
 # class Course(models.Model):
 #     STATUS_CHOICES = [("draft", "Draft"), ("published", "Published")]
 #     CATEGORY_CHOICES = [
-#         ("Programming", "Programming"),
-#         ("Data Science", "Data Science"),
-#         ("Business", "Business"),
-#         ("Design", "Design"),
-#         ("Marketing", "Marketing"),
-#         ("Finance", "Finance"),
-#         ("Actuarial Science", "Actuarial Science"),
-#         ("Mathematics", "Mathematics"),
-#         ("Other", "Other"),
+#         ("programming", "Programming"),
+#         ("data-science", "Data Science"),
+#         ("machine-learning", "Machine Learning"),
+#         ("statistics", "Statistics"),
+#         ("finance", "Financial Modeling"),
+#         ("risk-management", "Risk Management"),
+#         ("certification", "Certification Prep"),
+#         ("other", "Other"),
 #     ]
 #     DIFFICULTY_CHOICES = [
 #         ("beginner", "Beginner"),
 #         ("intermediate", "Intermediate"),
 #         ("advanced", "Advanced"),
+#         ("expert", "Expert"),
 #     ]
 
 #     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -82,6 +83,12 @@
 #             blank=True, 
 #             related_name='related_courses'  # or another meaningful name
 #         )
+#     rating = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)])
+#     enrolled_students = models.PositiveIntegerField(default=0)
+#     price = models.CharField(max_length=50, blank=True)  # e.g., "$149"
+#     is_popular = models.BooleanField(default=False)
+#     thumbnail = models.URLField(blank=True)
+
 #     def save(self, *args, **kwargs):
 #         if not self.slug:
 #             from django.utils.text import slugify
@@ -113,6 +120,7 @@
 
 #     def __str__(self):
 #         return self.title
+
 
 # class Lesson(models.Model):
 #     TYPE_CHOICES = [("video", "Video"), ("quiz", "Quiz")]
@@ -165,3 +173,50 @@
 
 #     def __str__(self):
 #         return self.question[:60]
+    
+
+
+
+# class CourseEnrollment(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+#     enrolled_at = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         unique_together = ['user', 'course']
+
+
+
+# class CourseRating(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+#     rating = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(5.0)])
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         unique_together = ['user', 'course']
+
+#     def save(self, *args, **kwargs):
+#         super().save(*args, **kwargs)
+#         # Update course rating
+#         course = self.course
+#         ratings = CourseRating.objects.filter(course=course)
+#         course.rating = ratings.aggregate(Avg('rating'))['rating__avg'] or 0.0
+#         course.save()
+
+
+# class QuizSubmission(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+#     answers = models.JSONField()  # e.g., { "question_id": selected_option_index }
+#     score = models.FloatField(null=True)
+#     submitted_at = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         unique_together = ['user', 'lesson']
+
+
+# class UserLessonProgress(models.Model):
+#     ...
+#     video_progress = models.FloatField(default=0.0)  # Percentage
+#     video_current_time = models.FloatField(default=0.0)  # Seconds
