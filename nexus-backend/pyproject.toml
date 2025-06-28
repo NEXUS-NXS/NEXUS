@@ -1,23 +1,32 @@
 [tool.poetry]
+package-mode = false
 name = "nexus-backend"
 version = "0.1.0"
 description = ""
-authors = ["j1ere <jeremywambua106@gmail.com>"]
+authors = ["j1ere <jeremywambua106@gmail.com>", "bentheaya <bentheaya@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.14"
 django = "<5.2"
 djangorestframework = "^3.16.0"
 pillow = "^11.2.1"
 python-dotenv = "^1.1.0"
 django-cors-headers = "^4.7.0"
-psycopg2 = "^2.9.10"
 djangorestframework-simplejwt = "^5.5.0"
 daphne = "^4.2.0"
 channels = "^4.2.2"
 channels-redis = "^4.2.1"
 django-extensions = "^4.1"
+psycopg2-binary = "^2.9.10"
+celery = "5.4.0"
+redis = "5.0.8"
+pandas = "2.2.2"
+numpy = "1.26.4"
+scipy = "1.13.1"
+lifelib = "^0.11.0"
+rpy2 = "^3.6.1"
+restrictedpython = {markers = "python_version < \"3.14\" and python_version >= \"3.9\"", version = "^8.0"}
 
 
 [tool.poetry.group.dev.dependencies]
