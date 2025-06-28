@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'resources.apps.ResourcesConfig',
     'chat.apps.ChatConfig',
     'accounts.apps.AccountsConfig',
+    'learnhub.apps.LearnhubConfig',
 ]   
 
 MIDDLEWARE = [
