@@ -25,12 +25,16 @@ urlpatterns = [
     
     # API endpoints
     path('api/resources/', include('resources.api.urls')),
+    path('auth/', include('accounts.urls')),
+    path('chats/', include('chat.urls')),
+    # API endpoints will be added here
+    # path('api/', include('apps.users.urls')),
+    # path('api/courses/', include('apps.courses.urls')),
     # Add other app URLs here
-    # path('api/users/', include('users.urls')),
-    # path('api/courses/', include('courses.urls')),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    
 
 # Serve static and media files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# if settings.DEBUG:
+#     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

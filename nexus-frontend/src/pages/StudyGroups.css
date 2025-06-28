@@ -176,3 +176,81 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Existing styles */
+.error-text {
+  color: #e53e3e;
+  font-size: 0.875rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+/* Modal styles for image and video modals */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-info {
+  margin-top: 10px;
+}
+
+.modal-info h3 {
+  margin: 0 0 10px;
+}
+
+.modal-info p {
+  margin: 0 0 10px;
+}
+
+.modal-content img,
+.modal-content video {
+  max-width: 100%;
+  height: auto;
+}
+
+.modal-video {
+  width: 100%;
+}

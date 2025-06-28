@@ -7,28 +7,10 @@ import CreateGroupModal from "../components/study-groups/CreateGroupModal"
 import GroupCard from "../components/study-groups/GroupCard"
 import GroupDetail from "../components/study-groups/GroupDetail"
 import "./StudyGroups.css"
-
-const groupCategories = [
-  { id: "all", name: "All Groups" },
-  { id: "exam-prep", name: "Exam Preparation" },
-  { id: "study-sessions", name: "Study Sessions" },
-  { id: "project-groups", name: "Project Groups" },
-  { id: "discussion", name: "Discussion Groups" },
-]
-
-const examTypes = [
-  { id: "all", name: "All Exams" },
-  { id: "soa-p", name: "SOA Exam P" },
-  { id: "soa-fm", name: "SOA Exam FM" },
-  { id: "soa-ifm", name: "SOA Exam IFM" },
-  { id: "soa-ltam", name: "SOA Exam LTAM" },
-  { id: "soa-stam", name: "SOA Exam STAM" },
-  { id: "cas-1", name: "CAS Exam 1" },
-  { id: "cas-2", name: "CAS Exam 2" },
-]
+import axios from "axios"
 
 const StudyGroups = () => {
-  const { user } = useUser()
+  const { user, isAuthenticated } = useUser()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedExam, setSelectedExam] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -37,119 +19,62 @@ const StudyGroups = () => {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [activeTab, setActiveTab] = useState("discover")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [examFocuses, setExamFocuses] = useState([])
+
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`
+    const parts = value.split(`; ${name}=`)
+    if (parts.length === 2) return parts.pop().split(";").shift()
+    return null
+  }
 
   useEffect(() => {
-    fetchGroups()
-  }, [])
-
-  useEffect(() => {
-    filterGroups()
-  }, [selectedCategory, selectedExam, searchQuery, groups])
+    if (isAuthenticated) {
+      fetchGroups()
+      fetchCategoriesAndExams()
+    }
+  }, [isAuthenticated, activeTab])
 
   const fetchGroups = async () => {
-    // Simulate API call
-    const mockGroups = [
-      {
-        id: 1,
-        name: "SOA Exam P Study Group",
-        description: "Preparing for the SOA Exam P together. Daily problem solving and weekly mock exams.",
-        category: "exam-prep",
-        examType: "soa-p",
-        members: 24,
-        maxMembers: 30,
-        isPrivate: false,
-        owner: "Sarah Johnson",
-        ownerId: "user123",
-        tags: ["Probability", "Statistics", "SOA"],
-        nextSession: "2024-01-15T18:00:00Z",
-        lastActivity: "2024-01-10T14:30:00Z",
-        avatar: "/assets/monte-carlo.jpg",
-        isJoined: false,
-      },
-      {
-        id: 2,
-        name: "Actuarial Python Coding",
-        description: "Learn Python programming for actuarial applications. Weekly coding challenges and projects.",
-        category: "project-groups",
-        examType: "all",
-        members: 18,
-        maxMembers: 25,
-        isPrivate: false,
-        owner: "Mike Chen",
-        ownerId: "user456",
-        tags: ["Python", "Programming", "Data Analysis"],
-        nextSession: "2024-01-12T19:00:00Z",
-        lastActivity: "2024-01-11T16:45:00Z",
-        avatar: "/assets/monte-carlo.jpg",
-        isJoined: true,
-      },
-      {
-        id: 3,
-        name: "CAS Exam 1 Intensive",
-        description: "Intensive study group for CAS Exam 1. Focus on problem-solving techniques and time management.",
-        category: "exam-prep",
-        examType: "cas-1",
-        members: 12,
-        maxMembers: 15,
-        isPrivate: true,
-        owner: "Emily Rodriguez",
-        ownerId: "user789",
-        tags: ["CAS", "Probability", "Intensive"],
-        nextSession: "2024-01-14T17:00:00Z",
-        lastActivity: "2024-01-11T20:15:00Z",
-        avatar: "/placeholder.svg?height=80&width=80",
-        isJoined: false,
-      },
-      {
-        id: 4,
-        name: "Financial Mathematics Discussion",
-        description: "Weekly discussions on financial mathematics concepts. Open to all levels.",
-        category: "discussion",
-        examType: "soa-fm",
-        members: 31,
-        maxMembers: 50,
-        isPrivate: false,
-        owner: "David Kim",
-        ownerId: "user101",
-        tags: ["Financial Math", "Discussion", "Theory"],
-        nextSession: "2024-01-13T16:00:00Z",
-        lastActivity: "2024-01-11T12:20:00Z",
-        avatar: "/placeholder.svg?height=80&width=80",
-        isJoined: true,
-      },
-      {
-        id: 5,
-        name: "Weekend Study Sessions",
-        description: "Casual weekend study sessions. Bring your own materials and study together.",
-        category: "study-sessions",
-        examType: "all",
-        members: 8,
-        maxMembers: 12,
-        isPrivate: false,
-        owner: "Lisa Wang",
-        ownerId: "user202",
-        tags: ["Weekend", "Casual", "Study"],
-        nextSession: "2024-01-13T10:00:00Z",
-        lastActivity: "2024-01-10T18:30:00Z",
-        avatar: "/assets/monte-carlo.jpg",
-        isJoined: false,
-      },
-    ]
+    setIsLoading(true)
+    setError(null)
+    try {
+      let url = "https://127.0.0.1:8000/chats/groups/"
+      if (activeTab === "my-groups") {
+        url = "https://127.0.0.1:8000/chats/my-groups/"
+      }
+      const response = await axios.get(url, { withCredentials: true })
+      setGroups(response.data)
 
-    setGroups(mockGroups)
-    setFilteredGroups(mockGroups)
+      console.log("Fetched groups:", response.data)
+
+      setFilteredGroups(response.data)
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to fetch groups")
+      console.error("Error fetching groups:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCategoriesAndExams = async () => {
+    try {
+      const [categoriesRes, examsRes] = await Promise.all([
+        axios.get("https://127.0.0.1:8000/chats/categories/", { withCredentials: true }),
+        axios.get("https://127.0.0.1:8000/chats/exam-focus/", { withCredentials: true })
+      ])
+      setCategories(categoriesRes.data)
+      setExamFocuses(examsRes.data)
+    } catch (err) {
+      console.error("Error fetching categories/exams:", err)
+    }
   }
 
   const filterGroups = () => {
-    let filtered = groups
-
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((group) => group.category === selectedCategory)
-    }
-
-    if (selectedExam !== "all") {
-      filtered = filtered.filter((group) => group.examType === selectedExam || group.examType === "all")
-    }
+    let filtered = [...groups]
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
@@ -157,58 +82,159 @@ const StudyGroups = () => {
         (group) =>
           group.name.toLowerCase().includes(query) ||
           group.description.toLowerCase().includes(query) ||
-          group.tags.some((tag) => tag.toLowerCase().includes(query)),
+          (group.tags && group.tags.some(tag => tag.name.toLowerCase().includes(query)))
+      )
+    }
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(group => 
+        group.category && group.category.name.toLowerCase().includes(selectedCategory.toLowerCase())
+      )
+    }
+
+    if (selectedExam !== "all") {
+      filtered = filtered.filter(group => 
+        group.exam_focus && group.exam_focus.name.toLowerCase().includes(selectedExam.toLowerCase())
       )
     }
 
     setFilteredGroups(filtered)
   }
 
-  const handleCreateGroup = (groupData) => {
-    const newGroup = {
-      id: groups.length + 1,
-      ...groupData,
-      members: 1,
-      owner: user.name,
-      ownerId: user.id,
-      lastActivity: new Date().toISOString(),
-      avatar: "/placeholder.svg?height=80&width=80",
-      isJoined: true,
+  useEffect(() => {
+    filterGroups()
+  }, [selectedCategory, selectedExam, searchQuery, groups])
+
+  const handleCreateGroup = async (groupData) => {
+    try {
+      const formData = new FormData()
+      formData.append('name', groupData.name)
+      formData.append('description', groupData.description)
+      formData.append('category_id', groupData.category)
+      formData.append('exam_focus_id', groupData.examFocus)
+      formData.append('max_members', groupData.maxMembers)
+      formData.append('status', groupData.isPrivate ? 'PRIVATE' : 'PUBLIC')
+      groupData.tags.forEach(tag => formData.append('tag_ids', tag))
+      if (groupData.icon) {
+        formData.append('icon', groupData.icon)
+      }
+
+      const csrfToken = getCookie('csrftoken')
+      const response = await axios.post(
+        "https://127.0.0.1:8000/chats/groups/",
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-CSRFToken': csrfToken
+          },
+          withCredentials: true
+        }
+      )
+
+      setGroups([response.data, ...groups])
+      setShowCreateModal(false)
+      return { success: true }
+    } catch (err) {
+      console.error("Error creating group:", err)
+      return { 
+        success: false,
+        error: err.response?.data || { detail: "Failed to create group" }
+      }
     }
-
-    setGroups([newGroup, ...groups])
-    setShowCreateModal(false)
   }
 
-  const handleJoinGroup = (groupId) => {
-    setGroups(
-      groups.map((group) =>
-        group.id === groupId
-          ? {
-              ...group,
-              members: group.members + 1,
-              isJoined: true,
-            }
-          : group,
-      ),
-    )
+  const handleJoinGroup = async (groupId) => {
+    try {
+      
+      const csrfToken = getCookie('csrftoken')
+      const token = localStorage.getItem("access_token"); // Get JWT token
+
+      const response = await axios.post(
+        `https://127.0.0.1:8000/chats/groups/${groupId}/join/`,
+        {},
+        {
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Authorization": `Bearer ${token}`,  // ✅ Send JWT token
+        },
+        withCredentials: true,
+      }
+      )
+
+      // Group is returned in response whether it's public (auto-joined) or private (request sent)
+      const updatedGroup = response.data.group || response.data
+
+      // Update local state to reflect changes
+      setGroups(prevGroups =>
+        prevGroups.map(g => g.id === groupId ? updatedGroup : g)
+      )
+
+      return { success: true, group: updatedGroup }
+
+    } catch (err) {
+      console.error("Error joining group:", err)
+      return {
+        success: false,
+        error: err.response?.data || { detail: "Failed to join group" }
+      }
+    }
   }
 
-  const handleLeaveGroup = (groupId) => {
-    setGroups(
-      groups.map((group) =>
-        group.id === groupId
-          ? {
-              ...group,
-              members: group.members - 1,
-              isJoined: false,
-            }
-          : group,
-      ),
-    )
+
+  const handleLeaveGroup = async (groupId) => {
+    try {
+      const csrfToken = getCookie('csrftoken')
+      const response = await axios.post(
+        `https://127.0.0.1:8000/chats/groups/${groupId}/leave/`,
+        {},
+        { 
+          headers: { 'X-CSRFToken': csrfToken },
+          withCredentials: true 
+        }
+      )
+      // Update the group in the groups state
+      const updatedGroup = response.data.group || response.data
+      setGroups(groups.map(g => g.id === groupId ? updatedGroup : g))
+      return { success: true, group: updatedGroup }
+    } catch (err) {
+      console.error("Error leaving group:", err)
+      return {
+        success: false,
+        error: err.response?.data || { detail: "Failed to leave group" }
+      }
+    }
   }
 
-  const myGroups = groups.filter((group) => group.isJoined)
+  const handleJoinByLink = async (inviteLink) => {
+    try {
+      const csrfToken = getCookie('csrftoken')
+      const response = await axios.post(
+        `https://127.0.0.1:8000/chats/join/${inviteLink}/`,
+        {},
+        { 
+          headers: { 'X-CSRFToken': csrfToken },
+          withCredentials: true 
+        }
+      )
+      fetchGroups() // Refresh all groups since we don't know which group was joined
+      return { 
+        success: true,
+        message: response.data.status
+      }
+    } catch (err) {
+      console.error("Error joining group by link:", err)
+      return {
+        success: false,
+        error: err.response?.data || { detail: "Failed to join group by link" }
+      }
+    }
+  }
+
+  const myGroups = groups.filter(group => 
+    group.members?.some(member => member.user.id === user?.chat_user_id)
+  )
+
 
   if (selectedGroup) {
     return (
@@ -221,6 +247,25 @@ const StudyGroups = () => {
     )
   }
 
+  if (isLoading) {
+    return (
+      <div className="study-groups-page">
+        <div className="loading-spinner">Loading groups...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="study-groups-page">
+        <div className="error-message">{error}</div>
+        <button onClick={fetchGroups} className="retry-btn">
+          Retry
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="study-groups-page">
       <div className="study-groups-header">
@@ -228,7 +273,11 @@ const StudyGroups = () => {
           <h1>Study Groups</h1>
           <p>Connect with fellow students and accelerate your learning</p>
         </div>
-        <button className="create-group-btn" onClick={() => setShowCreateModal(true)}>
+        <button 
+          className="create-group-btn" 
+          onClick={() => setShowCreateModal(true)}
+          disabled={!isAuthenticated}
+        >
           <Plus size={20} />
           Create Group
         </button>
@@ -245,6 +294,7 @@ const StudyGroups = () => {
         <button
           className={`tab-btn ${activeTab === "my-groups" ? "active" : ""}`}
           onClick={() => setActiveTab("my-groups")}
+          disabled={!isAuthenticated}
         >
           <Users size={16} />
           My Groups ({myGroups.length})
@@ -254,7 +304,7 @@ const StudyGroups = () => {
       {activeTab === "discover" && (
         <>
           <div className="study-groups-filters">
-            <div className="search-container-std-grp">
+            <div className="search-container-std-grp"> {/* Fixed <post> to <div> */}
               <Search size={18} />
               <input
                 type="text"
@@ -263,23 +313,29 @@ const StudyGroups = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-
             <div className="filter-container">
               <Filter size={18} />
-              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
-                {groupCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
+              <select 
+                value={selectedCategory} 
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
                     {category.name}
                   </option>
                 ))}
               </select>
             </div>
-
             <div className="filter-container">
               <BookOpen size={18} />
-              <select value={selectedExam} onChange={(e) => setSelectedExam(e.target.value)}>
-                {examTypes.map((exam) => (
-                  <option key={exam.id} value={exam.id}>
+              <select 
+                value={selectedExam} 
+                onChange={(e) => setSelectedExam(e.target.value)}
+              >
+                <option value="all">All Exams</option>
+                {examFocuses.map((exam) => (
+                  <option key={exam.id} value={exam.name}>
                     {exam.name}
                   </option>
                 ))}
@@ -293,18 +349,21 @@ const StudyGroups = () => {
                 <GroupCard
                   key={group.id}
                   group={group}
-                  onJoin={() => handleJoinGroup(group.id)}
-                  onLeave={() => handleLeaveGroup(group.id)}
+                  onJoin={handleJoinGroup}
+                  onLeave={handleLeaveGroup}
                   onViewDetails={() => setSelectedGroup(group)}
                   currentUser={user}
+                  showManageButton={group.owner?.id === user?.chat_user_id}
                 />
               ))
             ) : (
               <div className="no-groups">
                 <p>No groups found matching your criteria.</p>
-                <button className="create-first-group-btn" onClick={() => setShowCreateModal(true)}>
-                  Create the first group
-                </button>
+                {isAuthenticated && (
+                  <button className="create-first-group-btn" onClick={() => setShowCreateModal(true)}>
+                    Create the first group
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -319,11 +378,11 @@ const StudyGroups = () => {
                 <GroupCard
                   key={group.id}
                   group={group}
-                  onJoin={() => handleJoinGroup(group.id)}
-                  onLeave={() => handleLeaveGroup(group.id)}
+                  onJoin={handleJoinGroup}
+                  onLeave={handleLeaveGroup}
                   onViewDetails={() => setSelectedGroup(group)}
                   currentUser={user}
-                  showManageButton={group.ownerId === user.id}
+                  showManageButton={group.owner?.id === user?.chat_user_id}
                 />
               ))}
             </div>
@@ -339,7 +398,12 @@ const StudyGroups = () => {
       )}
 
       {showCreateModal && (
-        <CreateGroupModal onClose={() => setShowCreateModal(false)} onCreateGroup={handleCreateGroup} />
+        <CreateGroupModal 
+          onClose={() => setShowCreateModal(false)} 
+          onCreateGroup={handleCreateGroup}
+          categories={categories}
+          examFocuses={examFocuses}
+        />
       )}
     </div>
   )

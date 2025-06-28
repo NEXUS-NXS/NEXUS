@@ -29,8 +29,17 @@ media/*
 static/*
 !static/.gitkeep
 
+#ignore all django migration files
+**/migrations/*.py
+**/migrations/*.pyc
+
 # Environment variables
 .env
+venv/
+ENV/
+.venv/
+env/
+
 
 # IDE
 .idea/

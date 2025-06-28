@@ -1,0 +1,596 @@
+.aud-audio-call-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Call Header */
+.aud-audio-call-header {
+  padding: 20px 30px;
+  text-align: center;
+}
+
+.aud-call-status-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.aud-status-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.aud-call-timer {
+  color: white;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: "Courier New", monospace;
+}
+
+/* Participant Section */
+.aud-participant-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.aud-participant-avatar {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.aud-avatar-ring {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aud-avatar-ring.connecting {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.3) 0deg,
+    rgba(255, 255, 255, 0.1) 180deg,
+    rgba(255, 255, 255, 0.3) 360deg
+  );
+  animation: rotate 2s linear infinite;
+}
+
+.aud-avatar-ring.connected {
+  background: conic-gradient(from 0deg, #10b981 0deg, #34d399 120deg, #6ee7b7 240deg, #10b981 360deg);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.aud-avatar-inner {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.aud-participant-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.aud-recording-indicator {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #ef4444;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.aud-recording-dot {
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.aud-participant-details {
+  color: white;
+}
+
+.aud-participant-name {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.aud-participant-status {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Call Controls */
+.aud-audio-call-controls {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.aud-primary-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+}
+
+.aud-control-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.aud-control-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.aud-control-btn.active {
+  background: #ef4444;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+.aud-control-btn.active:hover {
+  background: #dc2626;
+}
+
+.aud-end-call-btn {
+  background: #ef4444;
+  border: none;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.aud-end-call-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.6);
+}
+
+.aud-secondary-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.aud-secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  min-width: 70px;
+}
+
+.aud-secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.aud-secondary-btn.active {
+  background: rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.aud-secondary-btn.recording {
+  background: rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.aud-secondary-btn span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.aud-keypad-icon {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.aud-record-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Keypad Overlay */
+.aud-keypad-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+}
+
+.aud-keypad-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 20px;
+  width: 280px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.aud-keypad-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.aud-keypad-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.aud-keypad-header button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.aud-keypad-header button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.aud-keypad-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aud-keypad-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.aud-keypad-btn {
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.aud-keypad-btn:hover {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.aud-keypad-btn:active {
+  transform: scale(0.95);
+  background: #d1d5db;
+}
+
+/* More Options Overlay */
+.aud-more-options-overlay {
+  position: absolute;
+  bottom: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+.aud-more-options-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 16px;
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.aud-more-options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.aud-more-options-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.aud-more-options-header button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.aud-more-options-header button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.aud-more-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aud-option-btn {
+  background: none;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.aud-option-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.aud-option-btn span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .aud-audio-call-header {
+    padding: 15px 20px;
+  }
+
+  .aud-participant-section {
+    padding: 30px 20px;
+  }
+
+  .aud-avatar-ring {
+    width: 160px;
+    height: 160px;
+  }
+
+  .aud-avatar-inner {
+    width: 140px;
+    height: 140px;
+  }
+
+  .aud-participant-name {
+    font-size: 28px;
+  }
+
+  .aud-participant-status {
+    font-size: 16px;
+  }
+
+  .aud-audio-call-controls {
+    padding: 20px;
+    gap: 25px;
+  }
+
+  .aud-primary-controls {
+    gap: 30px;
+  }
+
+  .aud-control-btn {
+    width: 60px;
+    height: 60px;
+  }
+
+  .aud-end-call-btn {
+    width: 70px;
+    height: 70px;
+  }
+
+  .aud-secondary-controls {
+    gap: 15px;
+  }
+
+  .aud-secondary-btn {
+    min-width: 60px;
+    padding: 10px 12px;
+  }
+
+  .aud-keypad-container {
+    width: 260px;
+    padding: 16px;
+  }
+
+  .aud-keypad-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .aud-participant-section {
+    padding: 20px 15px;
+  }
+
+  .aud-avatar-ring {
+    width: 140px;
+    height: 140px;
+  }
+
+  .aud-avatar-inner {
+    width: 120px;
+    height: 120px;
+  }
+
+  .aud-participant-name {
+    font-size: 24px;
+  }
+
+  .aud-primary-controls {
+    gap: 25px;
+  }
+
+  .aud-control-btn {
+    width: 55px;
+    height: 55px;
+  }
+
+  .aud-end-call-btn {
+    width: 65px;
+    height: 65px;
+  }
+
+  .aud-secondary-controls {
+    gap: 12px;
+  }
+
+  .aud-secondary-btn {
+    min-width: 55px;
+    padding: 8px 10px;
+  }
+
+  .aud-secondary-btn span {
+    font-size: 11px;
+  }
+
+  .aud-keypad-container {
+    width: 240px;
+  }
+
+  .aud-keypad-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+}
