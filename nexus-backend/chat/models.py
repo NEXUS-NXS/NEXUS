@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 import uuid
@@ -36,7 +36,7 @@ class Tag(models.Model):
         return self.name
 
 class ChatUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='chat_user')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_user')
     chat_username = models.CharField(max_length=100, unique=True)
     is_online = models.BooleanField(default=False)
 
