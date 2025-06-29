@@ -129,14 +129,13 @@ A full-stack educational platform built with React, Vite, and Django, providing 
 
 5. **Run migrations**
    ```bash
+   poetry run python manage.py makemigrations
    poetry run python manage.py migrate
    ```
 ##
  **NOTE!!!!!**
 
-**Highly recommened by Jeremiah not to create a superuser since it will be of trouble when using https**
-##
-##
+## Highly recommened by Jeremiah not to create a superuser since it will be of trouble when using https
 6. **Create superuser**
    ```bash
    poetry run python manage.py createsuperuser

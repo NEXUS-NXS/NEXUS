@@ -27,9 +27,7 @@ urlpatterns = [
     path('api/resources/', include('resources.api.urls')),
     path('auth/', include('accounts.urls')),
     path('chats/', include('chat.urls')),
-    # API endpoints will be added here
-    # path('api/', include('apps.users.urls')),
-    # path('api/courses/', include('apps.courses.urls')),
+    path('api/certificates/', include('certificates.urls')),
     # Add other app URLs here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     

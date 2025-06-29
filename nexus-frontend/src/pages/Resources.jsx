@@ -6,7 +6,7 @@ import "./Resources.css"
 import axios from 'axios';
 
 // API base URL from environment variables
-const API_BASE_URL = 'http://127.0.0.1:8000'; // Using explicit IP for better compatibility
+const API_BASE_URL = 'https://127.0.0.1:8000'; // Using HTTPS for secure connection
 
 // Create a custom axios instance with defaults
 const apiClient = axios.create({

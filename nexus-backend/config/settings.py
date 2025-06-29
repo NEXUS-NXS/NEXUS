@@ -34,13 +34,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    
     # Third-party apps
     'rest_framework',
     'corsheaders',
     'django_filters',
     'channels',
     'django_extensions',
+    'sslserver',
     
     # Local apps
     'users.apps.UsersConfig',
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'resources',  # Using the app name directly instead of ResourcesConfig
     'chat.apps.ChatConfig',
     'accounts.apps.AccountsConfig',
+    'certificates.apps.CertificatesConfig',
 ]   
 
 MIDDLEWARE = [
@@ -64,14 +65,16 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-# CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 CORS_ALLOWED_ORIGINS = [
     'https://127.0.0.1:5173',
     'http://127.0.0.1:5173',
+    'https://localhost:5173',
+    'http://localhost:5173',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://127.0.0.1:5173',
+    'https://localhost:5173',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -83,7 +86,11 @@ CORS_ALLOW_HEADERS = [
 
 
 # REST Framework settings
+
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'chat.authentication.CookieJWTAuthentication',  # Add your custom class
         'rest_framework_simplejwt.authentication.JWTAuthentication',
