@@ -141,6 +141,7 @@ CHANNEL_LAYERS = {
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+AUTH_USER_MODEL = 'users.CustomUser'
 
 DATABASES = {
     'default': {

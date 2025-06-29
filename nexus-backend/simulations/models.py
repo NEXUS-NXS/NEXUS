@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import JSONField
+from django.conf import settings
 
 class Model(models.Model):
     LANGUAGE_CHOICES = [
@@ -13,7 +14,7 @@ class Model(models.Model):
     language = models.CharField(max_length=20, choices=LANGUAGE_CHOICES)
     code = models.TextField()  # Model code or DSL JSON
     metadata = JSONField(default=dict)  # Additional info (e.g., description)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -24,7 +25,7 @@ class Dataset(models.Model):
     name = models.CharField(max_length=255)
     file_path = models.CharField(max_length=500)  # Path to dataset file
     metadata = JSONField(default=dict)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -44,7 +45,7 @@ class Simulation(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     progress = models.FloatField(default=0.0)  # 0 to 100
     current_step = models.CharField(max_length=100, blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

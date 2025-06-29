@@ -1,13 +1,16 @@
 from django.core.management.base import BaseCommand
 from simulations.models import Model
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class Command(BaseCommand):
     help = 'Populate the model library with actuarial models'
 
     def handle(self, *args, **kwargs):
-        admin_user = User.objects.get(username='admin')  # Adjust as needed
-
+        admin_user = User.objects.filter(username='admin').first()
+        if not admin_user:
+            self.stdout.write(self.style.ERROR('Admin user not found. Please create a user with username "admin"'))
+            return
         models = [
             {
                 'name': 'Chain-Ladder Model',
