@@ -1,7 +1,7 @@
 import uuid
 import pandas as pd
 import numpy as np
-from restrictedpython import compile_restricted, safe_globals
+from RestrictedPython import compile_restricted, safe_globals
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from simulations.models import Simulation, Result

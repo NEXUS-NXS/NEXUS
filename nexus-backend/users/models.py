@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Permission
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -48,3 +48,16 @@ class CustomUser(AbstractUser):
 
     def get_short_name(self):
         return self.first_name
+
+    groups = models.ManyToManyField(
+        Group,
+        blank=True,
+        related_name="custom_users",        
+        related_query_name="custom_user"
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        blank=True,
+        related_name="custom_user_permissions",  
+        related_query_name="custom_user_permission"
+    )

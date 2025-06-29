@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
+import sys
+print("Python executable:", sys.executable)
 import os
 import sys
 
