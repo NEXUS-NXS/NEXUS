@@ -24,6 +24,7 @@ urlpatterns = [
     path('auth/', include('accounts.urls')),
     path('chats/', include('chat.urls')),
     path('courses/', include('learnhub.urls')),
+    
     # API endpoints will be added here
     # path('api/', include('apps.users.urls')),
     # path('api/courses/', include('apps.courses.urls')),
