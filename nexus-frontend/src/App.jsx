@@ -26,6 +26,9 @@ import "./App.css"
 import LearningHub from "./pages/LearningHub"
 import CourseLesson from "./pages/CourseLesson"
 import CourseContentManager from "./pages/CourseContentManager"
+import CreateCourse from "./pages/CreateCourse"
+import MentorMatch from "./pages/MentorMatch"
+
 
 function AppContent({ isMobile }) {
   const location = useLocation()
@@ -169,6 +172,8 @@ function AppContent({ isMobile }) {
               }
             /> */}
             <Route path="/add-course" element={<CourseContentManager />} />
+            <Route path="/create-course" element={<CreateCourse />} />
+              <Route path="/mentor-match" element={<MentorMatch/>}/>
           </Routes>
         </div>
       </div>
