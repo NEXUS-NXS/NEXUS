@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Category, ExamFocus, Tag, ChatUser, StudyGroup, GroupMembership, JoinRequest, Message, Notification
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 import os
 
 class CategorySerializer(serializers.ModelSerializer):
