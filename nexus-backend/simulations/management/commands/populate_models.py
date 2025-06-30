@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
-from simulations.models import Model
+from simulations.models import Model, Dataset
+import pandas as pd
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -109,7 +110,27 @@ def run_simulation():
     }
                 ''',
                 'metadata': {'description': 'Calculates Value at Risk for a loss distribution'},
-            }
+            },
+            {
+            "name": "UPR Aggregation by Policy Class",
+            "category": "actuarial",
+            "language": "python",
+            "code": '''
+import pandas as pd
+def run_simulation():
+    # Load the dataset we just imported
+    ds = Dataset.objects.get(name="Premium UPR by Policy Class")
+    df = pd.read_csv(ds.file_path)
+    # Group and sum
+    grouped = df.groupby('Policyclass')['UPR'].sum().reset_index()
+    return {
+        "data": grouped.to_dict(orient="records"),
+        "metrics": {"total_UPR": grouped.UPR.sum()},
+        "chart_data": {"bar": grouped.values.tolist()}
+ }
+             ''',
+             "metadata": {"description": "Sum of UPR by policy class"},
+         },
         ]
 
         for model_data in models:
