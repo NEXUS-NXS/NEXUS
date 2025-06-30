@@ -18,11 +18,8 @@ daphne = "^4.2.0"
 channels = "^4.2.2"
 channels-redis = "^4.2.1"
 django-extensions = "^4.1"
-<<<<<<< HEAD
 psycopg2-binary = "^2.9.10"
-=======
 django-filter = "^25.1"
->>>>>>> b317f61535a54312dcaca8d521689d606b70eff1
 
 
 [tool.poetry.group.dev.dependencies]
