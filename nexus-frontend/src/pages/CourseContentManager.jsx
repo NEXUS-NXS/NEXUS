@@ -59,51 +59,26 @@ const CourseContentManager = () => {
   })
 
   useEffect(() => {
-    // Load existing course content or initialize empty structure
-    const mockCourseContent = {
-      id: courseId,
-      title: "Python for Actuarial Science",
-      description: "Comprehensive Python course for actuarial professionals",
-      modules: [
-        {
-          id: 1,
-          title: "Introduction to Python",
-          description: "Basic Python concepts and setup",
-          lessons: [
-            {
-              id: 1,
-              title: "What is Python?",
-              type: "video",
-              duration: "10:30",
-              description: "Introduction to Python programming language",
-              videoUrl: "/videos/python-intro.mp4",
-              content: {
-                overview: "Introduction to Python programming language and its applications in actuarial science.",
-                learningObjectives: [
-                  "Understand what Python is and its role in actuarial science",
-                  "Learn about Python's advantages for data analysis",
-                ],
-                keyPoints: [
-                  {
-                    title: "What is Python?",
-                    content: "Python is a high-level programming language...",
-                    bullets: ["Easy to learn", "Powerful libraries", "Great for data analysis"],
-                  },
-                ],
-                codeExample: {
-                  title: "Hello World Example",
-                  code: 'print("Hello, Actuarial World!")',
-                },
-                summary: "Python is essential for modern actuarial work.",
-              },
-            },
-          ],
-        },
-      ],
-    }
+    // Load existing course content from localStorage
+    const savedCourse = localStorage.getItem(`course_${courseId}`)
 
-    setCourseContent(mockCourseContent)
-    setExpandedModules([1])
+    if (savedCourse) {
+      const courseData = JSON.parse(savedCourse)
+      setCourseContent(courseData)
+      // Set first module as expanded if it exists
+      if (courseData.modules && courseData.modules.length > 0) {
+        setExpandedModules([courseData.modules[0].id])
+      }
+    } else {
+      // If no saved course, create a basic structure with the course data
+      const basicCourseContent = {
+        id: courseId,
+        title: "New Course",
+        description: "Course description",
+        modules: [],
+      }
+      setCourseContent(basicCourseContent)
+    }
   }, [courseId])
 
   // Module Management Functions
@@ -308,8 +283,20 @@ const CourseContentManager = () => {
   }
 
   const handleSaveCourse = () => {
-    // Save course content to backend/localStorage
-    localStorage.setItem(`course_${courseId}`, JSON.stringify(courseContent))
+    // Save course content to localStorage
+    const updatedCourse = {
+      ...courseContent,
+      updatedAt: new Date().toISOString(),
+      totalLessons: courseContent.modules.reduce((total, module) => total + module.lessons.length, 0),
+    }
+
+    localStorage.setItem(`course_${courseId}`, JSON.stringify(updatedCourse))
+
+    // Also update the courses list
+    const existingCourses = JSON.parse(localStorage.getItem("courses") || "[]")
+    const updatedCourses = existingCourses.map((course) => (course.id === courseId ? updatedCourse : course))
+    localStorage.setItem("courses", JSON.stringify(updatedCourses))
+
     alert("Course content saved successfully!")
   }
 
@@ -447,7 +434,6 @@ const CourseContentManager = () => {
                         <div className="lesson-form-container">
                           <div className="lesson-form">
                             <h4>Add New Lesson</h4>
-
                             {/* Basic Lesson Info */}
                             <div className="form-section">
                               <h5>Basic Information</h5>

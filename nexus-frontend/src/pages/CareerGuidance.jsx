@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
 import {
   Search,
   Filter,
@@ -13,8 +14,11 @@ import {
   BookOpen,
   Users,
   Award,
+  Sparkles,
 } from "lucide-react"
+
 import { useUser } from "../context/UserContext"
+import MentorMatch from "./MentorMatch"
 import "./CareerGuidance.css"
 
 const jobCategories = [
@@ -57,6 +61,7 @@ const CareerGuidance = () => {
   const [selectedJob, setSelectedJob] = useState(null)
   const [careerPaths, setCareerPaths] = useState([])
   const [mentors, setMentors] = useState([])
+  const [showMentorMatch, setShowMentorMatch] = useState(false)
 
   useEffect(() => {
     fetchJobs()
@@ -441,6 +446,19 @@ const CareerGuidance = () => {
     setSelectedJob(null)
   }
 
+  const handleFindMentorClick = () => {
+    setShowMentorMatch(true)
+  }
+
+  const handleBackToMentorsList = () => {
+    setShowMentorMatch(false)
+  }
+
+  // If showing MentorMatch, render it instead of the main component
+  if (showMentorMatch) {
+    return <MentorMatch onBack={handleBackToMentorsList} />
+  }
+
   return (
     <div className="career-guidance-page">
       <div className="career-header">
@@ -565,7 +583,6 @@ const CareerGuidance = () => {
               <button className="back-to-jobs" onClick={handleBackToJobs}>
                 ← Back to Jobs
               </button>
-
               <div className="job-detail-header">
                 <div className="company-logo-large">
                   <img src={selectedJob.logo || "/placeholder.svg"} alt={selectedJob.company} />
@@ -653,6 +670,7 @@ const CareerGuidance = () => {
                   <h3>{path.title}</h3>
                   <p>{path.description}</p>
                 </div>
+
                 <div className="path-timeline">
                   {path.steps.map((step, index) => (
                     <div key={index} className="path-step">
@@ -683,6 +701,7 @@ const CareerGuidance = () => {
                     </div>
                   ))}
                 </div>
+
                 <div className="path-actions">
                   <button className="explore-path-btn">Explore Resources</button>
                 </div>
@@ -700,6 +719,26 @@ const CareerGuidance = () => {
               Find experienced professionals who can provide guidance, advice, and support as you navigate your
               actuarial career. Our mentors are industry experts willing to share their knowledge and experience.
             </p>
+
+            {/* AI-Powered Mentor Matching CTA */}
+            <div className="ai-mentor-cta">
+              <div className="ai-cta-content">
+                <div className="ai-cta-icon">
+                  <Sparkles size={32} />
+                </div>
+                <div className="ai-cta-text">
+                  <h3>🚀 AI-Powered Mentor Matching</h3>
+                  <p>
+                    Get personalized mentor recommendations based on your goals, experience, and preferences using our
+                    advanced AI matching system.
+                  </p>
+                </div>
+                <button className="ai-cta-button" onClick={handleFindMentorClick}>
+                  <Sparkles size={18} />
+                  Find Perfect Mentors
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="mentors-grid">
@@ -721,6 +760,7 @@ const CareerGuidance = () => {
                     </div>
                   </div>
                 </div>
+
                 <div className="mentor-specialties">
                   {mentor.specialties.map((specialty, index) => (
                     <span key={index} className="specialty-tag">
@@ -728,11 +768,14 @@ const CareerGuidance = () => {
                     </span>
                   ))}
                 </div>
+
                 <p className="mentor-bio">{mentor.bio}</p>
+
                 <div className="mentor-availability">
                   <span>Availability: {mentor.availability}</span>
                   <span>Experience: {mentor.experience}</span>
                 </div>
+
                 <div className="mentor-actions">
                   <button className="request-mentor-btn">Request Mentorship</button>
                   <button className="view-profile-btn">View Full Profile</button>

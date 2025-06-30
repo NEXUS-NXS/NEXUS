@@ -14,19 +14,23 @@ from rest_framework import serializers
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    pagination_class = None
 
 class ExamFocusListView(generics.ListAPIView):
     queryset = ExamFocus.objects.all()
     serializer_class = ExamFocusSerializer
+    pagination_class = None
 
 class TagListCreateView(generics.ListCreateAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 #Search for someone by their username
 class ChatUserSearchView(generics.ListAPIView):
     serializer_class = ChatUserSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         query = self.request.query_params.get('q', '')
@@ -36,6 +40,7 @@ class ChatUserSearchView(generics.ListAPIView):
 class StudyGroupListCreateView(generics.ListCreateAPIView):
     serializer_class = StudyGroupSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         query = self.request.query_params.get('q', '')
@@ -49,6 +54,7 @@ class StudyGroupListCreateView(generics.ListCreateAPIView):
 class MyStudyGroupsView(generics.ListAPIView):
     serializer_class = StudyGroupSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         return StudyGroup.objects.filter(memberships__user=self.request.user.chat_user).distinct()
@@ -65,6 +71,7 @@ class StudyGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = StudyGroup.objects.all()
     serializer_class = StudyGroupSerializer
     permission_classes = [IsAuthenticated, IsGroupMember]
+    pagination_class = None
 
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -78,6 +85,7 @@ class StudyGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
 class PendingJoinRequestsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
     serializer_class = PendingJoinRequestSerializer
+    pagination_class = None
 
     def get_queryset(self):
         group_id = self.kwargs['group_id']
@@ -89,6 +97,7 @@ class PendingJoinRequestsView(generics.ListAPIView):
 class JoinRequestCreateView(generics.CreateAPIView):
     serializer_class = JoinRequestSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def create(self, request, *args, **kwargs):
         group = get_object_or_404(StudyGroup, id=kwargs['group_id'])
@@ -130,6 +139,7 @@ class JoinRequestCreateView(generics.CreateAPIView):
 #handles approval or rejection of join requests
 class JoinRequestManageView(APIView):
     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
+    pagination_class = None
 
     def post(self, request, join_request_id):
         join_request = get_object_or_404(JoinRequest, id=join_request_id)
@@ -227,6 +237,7 @@ class JoinRequestManageView(APIView):
 #handles role management in groups
 class GroupMembershipManageView(APIView):
     permission_classes = [IsAuthenticated, IsGroupAdminOrOwner]
+    pagination_class = None
 
     def post(self, request, group_id, user_id):
         group = get_object_or_404(StudyGroup, id=group_id)
@@ -259,6 +270,7 @@ class MessageListCreateView(generics.ListCreateAPIView):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    pagination_class = None
 
     def get_queryset(self):
         group_id = self.kwargs.get('group_id')
@@ -291,6 +303,7 @@ class MessageDeleteView(generics.DestroyAPIView):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsMessageSender]
+    pagination_class = None
 
     def perform_destroy(self, instance):
         instance.is_deleted = True
@@ -299,12 +312,14 @@ class MessageDeleteView(generics.DestroyAPIView):
 class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user.chat_user).order_by('-created_at')
 
 class LeaveGroupView(APIView):
     permission_classes = [IsAuthenticated, IsGroupMember]
+    pagination_class = None
 
     def post(self, request, group_id):
         group = get_object_or_404(StudyGroup, id=group_id)
@@ -316,6 +331,7 @@ class LeaveGroupView(APIView):
 
 class JoinGroupByLinkView(APIView):
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def post(self, request, invite_link):
         group = get_object_or_404(StudyGroup, invite_link=invite_link)
@@ -343,6 +359,7 @@ from .models import ChatUser
 from .serializers import ChatUserSerializer
 
 class CurrentChatUserView(APIView):
+    pagination_class = None
 
     def get(self, request):
         try:
@@ -359,6 +376,7 @@ class CurrentChatUserView(APIView):
 class GroupMembersView(generics.ListAPIView):
     serializer_class = GroupMembershipSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         group_id = self.kwargs['group_id']
