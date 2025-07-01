@@ -315,8 +315,17 @@ useEffect(() => {
               };
               const lessonModule = modulesWithLessons.find((m) => m.id === lessonData.module);
               if (lessonModule) {
-                lessonModule.lessons = [...lessonModule.lessons, lessonData];
+                // Check if lesson already exists in module
+                const existingLessonIndex = lessonModule.lessons.findIndex(l => l.id.toString() === lessonData.id.toString());
+                if (existingLessonIndex >= 0) {
+                  // Update existing lesson
+                  lessonModule.lessons[existingLessonIndex] = lessonData;
+                } else {
+                  // Add new lesson
+                  lessonModule.lessons = [...lessonModule.lessons, lessonData];
+                }
                 setCourseData({ ...course, modules: [...modulesWithLessons] });
+    
               } else {
                 console.warn("Lesson module not found in courseData:", lessonData.module);
               }
@@ -449,9 +458,31 @@ const navigateToNextLesson = () => {
       alert("Lesson previewed successfully!");
       return;
     }
+    
     try {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
+      
+      // Optimistic UI update
+      const updatedLesson = { ...activeLesson, is_completed: true };
+      setActiveLesson(updatedLesson);
+      
+      setCourseData(prev => {
+        const updatedModules = prev.modules.map(module => {
+          if (module.lessons.some(l => l.id === activeLesson.id)) {
+            return {
+              ...module,
+              lessons: module.lessons.map(l => 
+                l.id === activeLesson.id ? updatedLesson : l
+              )
+            };
+          }
+          return module;
+        });
+        
+        return { ...prev, modules: updatedModules };
+      });
+
       await axios.post(
         "https://127.0.0.1:8000/courses/api/progress/",
         {
@@ -469,18 +500,27 @@ const navigateToNextLesson = () => {
           withCredentials: true,
         }
       );
-      setActiveLesson({ ...activeLesson, is_completed: true });
-      setCourseData((prev) => ({
-        ...prev,
-        modules: prev.modules.map((module) => ({
-          ...module,
-          lessons: module.lessons.map((l) =>
-            l.id === activeLesson.id ? { ...l, is_completed: true } : l
-          ),
-        })),
-      }));
+
       alert("Lesson marked as complete!");
     } catch (err) {
+      // Revert optimistic update if error occurs
+      setActiveLesson({ ...activeLesson, is_completed: false });
+      setCourseData(prev => {
+        const revertedModules = prev.modules.map(module => {
+          if (module.lessons.some(l => l.id === activeLesson.id)) {
+            return {
+              ...module,
+              lessons: module.lessons.map(l => 
+                l.id === activeLesson.id ? { ...l, is_completed: false } : l
+              )
+            };
+          }
+          return module;
+        });
+        
+        return { ...prev, modules: revertedModules };
+      });
+
       console.error("Mark complete error:", err.response?.status, err.response?.data);
       if (err.response?.status === 401) {
         const refreshed = await refreshToken();
@@ -659,7 +699,7 @@ const navigateToNextLesson = () => {
                       <span className="module-title-text">{module.title}</span>
                     </div>
                     <div className="module-progress-indicator">
-                      <span className="module-progress-text">{module.progress}%</span>
+                      <span className="module-progress-text">{module.progress.toFixed(2)}%</span>
                       {module.is_completed && <CheckCircle size={16} className="completed-icon" />}
                     </div>
                   </button>
