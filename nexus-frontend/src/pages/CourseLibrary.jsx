@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import "./CourseLibrary.css"
 import { useUser } from "../context/UserContext"
+import axios from "axios"
 
 const CourseLibrary = () => {
   const navigate = useNavigate()
@@ -33,173 +34,6 @@ const CourseLibrary = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all")
   const [viewMode, setViewMode] = useState("grid")
   const [sortBy, setSortBy] = useState("recent")
-
-  // Dummy data for demonstration
-  const dummyCourses = [
-    {
-      id: 1,
-      title: "Introduction to Actuarial Science",
-      description:
-        "Learn the fundamentals of actuarial science including probability theory, statistics, and risk assessment.",
-      category: "actuarial-science",
-      difficulty: "beginner",
-      estimated_duration: "8 weeks",
-      instructor: {
-        name: "Dr. Sarah Johnson",
-        profile_image: "/placeholder.svg?height=40&width=40",
-        bio: "Professor of Actuarial Science with 15+ years experience",
-      },
-      modules: [
-        { id: 1, title: "Probability Fundamentals", lessons: 8 },
-        { id: 2, title: "Statistical Methods", lessons: 6 },
-        { id: 3, title: "Risk Theory", lessons: 10 },
-      ],
-      tags: ["probability", "statistics", "risk-management"],
-      created_at: "2024-01-15",
-      updated_at: "2024-01-20",
-      status: "published",
-      enrollment_count: 245,
-      rating: 4.8,
-      total_lessons: 24,
-      completion_rate: 87,
-      thumbnail: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 2,
-      title: "Advanced Financial Modeling",
-      description: "Master complex financial models used in insurance and investment analysis.",
-      category: "finance",
-      difficulty: "advanced",
-      estimated_duration: "12 weeks",
-      instructor: {
-        name: "Prof. Michael Chen",
-        profile_image: "/placeholder.svg?height=40&width=40",
-        bio: "Senior Financial Analyst and Academic Researcher",
-      },
-      modules: [
-        { id: 1, title: "Monte Carlo Simulations", lessons: 12 },
-        { id: 2, title: "Stochastic Processes", lessons: 10 },
-        { id: 3, title: "Portfolio Optimization", lessons: 8 },
-      ],
-      tags: ["modeling", "monte-carlo", "portfolio-management"],
-      created_at: "2024-01-10",
-      updated_at: "2024-01-18",
-      status: "published",
-      enrollment_count: 156,
-      rating: 4.9,
-      total_lessons: 30,
-      completion_rate: 92,
-      thumbnail: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 3,
-      title: "Data Science for Actuaries",
-      description: "Apply modern data science techniques to actuarial problems and insurance analytics.",
-      category: "data-science",
-      difficulty: "intermediate",
-      estimated_duration: "10 weeks",
-      instructor: {
-        name: "Dr. Emily Rodriguez",
-        profile_image: "/placeholder.svg?height=40&width=40",
-        bio: "Data Science Lead at Major Insurance Company",
-      },
-      modules: [
-        { id: 1, title: "Python for Actuaries", lessons: 15 },
-        { id: 2, title: "Machine Learning Applications", lessons: 12 },
-        { id: 3, title: "Predictive Analytics", lessons: 8 },
-      ],
-      tags: ["python", "machine-learning", "analytics"],
-      created_at: "2024-01-05",
-      updated_at: "2024-01-22",
-      status: "published",
-      enrollment_count: 189,
-      rating: 4.7,
-      total_lessons: 35,
-      completion_rate: 78,
-      thumbnail: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 4,
-      title: "Risk Management Fundamentals",
-      description: "Comprehensive introduction to risk identification, assessment, and mitigation strategies.",
-      category: "risk-management",
-      difficulty: "beginner",
-      estimated_duration: "6 weeks",
-      instructor: {
-        name: "James Wilson",
-        profile_image: "/placeholder.svg?height=40&width=40",
-        bio: "Chief Risk Officer with 20+ years experience",
-      },
-      modules: [
-        { id: 1, title: "Risk Identification", lessons: 6 },
-        { id: 2, title: "Risk Assessment", lessons: 8 },
-        { id: 3, title: "Risk Mitigation", lessons: 7 },
-      ],
-      tags: ["risk-assessment", "compliance", "governance"],
-      created_at: "2024-01-12",
-      updated_at: "2024-01-19",
-      status: "draft",
-      enrollment_count: 0,
-      rating: 0,
-      total_lessons: 21,
-      completion_rate: 0,
-      thumbnail: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 5,
-      title: "Insurance Analytics with R",
-      description: "Learn to use R programming for insurance data analysis and statistical modeling.",
-      category: "programming",
-      difficulty: "intermediate",
-      estimated_duration: "9 weeks",
-      instructor: {
-        name: "Dr. Lisa Thompson",
-        profile_image: "/placeholder.svg?height=40&width=40",
-        bio: "Statistical Consultant and R Programming Expert",
-      },
-      modules: [
-        { id: 1, title: "R Fundamentals", lessons: 10 },
-        { id: 2, title: "Statistical Modeling", lessons: 12 },
-        { id: 3, title: "Data Visualization", lessons: 8 },
-      ],
-      tags: ["r-programming", "statistics", "data-visualization"],
-      created_at: "2024-01-08",
-      updated_at: "2024-01-21",
-      status: "published",
-      enrollment_count: 134,
-      rating: 4.6,
-      total_lessons: 30,
-      completion_rate: 85,
-      thumbnail: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 6,
-      title: "Regulatory Compliance in Insurance",
-      description: "Navigate the complex regulatory landscape of the insurance industry.",
-      category: "compliance",
-      difficulty: "advanced",
-      estimated_duration: "7 weeks",
-      instructor: {
-        name: "Robert Davis",
-        profile_image: "/placeholder.svg?height=40&width=40",
-        bio: "Former Insurance Regulator and Compliance Expert",
-      },
-      modules: [
-        { id: 1, title: "Regulatory Framework", lessons: 8 },
-        { id: 2, title: "Solvency Requirements", lessons: 10 },
-        { id: 3, title: "Reporting Standards", lessons: 6 },
-      ],
-      tags: ["regulation", "solvency", "reporting"],
-      created_at: "2024-01-03",
-      updated_at: "2024-01-17",
-      status: "published",
-      enrollment_count: 98,
-      rating: 4.5,
-      total_lessons: 24,
-      completion_rate: 91,
-      thumbnail: "/placeholder.svg?height=200&width=300",
-    },
-  ]
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -226,31 +60,31 @@ const CourseLibrary = () => {
   ]
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setError("Please log in to view your courses.")
+      setLoading(false)
+      navigate("/login")
+      return
+    }
     fetchCourses()
-  }, [])
+  }, [isAuthenticated])
 
   const fetchCourses = async () => {
     try {
       setLoading(true)
-      // For now, use dummy data
-      // In production, uncomment the API call below
-      /*
-      const accessToken = getAccessToken();
+      const accessToken = getAccessToken()
       const response = await axios.get("https://127.0.0.1:8000/courses/api/courses/", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         withCredentials: true,
-      });
-      setCourses(response.data.results || response.data);
-      */
-
-      // Using dummy data for demonstration
-      setTimeout(() => {
-        setCourses(dummyCourses)
-        setLoading(false)
-      }, 1000)
+        params: {
+          instructor_courses: true, // Filter for courses by the authenticated instructor
+        },
+      })
+      setCourses(response.data.results || response.data)
+      setLoading(false)
     } catch (err) {
       console.error("Failed to fetch courses:", err)
       if (err.response?.status === 401) {
@@ -259,9 +93,10 @@ const CourseLibrary = () => {
           fetchCourses()
         } else {
           setError("Authentication failed. Please log in again.")
+          navigate("/login")
         }
       } else {
-        setError("Failed to fetch courses: " + (err.response?.data?.detail || err.message))
+        setError("Failed to fetch your courses: " + (err.response?.data?.detail || err.message))
       }
       setLoading(false)
     }
@@ -318,7 +153,7 @@ const CourseLibrary = () => {
     return (
       <div className="course-library-loading">
         <div className="loading-spinner"></div>
-        <p>Loading course library...</p>
+        <p>Loading your courses...</p>
       </div>
     )
   }
@@ -331,8 +166,8 @@ const CourseLibrary = () => {
       <div className="library-header">
         <div className="header-content">
           <div className="header-info">
-            <h1 className="library-title">Course Library</h1>
-            <p className="library-subtitle">Manage and organize your educational content</p>
+            <h1 className="library-title">My Courses</h1>
+            <p className="library-subtitle">Manage and organize your created courses</p>
           </div>
           <div className="header-stats">
             <div className="stat-card">
@@ -373,7 +208,7 @@ const CourseLibrary = () => {
             <Search className="search-icon" size={20} />
             <input
               type="text"
-              placeholder="Search courses, topics, or instructors..."
+              placeholder="Search your courses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
@@ -448,7 +283,7 @@ const CourseLibrary = () => {
           <div className="no-courses">
             <BookOpen size={48} className="no-courses-icon" />
             <h3>No courses found</h3>
-            <p>Try adjusting your search criteria or create a new course.</p>
+            <p>You haven't created any courses yet. Start by creating a new course!</p>
             <button className="btn-primary" onClick={() => navigate("/create-course")}>
               Create New Course
             </button>
@@ -524,27 +359,6 @@ const CourseLibrary = () => {
                       </div>
                     </div>
                   )}
-                </div>
-
-                <div className="course-instructor">
-                  <img
-                    src={course.instructor.profile_image || "/placeholder.svg"}
-                    alt={course.instructor.name}
-                    className="instructor-avatar"
-                  />
-                  <div className="instructor-info">
-                    <span className="instructor-name">{course.instructor.name}</span>
-                    <span className="instructor-bio">{course.instructor.bio}</span>
-                  </div>
-                </div>
-
-                <div className="course-tags">
-                  {course.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                  {course.tags.length > 3 && <span className="tag-more">+{course.tags.length - 3}</span>}
                 </div>
 
                 <div className="course-footer">
