@@ -331,7 +331,7 @@ class EnrolledCourseSerializer(CourseSerializer):
                 user=self.context['request'].user, lesson=lesson, is_completed=True
             ).exists():
                 return str(lesson.id)
-        return None
+        return str(lessons.first().id) if lessons.exists() else None
 
     def get_next_lesson(self, obj):
         next_lesson_id = self.get_next_lesson_id(obj)

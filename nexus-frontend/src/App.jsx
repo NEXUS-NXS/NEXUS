@@ -25,6 +25,7 @@ import CourseLesson from "./pages/CourseLesson";
 import CourseContentManager from "./pages/CourseContentManager";
 import CreateCourse from "./pages/CreateCourse";
 import MentorMatch from "./pages/MentorMatch";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function AppContent({ isMobile }) {
   const location = useLocation();
@@ -44,165 +45,169 @@ function AppContent({ isMobile }) {
     setIsSidebarOpen(false);
   };
 
-  return isNoLayoutRoute ? (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-    </Routes>
-  ) : (
-    <>
-      <Sidebar isMobile={isMobile} isOpen={isSidebarOpen} onClose={handleSidebarClose} />
-      <div className="main-content">
-        <Header onMenuToggle={handleMenuToggle} isSidebarOpen={isSidebarOpen} />
-        <div className="page-container">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/study-groups"
-              element={
-                <ProtectedRoute>
-                  <StudyGroups />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chats"
-              element={
-                <ProtectedRoute>
-                  <Chats />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resources"
-              element={
-                <ProtectedRoute>
-                  <Resources />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/learninghub"
-              element={
-                <ProtectedRoute>
-                  <LearningHub />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/course/:courseId/lesson/:lessonId"
-              element={
-                <ProtectedRoute>
-                  <CourseLesson />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/course/:courseId/preview"
-              element={
-                <ProtectedRoute>
-                  <CourseLesson />
-                </ProtectedRoute>
-              }
-            />
-             <Route
-              path="/course/:courseId"
-              element={
-                
-                  <CourseLesson />
-                
-              }
-            />
-            <Route
-              path="/my-certificates"
-              element={
-                <ProtectedRoute>
-                  <MyCertificates />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/well-being"
-              element={
-                <ProtectedRoute>
-                  <WellBeingCenter />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/career-guidance"
-              element={
-                <ProtectedRoute>
-                  <CareerGuidance />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/help"
-              element={
-                <ProtectedRoute>
-                  <HelpCenter />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/video-call"
-              element={
-                <ProtectedRoute>
-                  <VideoCall />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/audio-call"
-              element={
-                <ProtectedRoute>
-                  <AudioCall />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/course/:courseId/content-manager"
-              element={
-                <ProtectedRoute>
-                  <CourseContentManager />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create-course"
-              element={
-              
-                  <CreateCourse />
-                
-              }
-            />
-            <Route
-              path="/mentor-match"
-              element={
-                <ProtectedRoute>
-                  <MentorMatch />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </div>
-      </div>
-    </>
+  return (
+    <ErrorBoundary>
+      {isNoLayoutRoute ? (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      ) : (
+        <>
+          <Sidebar isMobile={isMobile} isOpen={isSidebarOpen} onClose={handleSidebarClose} />
+          <div className="main-content">
+            <Header onMenuToggle={handleMenuToggle} isSidebarOpen={isSidebarOpen} />
+            <div className="page-container">
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/study-groups"
+                  element={
+                    <ProtectedRoute>
+                      <StudyGroups />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/chats"
+                  element={
+                    <ProtectedRoute>
+                      <Chats />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/resources"
+                  element={
+                    <ProtectedRoute>
+                      <Resources />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/learninghub"
+                  element={
+                    <ProtectedRoute>
+                      <LearningHub />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:courseId/lesson/:lessonId"
+                  element={
+                    <ProtectedRoute>
+                      <CourseLesson />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:courseId/preview"
+                  element={
+                    <ProtectedRoute>
+                      <CourseLesson />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:courseId"
+                  element={
+                    
+                      <CourseLesson />
+                    
+                  }
+                />
+                <Route
+                  path="/my-certificates"
+                  element={
+                    <ProtectedRoute>
+                      <MyCertificates />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/well-being"
+                  element={
+                    <ProtectedRoute>
+                      <WellBeingCenter />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/career-guidance"
+                  element={
+                    <ProtectedRoute>
+                      <CareerGuidance />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/help"
+                  element={
+                    <ProtectedRoute>
+                      <HelpCenter />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/video-call"
+                  element={
+                    <ProtectedRoute>
+                      <VideoCall />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/audio-call"
+                  element={
+                    <ProtectedRoute>
+                      <AudioCall />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course/:courseId/content-manager"
+                  element={
+                    <ProtectedRoute>
+                      <CourseContentManager />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/create-course"
+                  element={
+                    
+                      <CreateCourse />
+                    
+                  }
+                />
+                <Route
+                  path="/mentor-match"
+                  element={
+                    <ProtectedRoute>
+                      <MentorMatch />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </div>
+          </div>
+        </>
+      )}
+    </ErrorBoundary>
   );
 }
 

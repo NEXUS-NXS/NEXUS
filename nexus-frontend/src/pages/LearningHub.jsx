@@ -1,4 +1,3 @@
-// LearningHub.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -61,7 +60,27 @@ const LearningHub = () => {
           },
           withCredentials: true,
         });
-        setEnrolledCourses(enrolledResponse.data.results || []);
+
+        // Use backend-provided progress data
+        const enrichedCourses = (enrolledResponse.data.results || []).map((course) => {
+          console.log(`Course ${course.id} Data:`, {
+            progress: course.progress,
+            completed_lessons: course.completed_lessons,
+            total_lessons: course.total_lessons,
+            next_lesson_id: course.next_lesson_id,
+            next_lesson: course.next_lesson,
+          });
+          return {
+            ...course,
+            progress: parseFloat(course.progress || 0).toFixed(1),
+            completed_lessons: course.completed_lessons || 0,
+            total_lessons: course.total_lessons || 0,
+            next_lesson_id: course.next_lesson_id || null,
+            next_lesson: course.next_lesson || "First Lesson",
+          };
+        });
+
+        setEnrolledCourses(enrichedCourses);
 
         // Fetch available courses
         const availableResponse = await axios.get(
@@ -77,10 +96,11 @@ const LearningHub = () => {
         setAvailableCourses(availableResponse.data.results || []);
         setFilteredCourses(availableResponse.data.results || []);
       } catch (err) {
+        console.error("Fetch courses error:", err.response?.status, err.response?.data);
         if (err.response?.status === 401) {
           const refreshed = await refreshToken();
           if (refreshed) {
-            fetchCourses(); // Retry after refreshing token
+            fetchCourses();
           } else {
             setError("Authentication failed. Please log in again.");
           }
@@ -144,12 +164,34 @@ const LearningHub = () => {
         },
         withCredentials: true,
       });
-      setEnrolledCourses(enrolledResponse.data.results || []);
+
+      // Use backend-provided progress data for new course
+      const newCourse = enrolledResponse.data.results.find((c) => c.id === courseId);
+      if (newCourse) {
+        const updatedCourse = {
+          ...newCourse,
+          progress: parseFloat(newCourse.progress || 0).toFixed(1),
+          completed_lessons: newCourse.completed_lessons || 0,
+          total_lessons: newCourse.total_lessons || 0,
+          next_lesson_id: newCourse.next_lesson_id || null,
+          next_lesson: newCourse.next_lesson || "First Lesson",
+        };
+        console.log(`New Course ${courseId} Data:`, {
+          progress: updatedCourse.progress,
+          completed_lessons: updatedCourse.completed_lessons,
+          total_lessons: updatedCourse.total_lessons,
+          next_lesson_id: updatedCourse.next_lesson_id,
+          next_lesson: updatedCourse.next_lesson,
+        });
+        setEnrolledCourses([...enrolledCourses.filter((c) => c.id !== courseId), updatedCourse]);
+      }
+
       alert("Successfully enrolled!");
     } catch (err) {
+      console.error("Enroll error:", err.response?.status, err.response?.data);
       if (err.response?.status === 401) {
         const refreshed = await refreshToken();
-        if (refreshed) handleEnroll(courseId); // Retry
+        if (refreshed) handleEnroll(courseId);
         else setError("Please log in to enroll.");
       } else {
         setError(err.response?.data?.detail || "Failed to enroll.");
@@ -158,7 +200,8 @@ const LearningHub = () => {
   };
 
   const handleContinueLearning = (course) => {
-    navigate(`/course/${course.id}/lesson/${course.next_lesson_id || 1}`);
+    console.log("Continuing to lesson:", { courseId: course.id, nextLessonId: course.next_lesson_id });
+    navigate(`/course/${course.id}/lesson/${course.next_lesson_id || "first"}`);
   };
 
   const renderEnrolledCourse = (course) => (

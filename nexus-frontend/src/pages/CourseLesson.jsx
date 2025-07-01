@@ -1,4 +1,5 @@
 "use client";
+import { useCallback } from 'react';
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -27,6 +28,7 @@ const CourseLesson = () => {
   const [error, setError] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [isInstructorPreview, setIsInstructorPreview] = useState(false);
+  const [isYouTubeAPILoaded, setIsYouTubeAPILoaded] = useState(false);
   const playerRef = useRef(null);
 
   const getAccessToken = () => localStorage.getItem("access_token");
@@ -44,32 +46,78 @@ const CourseLesson = () => {
 
   // Load YouTube Iframe API script
   useEffect(() => {
+    if (window.YT) {
+      setIsYouTubeAPILoaded(true);
+      return;
+    }
+
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName("script")[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    window.onYouTubeIframeAPIReady = () => {
+      console.log("YouTube Iframe API loaded");
+      setIsYouTubeAPILoaded(true);
+    };
 
     return () => {
       delete window.onYouTubeIframeAPIReady;
     };
   }, []);
 
-  // Initialize YouTube Player when activeLesson changes
-  useEffect(() => {
-    if (activeLesson?.type !== "video" || !activeLesson?.video_url || !window.YT) {
-      return;
-    }
+  // Initialize YouTube Player
+  // Initialize YouTube Player
+const initYouTubePlayer = useCallback(() => {
+  if (!isYouTubeAPILoaded || activeLesson?.type !== "video" || !activeLesson?.video_url) {
+    return;
+  }
 
-    let videoId;
-    try {
-      videoId = new URL(activeLesson.video_url).searchParams.get("v") || activeLesson.video_url.split("/").pop();
-    } catch (e) {
-      console.error("Invalid YouTube URL:", activeLesson.video_url, e);
-      setError("Invalid YouTube video URL.");
-      return;
-    }
+  let videoId;
+  try {
+    videoId = new URL(activeLesson.video_url).searchParams.get("v") || activeLesson.video_url.split("/").pop();
+  } catch (e) {
+    console.error("Invalid YouTube URL:", activeLesson.video_url, e);
+    setError("Invalid YouTube video URL.");
+    return;
+  }
 
-    playerRef.current = new window.YT.Player("youtube-player", {
+  console.log("Initializing YouTube Player for videoId:", videoId);
+
+  // Clean up previous player safely
+  const cleanupPlayer = () => {
+    const playerContainer = document.getElementById('youtube-player-container');
+    if (playerContainer) {
+      playerContainer.innerHTML = ''; // Clear any existing iframe
+    }
+    if (playerRef.current) {
+      try {
+        if (playerRef.current.getPlayerState) {
+          playerRef.current.stopVideo();
+          playerRef.current.destroy();
+        }
+        if (playerRef.current.interval) {
+          clearInterval(playerRef.current.interval);
+        }
+      } catch (err) {
+        console.error("Error cleaning up YouTube player:", err);
+      }
+      playerRef.current = null;
+    }
+  };
+
+  cleanupPlayer();
+
+  try {
+    // Create a new container div for the player
+    const playerContainer = document.getElementById('youtube-player-container');
+    if (!playerContainer) return;
+    
+    const playerDiv = document.createElement('div');
+    playerDiv.id = 'youtube-player';
+    playerContainer.appendChild(playerDiv);
+
+    playerRef.current = new window.YT.Player(playerDiv, {
       height: "100%",
       width: "100%",
       videoId,
@@ -90,37 +138,50 @@ const CourseLesson = () => {
           if (event.data === window.YT.PlayerState.PLAYING) {
             setVideoPlaying(true);
             const interval = setInterval(() => {
-              const currentTime = event.target.getCurrentTime();
-              setVideoCurrentTime(currentTime);
-              setVideoProgress((currentTime / event.target.getDuration()) * 100);
+              try {
+                const currentTime = event.target.getCurrentTime();
+                setVideoCurrentTime(currentTime);
+                setVideoProgress((currentTime / event.target.getDuration()) * 100);
+              } catch (err) {
+                console.error("Error updating video progress:", err);
+                clearInterval(interval);
+              }
             }, 1000);
             playerRef.current.interval = interval;
           } else {
             setVideoPlaying(false);
-            clearInterval(playerRef.current.interval);
+            if (playerRef.current?.interval) {
+              clearInterval(playerRef.current.interval);
+            }
           }
         },
         onError: (event) => {
           console.error("YouTube Player Error:", event.data);
-          setError(`Failed to load YouTube video. Error code: ${event.data}`);
+          let errorMessage = "Failed to load YouTube video.";
+          if (event.data === 100) errorMessage = "Video not found.";
+          if (event.data === 101 || event.data === 150) errorMessage = "Video cannot be played (embedding restricted).";
+          setError(errorMessage);
         },
       },
     });
+  } catch (err) {
+    console.error("Error initializing YouTube player:", err);
+    setError("Failed to initialize YouTube player.");
+  }
 
-    return () => {
-      if (playerRef.current) {
-        if (playerRef.current.interval) {
-          clearInterval(playerRef.current.interval);
-        }
-        playerRef.current.destroy();
-        playerRef.current = null;
-      }
-    };
-  }, [activeLesson]);
+  return cleanupPlayer;
+}, [activeLesson, isYouTubeAPILoaded]);
+
+useEffect(() => {
+  const cleanup = initYouTubePlayer();
+  return () => {
+    if (cleanup) cleanup();
+  };
+}, [initYouTubePlayer]);
 
   const calculateOverallProgress = () => {
     if (!courseData || !courseData.modules) return 0;
-    const allLessons = courseData.modules.flatMap((module) => module.lessons);
+    const allLessons = courseData.modules.flatMap((module) => module.lessons) || [];
     if (allLessons.length === 0) return 0;
     const completedLessons = allLessons.filter((lesson) => lesson.is_completed).length;
     return ((completedLessons / allLessons.length) * 100).toFixed(1);
@@ -178,9 +239,10 @@ const CourseLesson = () => {
             const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results : progressResponse.data;
 
             const lessons = lessonsData.map((lesson) => {
-              const progress = progressData.find((p) => p.lesson === lesson.id);
+              const progress = progressData.find((p) => p.lesson.toString() === lesson.id.toString());
               return {
                 ...lesson,
+                id: lesson.id.toString(),
                 is_completed: progress ? progress.is_completed : false,
                 learningObjectives: lesson.learning_objectives || [],
                 keypoints: (lesson.keypoints || []).map((kp) => ({
@@ -192,7 +254,11 @@ const CourseLesson = () => {
               };
             });
 
-            return { ...module, lessons };
+            return {
+              ...module,
+              id: module.id.toString(), // Ensure ID is string
+              lessons
+            };
           })
         );
 
@@ -206,50 +272,66 @@ const CourseLesson = () => {
         setIsInstructorPreview(isPreview);
 
         let lessonData;
+        const allLessons = modulesWithLessons.flatMap((module) => module.lessons);
+
         if (isPreview) {
-          const allLessons = modulesWithLessons.flatMap((module) => module.lessons);
           if (allLessons.length === 0) {
             setError("No lessons available for this course.");
             navigate(`/course/${courseId}`);
             return;
           }
           lessonData = allLessons[0];
+          console.log("Preview Lesson:", lessonData);
           navigate(`/course/${courseId}/lesson/${lessonData.id}`, { replace: true });
         } else {
-          const lessonResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "X-CSRFToken": csrfToken,
-            },
-            withCredentials: true,
-          });
-          const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson=${lessonId}`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "X-CSRFToken": csrfToken,
-            },
-            withCredentials: true,
-          });
-          const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results[0] : progressResponse.data;
-          lessonData = {
-            ...lessonResponse.data,
-            is_completed: progressData ? progressData.is_completed : false,
-          };
+          lessonData = allLessons.find((lesson) => lesson.id === parseInt(lessonId));
+          if (!lessonData) {
+            try {
+              const lessonResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`, {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "X-CSRFToken": csrfToken,
+                },
+                withCredentials: true,
+              });
+              const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson=${lessonId}`, {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "X-CSRFToken": csrfToken,
+                },
+                withCredentials: true,
+              });
+              const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results[0] : progressResponse.data;
+              lessonData = {
+                ...lessonResponse.data,
+                is_completed: progressData ? progressData.is_completed : false,
+                learningObjectives: lessonResponse.data.learning_objectives || [],
+                keypoints: (lessonResponse.data.keypoints || []).map((kp) => ({
+                  ...kp,
+                  bullets: kp.bullets || [],
+                })),
+                code_examples: lessonResponse.data.code_examples || [],
+                questions: lessonResponse.data.questions || [],
+              };
+              const lessonModule = modulesWithLessons.find((m) => m.id === lessonData.module);
+              if (lessonModule) {
+                lessonModule.lessons = [...lessonModule.lessons, lessonData];
+                setCourseData({ ...course, modules: [...modulesWithLessons] });
+              } else {
+                console.warn("Lesson module not found in courseData:", lessonData.module);
+              }
+            } catch (err) {
+              console.error("Lesson fetch error:", err.response?.status, err.response?.data);
+              setError("Lesson not found.");
+              navigate(`/course/${courseId}`);
+              return;
+            }
+          }
         }
 
         if (lessonData) {
-          console.log("Active Lesson Video URL:", lessonData.video_url);
-          const normalizedLesson = {
-            ...lessonData,
-            learningObjectives: lessonData.learning_objectives || [],
-            keypoints: (lessonData.keypoints || []).map((kp) => ({
-              ...kp,
-              bullets: kp.bullets || [],
-            })),
-            code_examples: lessonData.code_examples || [],
-            questions: lessonData.questions || [],
-          };
-          setActiveLesson(normalizedLesson);
+          setActiveLesson(lessonData);
+          console.log("Active Lesson Set:", lessonData, "Video URL:", lessonData.video_url);
         } else {
           setError("Lesson not found.");
           navigate(`/course/${courseId}`);
@@ -286,29 +368,81 @@ const CourseLesson = () => {
   };
 
   const selectLesson = async (lesson) => {
-    setActiveLesson(lesson);
-    setVideoCurrentTime(0);
-    setVideoProgress(0);
-    setVideoPlaying(false);
-    setQuizAnswers({});
-    navigate(`/course/${courseId}/lesson/${lesson.id}`);
-  };
+  console.log("Selecting lesson:", { id: lesson.id, title: lesson.title });
+  
+  // Reset player state
+  setVideoPlaying(false);
+  setVideoCurrentTime(0);
+  setVideoProgress(0);
+  setQuizAnswers({});
+  
+  // Clear the player container
+  const playerContainer = document.getElementById('youtube-player-container');
+  if (playerContainer) {
+    playerContainer.innerHTML = '';
+  }
+  
+  // Set the new active lesson
+  setActiveLesson(lesson);
+  
+  // Navigate immediately
+  navigate(`/course/${courseId}/lesson/${lesson.id}`);
+};
+const navigateToPreviousLesson = () => {
+  if (!courseData || !activeLesson) {
+    console.error("Cannot navigate: courseData or activeLesson is missing", { courseData, activeLesson });
+    setError("Course data not loaded. Please try again.");
+    return;
+  }
+  
+  const allLessons = courseData.modules.flatMap((module) => module.lessons) || [];
+  console.log("All Lessons:", allLessons.map(l => ({ id: l.id, title: l.title })));
+  
+  // Convert both IDs to strings for comparison
+  const currentIndex = allLessons.findIndex((l) => l.id.toString() === activeLesson.id.toString());
+  
+  if (currentIndex === -1) {
+    console.error("Current lesson not found in courseData", { 
+      activeLessonId: activeLesson.id, 
+      allLessonIds: allLessons.map(l => l.id) 
+    });
+    setError("Current lesson not found.");
+    return;
+  }
+  
+  if (currentIndex > 0) {
+    console.log("Navigating to previous lesson:", allLessons[currentIndex - 1]);
+    selectLesson(allLessons[currentIndex - 1]);
+  }
+};
 
-  const navigateToNextLesson = () => {
-    const allLessons = courseData?.modules.flatMap((module) => module.lessons) || [];
-    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
-    if (currentIndex < allLessons.length - 1) {
-      selectLesson(allLessons[currentIndex + 1]);
-    }
-  };
-
-  const navigateToPreviousLesson = () => {
-    const allLessons = courseData?.modules.flatMap((module) => module.lessons) || [];
-    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
-    if (currentIndex > 0) {
-      selectLesson(allLessons[currentIndex - 1]);
-    }
-  };
+const navigateToNextLesson = () => {
+  if (!courseData || !activeLesson) {
+    console.error("Cannot navigate: courseData or activeLesson is missing", { courseData, activeLesson });
+    setError("Course data not loaded. Please try again.");
+    return;
+  }
+  
+  const allLessons = courseData.modules.flatMap((module) => module.lessons) || [];
+  console.log("All Lessons:", allLessons.map(l => ({ id: l.id, title: l.title })));
+  
+  // Convert both IDs to strings for comparison
+  const currentIndex = allLessons.findIndex((l) => l.id.toString() === activeLesson.id.toString());
+  
+  if (currentIndex === -1) {
+    console.error("Current lesson not found in courseData", { 
+      activeLessonId: activeLesson.id, 
+      allLessonIds: allLessons.map(l => l.id) 
+    });
+    setError("Current lesson not found.");
+    return;
+  }
+  
+  if (currentIndex < allLessons.length - 1) {
+    console.log("Navigating to next lesson:", allLessons[currentIndex + 1]);
+    selectLesson(allLessons[currentIndex + 1]);
+  }
+};
 
   const markLessonComplete = async () => {
     if (isInstructorPreview) {
@@ -419,6 +553,32 @@ const CourseLesson = () => {
       setError("YouTube player not initialized. Please try again.");
     }
   };
+
+
+
+  useEffect(() => {
+  return () => {
+    // Clean up on unmount
+    const playerContainer = document.getElementById('youtube-player-container');
+    if (playerContainer) {
+      playerContainer.innerHTML = '';
+    }
+    if (playerRef.current) {
+      try {
+        if (playerRef.current.getPlayerState) {
+          playerRef.current.stopVideo();
+          playerRef.current.destroy();
+        }
+        if (playerRef.current.interval) {
+          clearInterval(playerRef.current.interval);
+        }
+      } catch (err) {
+        console.error("Error during cleanup:", err);
+      }
+      playerRef.current = null;
+    }
+  };
+}, []);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -566,13 +726,23 @@ const CourseLesson = () => {
           <div className="video-learning-section">
             <div className="video-player-container">
               <div className="video-player-wrapper">
-                {activeLesson.video_url ? (
-                  <div id="youtube-player" className="youtube-iframe"></div>
-                ) : (
-                  <p className="error">Invalid YouTube video URL</p>
-                )}
+                <div id="youtube-player-container" className="youtube-iframe-container">
+                  {activeLesson.video_url && isYouTubeAPILoaded ? (
+                    <div style={{ height: '100%', width: '100%' }}></div>
+                  ) : (
+                    <p className="error">
+                      {activeLesson.video_url 
+                        ? "Loading YouTube player..." 
+                        : "Invalid YouTube video URL"}
+                    </p>
+                  )}
+                </div>
                 <div className="video-controls-bar">
-                  <button className="video-control-btn" onClick={handleVideoPlayPause}>
+                  <button
+                    className="video-control-btn"
+                    onClick={handleVideoPlayPause}
+                    disabled={!playerRef.current || !isYouTubeAPILoaded}
+                  >
                     {videoPlaying ? <Pause size={16} /> : <Play size={16} />}
                   </button>
 
