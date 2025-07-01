@@ -26,6 +26,7 @@ import CourseContentManager from "./pages/CourseContentManager";
 import CreateCourse from "./pages/CreateCourse";
 import MentorMatch from "./pages/MentorMatch";
 import ErrorBoundary from "./components/ErrorBoundary";
+import CourseLibrary from "./pages/CourseLibrary";
 
 function AppContent({ isMobile }) {
   const location = useLocation();
@@ -122,6 +123,7 @@ function AppContent({ isMobile }) {
                     
                   }
                 />
+                <Route path="/admin/course-library" element={<CourseLibrary/>}/>
                 <Route
                   path="/my-certificates"
                   element={

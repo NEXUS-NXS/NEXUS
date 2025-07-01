@@ -13,6 +13,7 @@ import {
   BookOpen,
   Settings,
   Eye,
+  Upload, // Added for Publish button
 } from "lucide-react";
 import "./CourseContentManager.css";
 import { useUser } from "../context/UserContext";
@@ -145,6 +146,51 @@ const CourseContentManager = () => {
     fetchCourseContent();
   }, [courseId, isAuthenticated, navigate, refreshToken]);
 
+  
+  
+
+
+
+  // publish the course
+  const handlePublishCourse = async () => {
+    if (!window.confirm("Are you sure you want to publish this course?")) return;
+
+    try {
+      const accessToken = getAccessToken();
+      const csrfToken = await fetchCsrfToken();
+      await axios.post(
+        `https://127.0.0.1:8000/courses/api/courses/${courseId}/publish/`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      alert("Course published successfully!");
+      setCourseContent((prev) => ({ ...prev, status: "published" }));
+      setError(null);
+    } catch (err) {
+      console.error("Failed to publish course:", err);
+      if (err.response?.status === 401) {
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          handlePublishCourse();
+        } else {
+          setError("Authentication failed. Please log in again.");
+          navigate("/login");
+        }
+      } else {
+        setError(err.response?.data?.detail || "Failed to publish course: " + err.message);
+      }
+    }
+  };
+
+  
+  
   // Module Management Functions
   const handleAddModule = async () => {
     if (!moduleForm.title.trim()) {
@@ -725,7 +771,12 @@ const CourseContentManager = () => {
             <Save size={18} />
             Save Course
           </button>
+          <button className="action-btn publish" onClick={handlePublishCourse}>
+            <Upload size={18} />
+            Publish Course
+          </button>
         </div>
+        
       </div>
 
       <div className="manager-tabs">

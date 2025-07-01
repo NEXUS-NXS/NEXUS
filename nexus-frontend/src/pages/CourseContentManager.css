@@ -762,3 +762,20 @@
     justify-content: center;
   }
 }
+
+
+
+.action-btn.publish {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.action-btn.publish:hover {
+  background-color: #218838;
+}
