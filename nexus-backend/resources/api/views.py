@@ -45,6 +45,80 @@ class ResourceViewSet(viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """
+        Download the resource file.
+        """
+        try:
+            resource = self.get_object()
+            
+            # Check if the resource has a file
+            if not resource.file:
+                return Response(
+                    {'detail': 'No file available for this resource.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check if the file exists
+            if not os.path.exists(resource.file.path):
+                return Response(
+                    {'detail': 'The requested file does not exist on the server.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Increment download count
+            resource.download_count = F('download_count') + 1
+            resource.save(update_fields=['download_count'])
+            
+            # Get the file name from the path
+            file_name = os.path.basename(resource.file.path)
+            
+            # Open the file and create a response
+            response = FileResponse(open(resource.file.path, 'rb'))
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            response['Content-Type'] = 'application/pdf'
+            
+            return response
+            
+        except Resource.DoesNotExist:
+            return Response(
+                {'detail': 'Resource not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f'Error downloading resource {pk}: {str(e)}')
+            return Response(
+                {'detail': 'An error occurred while processing your request.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a resource instance and increment its view count.
+        """
+        try:
+            instance = self.get_object()
+            # Increment view count
+            instance.view_count = F('view_count') + 1
+            instance.save(update_fields=['view_count'])
+            
+            # Get the serialized data
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+            
+        except Resource.DoesNotExist:
+            return Response(
+                {'detail': 'Resource not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f'Error retrieving resource: {str(e)}')
+            return Response(
+                {'detail': 'An error occurred while processing your request.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def get_serializer_class(self):
         if self.action == 'list':
             return resource_serializers.ResourceListSerializer

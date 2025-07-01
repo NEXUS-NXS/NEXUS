@@ -8,4 +8,8 @@ router.register(r'my-certificates', views.UserCertificateViewSet, basename='user
 
 urlpatterns = [
     path('', include(router.urls)),
+    
+    # Course-related certificate endpoints
+    path('courses/available/', views.available_courses_for_certificate, name='available-courses'),
+    path('my-certificates/courses/', views.UserCertificateViewSet.as_view({'get': 'course_certificates'}), name='my-course-certificates'),
 ]

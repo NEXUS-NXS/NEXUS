@@ -3,6 +3,9 @@ from django.contrib.auth import get_user_model
 from resources.models import Category, ResourceType, Organization, Resource
 from django.conf import settings
 import os
+import shutil
+from datetime import datetime
+from django.core.files import File
 
 class Command(BaseCommand):
     help = 'Load test data for resources app'
@@ -17,6 +20,11 @@ class Command(BaseCommand):
         if not user:
             self.stdout.write(self.style.ERROR('No superuser found. Please create one first.'))
             return
+            
+        # Create test_pdfs directory if it doesn't exist
+        test_pdfs_dir = os.path.join(settings.BASE_DIR, 'test_pdfs')
+        os.makedirs(test_pdfs_dir, exist_ok=True)
+        self.stdout.write(f'Using PDF directory: {test_pdfs_dir}')
 
         # Create categories
         categories = [
@@ -46,7 +54,7 @@ class Command(BaseCommand):
         ]
         self.stdout.write(self.style.SUCCESS(f'Created {len(organizations)} organizations'))
 
-        # Create sample resources
+        # Create sample resources with PDF files
         sample_resources = [
             {
                 'title': 'Actuarial Mathematics for Life Contingent Risks',
@@ -56,7 +64,7 @@ class Command(BaseCommand):
                 'resource_type': resource_types[2],  # Book
                 'organization': organizations[0],  # SOA
                 'is_premium': False,
-                'download_url': 'https://example.com/actuarial-math.pdf',
+                'file_name': 'actuarial-mathematics.pdf',
                 'created_by': user
             },
             {
@@ -67,7 +75,7 @@ class Command(BaseCommand):
                 'resource_type': resource_types[0],  # Free
                 'organization': organizations[1],  # IFoA
                 'is_premium': False,
-                'download_url': 'https://example.com/fin-econ-notes.pdf',
+                'file_name': 'financial-economics.pdf',
                 'created_by': user
             },
             {
@@ -78,7 +86,7 @@ class Command(BaseCommand):
                 'resource_type': resource_types[1],  # Premium
                 'organization': organizations[2],  # CAS
                 'is_premium': True,
-                'download_url': 'https://example.com/longevity-risk.pdf',
+                'file_name': 'longevity-risk.pdf',
                 'created_by': user
             },
             {
@@ -89,7 +97,7 @@ class Command(BaseCommand):
                 'resource_type': resource_types[0],  # Free
                 'organization': organizations[0],  # SOA
                 'is_premium': False,
-                'download_url': 'https://example.com/exam-p-practice.pdf',
+                'file_name': 'exam-p-practice.pdf',
                 'created_by': user
             },
             {
@@ -106,14 +114,47 @@ class Command(BaseCommand):
         ]
 
         # Create resources
-        created_count = 0
         for resource_data in sample_resources:
-            _, created = Resource.objects.get_or_create(
+            # Remove file_name from the resource data
+            file_name = resource_data.pop('file_name', None)
+            
+            # Create or get the resource
+            resource, created = Resource.objects.get_or_create(
                 title=resource_data['title'],
                 defaults=resource_data
             )
-            if created:
-                created_count += 1
+            
+            # Handle PDF file
+            if created and file_name:
+                pdf_path = os.path.join(test_pdfs_dir, file_name)
+                
+                # Check if PDF file exists
+                if os.path.exists(pdf_path):
+                    with open(pdf_path, 'rb') as f:
+                        # Save the file to the resource
+                        resource.file.save(
+                            file_name,
+                            File(f),
+                            save=True
+                        )
+                    self.stdout.write(self.style.SUCCESS(f'Created resource with PDF: {resource.title}'))
+                else:
+                    # Create a placeholder file if it doesn't exist
+                    placeholder_path = os.path.join(test_pdfs_dir, 'placeholder.pdf')
+                    if not os.path.exists(placeholder_path):
+                        with open(placeholder_path, 'wb') as f:
+                            f.write(b'This is a placeholder PDF file. Please replace with actual PDF files.')
+                    
+                    with open(placeholder_path, 'rb') as f:
+                        resource.file.save(
+                            'placeholder.pdf',
+                            File(f),
+                            save=True
+                        )
+                    self.stdout.write(self.style.WARNING(f'Created resource with placeholder PDF (file not found: {file_name}): {resource.title}'))
+            elif created:
+                self.stdout.write(self.style.SUCCESS(f'Created resource (no PDF): {resource.title}'))
+            else:
+                self.stdout.write(self.style.WARNING(f'Resource already exists: {resource.title}'))
 
-        self.stdout.write(self.style.SUCCESS(f'Created {created_count} sample resources'))
         self.stdout.write(self.style.SUCCESS('Test data loaded successfully!'))
