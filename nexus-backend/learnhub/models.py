@@ -25,7 +25,7 @@ class Instructor(models.Model):
         return self.user.get_full_name() or self.user.username
 
 class Tag(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name

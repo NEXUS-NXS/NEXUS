@@ -47,12 +47,21 @@ class PrerequisiteViewSet(viewsets.ModelViewSet):
     serializer_class = PrerequisiteSerializer
     permission_classes = [IsInstructorOrReadOnly]
 
+from .permissions import IsInstructorOrReadOnly, IsEnrolled, IsInstructorOrEnrolled 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsInstructorOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['category', 'difficulty', 'status']
+
+    def get_permissions(self):
+        if self.action in ['retrieve', 'preview']:
+            # Allow instructor or enrolled users for retrieve, AllowAny for preview
+            if self.action == 'retrieve':
+                return [IsInstructorOrEnrolled()]
+            return [AllowAny()]
+        return [IsInstructorOrReadOnly()]
 
     @action(detail=True, methods=['post'], permission_classes=[IsInstructor])
     def publish(self, request, pk=None):
@@ -68,11 +77,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = CourseSerializer(course, context={'request': request})
         return Response(serializer.data)
     
-    def get_permissions(self):
-        if self.action in ['retrieve', 'preview']:
-            return [IsEnrolled() if self.action != 'preview' else AllowAny()]
-        return [IsInstructorOrReadOnly()]
-    
+   
 
 class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
@@ -136,8 +141,7 @@ class EnrolledCourseViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Course.objects.filter(enrollments__user=self.request.user)
-    
+        return Course.objects.filter(courseenrollment__user=self.request.user)
 
 class CourseRatingViewSet(viewsets.ModelViewSet):
     queryset = CourseRating.objects.all()

@@ -1,52 +1,48 @@
-"use client"
+"use client";
 
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect } from "react"
-import Sidebar from "./components/layout/Sidebar"
-import Header from "./components/layout/Header"
-import Dashboard from "./pages/Dashboard"
-import Profile from "./pages/Profile"
-import HelpCenter from "./pages/HelpCenter"
-import StudyGroups from "./pages/StudyGroups"
-import Chats from "./pages/Chats"
-import Resources from "./pages/Resources"
-import MyCertificates from "./pages/MyCertificates"
-import WellBeingCenter from "./pages/WellBeingCenter"
-import CareerGuidance from "./pages/CareerGuidance"
-import VideoCall from "./pages/VideoCall"
-import AudioCall from "./pages/AudioCall"
-// import Simulations from "./pages/Simulations"
-// import CourseDetail from "./pages/CourseDetail"
-import Login from "./pages/Login"
-
-import { UserProvider } from "./context/UserContext"
-import { CourseProvider } from "./context/CourseContext"
-import ProtectedRoute from "./components/auth/ProtectedRoute"
-import "./App.css"
-import LearningHub from "./pages/LearningHub"
-import CourseLesson from "./pages/CourseLesson"
-import CourseContentManager from "./pages/CourseContentManager"
-import CreateCourse from "./pages/CreateCourse"
-import MentorMatch from "./pages/MentorMatch"
-
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import Sidebar from "./components/layout/Sidebar";
+import Header from "./components/layout/Header";
+import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import HelpCenter from "./pages/HelpCenter";
+import StudyGroups from "./pages/StudyGroups";
+import Chats from "./pages/Chats";
+import Resources from "./pages/Resources";
+import MyCertificates from "./pages/MyCertificates";
+import WellBeingCenter from "./pages/WellBeingCenter";
+import CareerGuidance from "./pages/CareerGuidance";
+import VideoCall from "./pages/VideoCall";
+import AudioCall from "./pages/AudioCall";
+import Login from "./pages/Login";
+import { UserProvider } from "./context/UserContext";
+import { CourseProvider } from "./context/CourseContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import "./App.css";
+import LearningHub from "./pages/LearningHub";
+import CourseLesson from "./pages/CourseLesson";
+import CourseContentManager from "./pages/CourseContentManager";
+import CreateCourse from "./pages/CreateCourse";
+import MentorMatch from "./pages/MentorMatch";
 
 function AppContent({ isMobile }) {
-  const location = useLocation()
-  const noLayoutRoutes = ["/login", "/register"]
-  const isNoLayoutRoute = noLayoutRoutes.includes(location.pathname)
+  const location = useLocation();
+  const noLayoutRoutes = ["/login", "/register"];
+  const isNoLayoutRoute = noLayoutRoutes.includes(location.pathname);
 
   // State for mobile sidebar
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleMenuToggle = () => {
-    console.log("Menu toggle called, current state:", isSidebarOpen)
-    setIsSidebarOpen(!isSidebarOpen)
-  }
+    console.log("Menu toggle called, current state:", isSidebarOpen);
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   const handleSidebarClose = () => {
-    console.log("Sidebar close called")
-    setIsSidebarOpen(false)
-  }
+    console.log("Sidebar close called");
+    setIsSidebarOpen(false);
+  };
 
   return isNoLayoutRoute ? (
     <Routes>
@@ -108,6 +104,22 @@ function AppContent({ isMobile }) {
               }
             />
             <Route
+              path="/course/:courseId/preview"
+              element={
+                <ProtectedRoute>
+                  <CourseLesson />
+                </ProtectedRoute>
+              }
+            />
+             <Route
+              path="/course/:courseId"
+              element={
+                
+                  <CourseLesson />
+                
+              }
+            />
+            <Route
               path="/my-certificates"
               element={
                 <ProtectedRoute>
@@ -163,37 +175,50 @@ function AppContent({ isMobile }) {
                 </ProtectedRoute>
               }
             />
-            {/* <Route
-              path="/simulations"
+            <Route
+              path="/course/:courseId/content-manager"
               element={
                 <ProtectedRoute>
-                  <Simulations />
+                  <CourseContentManager />
                 </ProtectedRoute>
               }
-            /> */}
-            <Route path="/add-course" element={<CourseContentManager />} />
-            <Route path="/create-course" element={<CreateCourse />} />
-              <Route path="/mentor-match" element={<MentorMatch/>}/>
+            />
+            <Route
+              path="/create-course"
+              element={
+              
+                  <CreateCourse />
+                
+              }
+            />
+            <Route
+              path="/mentor-match"
+              element={
+                <ProtectedRoute>
+                  <MentorMatch />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </div>
       </div>
     </>
-  )
+  );
 }
 
 function App() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      console.log("Mobile check:", mobile, "Width:", window.innerWidth)
-    }
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      console.log("Mobile check:", mobile, "Width:", window.innerWidth);
+    };
 
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <UserProvider>
@@ -205,7 +230,7 @@ function App() {
         </Router>
       </CourseProvider>
     </UserProvider>
-  )
+  );
 }
 
-export default App
+export default App;

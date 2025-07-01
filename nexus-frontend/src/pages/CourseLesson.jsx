@@ -1,403 +1,450 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
-  CheckCircle,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
-  Menu,
-  X,
-  BookOpen,
-  PlayCircle,
-  FileText,
-  Clock,
-  Users,
-  Star,
-  Volume2,
-  Maximize,
-  Settings,
-} from "lucide-react"
-import "./CourseLesson.css"
+  Play, Pause, SkipForward, SkipBack, CheckCircle, ChevronDown, ChevronRight,
+  ChevronLeft, Menu, X, BookOpen, PlayCircle, FileText, Clock, Users, Star,
+  Volume2, Maximize, Settings,
+} from "lucide-react";
+import "./CourseLesson.css";
+import { useUser } from "../context/UserContext";
+import axios from "axios";
 
 const CourseLesson = () => {
-  const { courseId, lessonId } = useParams()
-  const navigate = useNavigate()
-  const [courseData, setCourseData] = useState(null)
-  const [activeLesson, setActiveLesson] = useState(null)
-  const [navigationOpen, setNavigationOpen] = useState(true)
-  const [expandedModules, setExpandedModules] = useState([1, 2])
-  const [videoPlaying, setVideoPlaying] = useState(false)
-  const [videoCurrentTime, setVideoCurrentTime] = useState(0)
-  const [videoDuration, setVideoDuration] = useState(0)
-  const [videoProgress, setVideoProgress] = useState(0)
+  const { courseId, lessonId } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated, fetchCsrfToken, refreshToken } = useUser();
+  const [courseData, setCourseData] = useState(null);
+  const [activeLesson, setActiveLesson] = useState(null);
+  const [navigationOpen, setNavigationOpen] = useState(true);
+  const [expandedModules, setExpandedModules] = useState([]);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [isInstructorPreview, setIsInstructorPreview] = useState(false);
+  const playerRef = useRef(null);
 
+  const getAccessToken = () => localStorage.getItem("access_token");
+
+  const getYouTubeEmbedUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const videoId = urlObj.searchParams.get("v") || url.split("/").pop();
+      return `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+    } catch (e) {
+      console.error("Invalid YouTube URL:", url, e);
+      return null;
+    }
+  };
+
+  // Load YouTube Iframe API script
   useEffect(() => {
-    // Enhanced mock course data with structured content
-    const mockCourseData = {
-      id: courseId,
-      title: "Python for Actuarial Science",
-      instructor: "Dr. Sarah Johnson, FSA",
-      rating: 4.8,
-      enrolledStudents: 1250,
-      totalDuration: "8 weeks",
-      overallProgress: 65,
-      modules: [
-        {
-          id: 1,
-          title: "Introduction to Python",
-          progress: 100,
-          isCompleted: true,
-          lessons: [
-            {
-              id: 1,
-              title: "What is Python?",
-              type: "video",
-              duration: "10:30",
-              isCompleted: true,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview: "Introduction to Python programming language and its applications in actuarial science.",
-                learningObjectives: [
-                  "Understand what Python is and its role in actuarial science",
-                  "Learn about Python's advantages for data analysis",
-                  "Explore real-world applications in insurance and risk management",
-                ],
-                keyPoints: [
-                  {
-                    title: "What is Python?",
-                    content:
-                      "Python is a high-level, interpreted programming language known for its simplicity and readability. It has become the go-to language for actuarial professionals due to its powerful libraries for data analysis, statistical modeling, and machine learning.",
-                  },
-                  {
-                    title: "Why Python for Actuaries?",
-                    content: "Python offers several advantages for actuarial work:",
-                    bullets: [
-                      "Extensive libraries for statistical analysis (NumPy, SciPy, Pandas)",
-                      "Machine learning capabilities (Scikit-learn, TensorFlow)",
-                      "Data visualization tools (Matplotlib, Seaborn, Plotly)",
-                      "Integration with databases and APIs",
-                      "Large community and extensive documentation",
-                    ],
-                  },
-                  {
-                    title: "Applications in Actuarial Science",
-                    content: "Python is used across various actuarial domains:",
-                    bullets: [
-                      "Pricing models for life and non-life insurance",
-                      "Risk assessment and capital modeling",
-                      "Claims analysis and fraud detection",
-                      "Portfolio optimization and asset-liability modeling",
-                      "Regulatory reporting and compliance",
-                    ],
-                  },
-                ],
-                codeExample: {
-                  title: "Simple Actuarial Calculation",
-                  code: `# Calculate present value of annuity
-import numpy as np
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName("script")[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-def present_value_annuity(payment, rate, periods):
-    """Calculate present value of ordinary annuity"""
-    pv = payment * ((1 - (1 + rate)**(-periods)) / rate)
-    return pv
+    return () => {
+      delete window.onYouTubeIframeAPIReady;
+    };
+  }, []);
 
-# Example: Monthly payment of $1000, 5% annual rate, 20 years
-monthly_rate = 0.05 / 12
-periods = 20 * 12
-pv = present_value_annuity(1000, monthly_rate, periods)
-print("Present Value: $" + "{:,.2f}".format(pv))`,
-                },
-                summary:
-                  "Python is a powerful tool for actuarial professionals, offering extensive libraries and capabilities for data analysis, modeling, and automation of complex calculations.",
-              },
-            },
-            {
-              id: 2,
-              title: "Setting up Python Environment",
-              type: "video",
-              duration: "15:45",
-              isCompleted: true,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview:
-                  "Learn how to install and configure Python for actuarial work, including essential libraries and development environments.",
-                learningObjectives: [
-                  "Install Python and essential packages",
-                  "Set up a development environment",
-                  "Configure Jupyter notebooks for interactive analysis",
-                ],
-                keyPoints: [
-                  {
-                    title: "Python Installation Options",
-                    content: "There are several ways to install Python for actuarial work:",
-                    bullets: [
-                      "Anaconda Distribution (Recommended for beginners)",
-                      "Official Python.org installer",
-                      "Package managers (Homebrew for Mac, Chocolatey for Windows)",
-                    ],
-                  },
-                  {
-                    title: "Essential Libraries for Actuaries",
-                    content: "Key Python libraries every actuary should know:",
-                    bullets: [
-                      "NumPy - Numerical computing and arrays",
-                      "Pandas - Data manipulation and analysis",
-                      "Matplotlib/Seaborn - Data visualization",
-                      "SciPy - Scientific computing and statistics",
-                      "Scikit-learn - Machine learning",
-                      "Jupyter - Interactive notebooks",
-                    ],
-                  },
-                ],
-              },
-            },
-            {
-              id: 3,
-              title: "Module 1 Assessment",
-              type: "quiz",
-              duration: "15:00",
-              isCompleted: false,
-              questions: [
-                {
-                  id: 1,
-                  question: "What is Python primarily used for in actuarial science?",
-                  options: ["Data analysis and modeling", "Web development", "Game development", "Mobile apps"],
-                  correct: 0,
-                },
-                {
-                  id: 2,
-                  question: "Which Python library is most commonly used for numerical computations?",
-                  options: ["Pandas", "NumPy", "Matplotlib", "Scikit-learn"],
-                  correct: 1,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: 2,
-          title: "Python Fundamentals",
-          progress: 67,
-          isCompleted: false,
-          lessons: [
-            {
-              id: 4,
-              title: "Variables and Data Types",
-              type: "video",
-              duration: "20:15",
-              isCompleted: true,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview: "Understanding Python variables and data types essential for actuarial calculations.",
-                learningObjectives: [
-                  "Master Python data types and their applications",
-                  "Learn variable naming conventions",
-                  "Understand type conversion and validation",
-                ],
-                keyPoints: [
-                  {
-                    title: "Python Data Types",
-                    content: "Python has several built-in data types that are crucial for actuarial work:",
-                    bullets: [
-                      "int - Whole numbers (policy counts, ages)",
-                      "float - Decimal numbers (premiums, rates, probabilities)",
-                      "str - Text data (policy numbers, names)",
-                      "bool - True/False values (claim status, eligibility)",
-                      "list - Ordered collections (premium schedules)",
-                      "dict - Key-value pairs (policyholder data)",
-                    ],
-                  },
-                ],
-                codeExample: {
-                  title: "Actuarial Data Types Example",
-                  code: `# Actuarial variables and data types
-policy_number = "POL-2024-001"  # string
-insured_age = 35               # integer
-annual_premium = 1250.50       # float
-is_smoker = False             # boolean
-mortality_rates = [0.001, 0.002, 0.003]  # list
-policy_data = {               # dictionary
-    "name": "John Doe",
-    "age": 35,
-    "premium": 1250.50,
-    "smoker": False
-}
-
-print("Policy: " + policy_number)
-print("Premium: $" + "{:,.2f}".format(annual_premium))
-print("Smoker status: " + str(is_smoker))`,
-                },
-              },
-            },
-            {
-              id: 5,
-              title: "Control Structures",
-              type: "video",
-              duration: "25:30",
-              isCompleted: true,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview: "Learn about loops and conditional statements for actuarial logic implementation.",
-                keyPoints: [
-                  {
-                    title: "Conditional Statements",
-                    content: "Use if/elif/else statements for actuarial decision logic:",
-                    bullets: [
-                      "Risk classification based on age and health",
-                      "Premium adjustments for different coverage types",
-                      "Claim validation and processing rules",
-                    ],
-                  },
-                ],
-              },
-            },
-            {
-              id: 6,
-              title: "Functions and Modules",
-              type: "video",
-              duration: "18:45",
-              isCompleted: false,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview: "Creating reusable code with functions and modules for actuarial calculations.",
-                keyPoints: [
-                  {
-                    title: "Function Benefits",
-                    content: "Functions help organize actuarial calculations:",
-                    bullets: [
-                      "Reusable premium calculation formulas",
-                      "Standardized risk assessment procedures",
-                      "Modular reserve calculation methods",
-                    ],
-                  },
-                ],
-              },
-            },
-          ],
-        },
-        {
-          id: 3,
-          title: "Data Analysis with Pandas",
-          progress: 25,
-          isCompleted: false,
-          lessons: [
-            {
-              id: 7,
-              title: "Introduction to Pandas",
-              type: "video",
-              duration: "22:10",
-              isCompleted: false,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview: "Getting started with Pandas for actuarial data manipulation and analysis.",
-                keyPoints: [
-                  {
-                    title: "Pandas for Actuaries",
-                    content: "Pandas is essential for handling actuarial datasets:",
-                    bullets: [
-                      "Policy data management",
-                      "Claims data analysis",
-                      "Experience studies",
-                      "Regulatory reporting",
-                    ],
-                  },
-                ],
-              },
-            },
-            {
-              id: 8,
-              title: "Data Cleaning Techniques",
-              type: "video",
-              duration: "28:20",
-              isCompleted: false,
-              videoUrl: "/placeholder-video.mp4",
-              content: {
-                overview: "Essential data cleaning techniques for actuarial datasets.",
-                keyPoints: [
-                  {
-                    title: "Common Data Issues",
-                    content: "Typical problems in actuarial data:",
-                    bullets: [
-                      "Missing policy information",
-                      "Inconsistent date formats",
-                      "Duplicate records",
-                      "Invalid claim amounts",
-                    ],
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      ],
+  // Initialize YouTube Player when activeLesson changes
+  useEffect(() => {
+    if (activeLesson?.type !== "video" || !activeLesson?.video_url || !window.YT) {
+      return;
     }
 
-    setCourseData(mockCourseData)
-
-    // Find current lesson
-    const allLessons = mockCourseData.modules.flatMap((module) => module.lessons)
-    const lesson = allLessons.find((l) => l.id === Number.parseInt(lessonId)) || allLessons[0]
-    setActiveLesson(lesson)
-  }, [courseId, lessonId])
-
-  const toggleModuleExpansion = (moduleId) => {
-    setExpandedModules((prev) => (prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]))
-  }
-
-  const selectLesson = (lesson) => {
-    setActiveLesson(lesson)
-    setVideoCurrentTime(0)
-    setVideoProgress(0)
-    setVideoPlaying(false)
-    navigate(`/course/${courseId}/lesson/${lesson.id}`)
-  }
-
-  const navigateToNextLesson = () => {
-    const allLessons = courseData.modules.flatMap((module) => module.lessons)
-    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id)
-    if (currentIndex < allLessons.length - 1) {
-      selectLesson(allLessons[currentIndex + 1])
+    let videoId;
+    try {
+      videoId = new URL(activeLesson.video_url).searchParams.get("v") || activeLesson.video_url.split("/").pop();
+    } catch (e) {
+      console.error("Invalid YouTube URL:", activeLesson.video_url, e);
+      setError("Invalid YouTube video URL.");
+      return;
     }
-  }
 
-  const navigateToPreviousLesson = () => {
-    const allLessons = courseData.modules.flatMap((module) => module.lessons)
-    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id)
-    if (currentIndex > 0) {
-      selectLesson(allLessons[currentIndex - 1])
-    }
-  }
+    playerRef.current = new window.YT.Player("youtube-player", {
+      height: "100%",
+      width: "100%",
+      videoId,
+      playerVars: {
+        enablejsapi: 1,
+        controls: 1,
+        rel: 0,
+        showinfo: 0,
+        modestbranding: 1,
+      },
+      events: {
+        onReady: (event) => {
+          console.log("YouTube Player Ready:", videoId);
+          setVideoDuration(event.target.getDuration());
+        },
+        onStateChange: (event) => {
+          console.log("YouTube Player State:", event.data);
+          if (event.data === window.YT.PlayerState.PLAYING) {
+            setVideoPlaying(true);
+            const interval = setInterval(() => {
+              const currentTime = event.target.getCurrentTime();
+              setVideoCurrentTime(currentTime);
+              setVideoProgress((currentTime / event.target.getDuration()) * 100);
+            }, 1000);
+            playerRef.current.interval = interval;
+          } else {
+            setVideoPlaying(false);
+            clearInterval(playerRef.current.interval);
+          }
+        },
+        onError: (event) => {
+          console.error("YouTube Player Error:", event.data);
+          setError(`Failed to load YouTube video. Error code: ${event.data}`);
+        },
+      },
+    });
+
+    return () => {
+      if (playerRef.current) {
+        if (playerRef.current.interval) {
+          clearInterval(playerRef.current.interval);
+        }
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+    };
+  }, [activeLesson]);
 
   const calculateOverallProgress = () => {
-    const allLessons = courseData?.modules.flatMap((module) => module.lessons) || []
-    const completedLessons = allLessons.filter((lesson) => lesson.isCompleted).length
-    return Math.round((completedLessons / allLessons.length) * 100)
-  }
+    if (!courseData || !courseData.modules) return 0;
+    const allLessons = courseData.modules.flatMap((module) => module.lessons);
+    if (allLessons.length === 0) return 0;
+    const completedLessons = allLessons.filter((lesson) => lesson.is_completed).length;
+    return ((completedLessons / allLessons.length) * 100).toFixed(1);
+  };
+
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      setLoading(true);
+      try {
+        const accessToken = getAccessToken();
+        const csrfToken = await fetchCsrfToken();
+        if (!accessToken || !isAuthenticated) {
+          setError("Please log in to view course content.");
+          navigate("/login");
+          return;
+        }
+
+        const courseResponse = await axios.get(`https://127.0.0.1:8000/courses/api/courses/${courseId}/`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        });
+
+        const modulesResponse = await axios.get(`https://127.0.0.1:8000/courses/api/modules/?course_id=${courseId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        });
+
+        const modulesData = Array.isArray(modulesResponse.data.results) ? modulesResponse.data.results : modulesResponse.data;
+
+        const modulesWithLessons = await Promise.all(
+          modulesData.map(async (module) => {
+            const lessonsResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/?module_id=${module.id}`, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "X-CSRFToken": csrfToken,
+              },
+              withCredentials: true,
+            });
+
+            const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson__module=${module.id}`, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "X-CSRFToken": csrfToken,
+              },
+              withCredentials: true,
+            });
+
+            const lessonsData = Array.isArray(lessonsResponse.data.results) ? lessonsResponse.data.results : lessonsResponse.data;
+            const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results : progressResponse.data;
+
+            const lessons = lessonsData.map((lesson) => {
+              const progress = progressData.find((p) => p.lesson === lesson.id);
+              return {
+                ...lesson,
+                is_completed: progress ? progress.is_completed : false,
+                learningObjectives: lesson.learning_objectives || [],
+                keypoints: (lesson.keypoints || []).map((kp) => ({
+                  ...kp,
+                  bullets: kp.bullets || [],
+                })),
+                code_examples: lesson.code_examples || [],
+                questions: lesson.questions || [],
+              };
+            });
+
+            return { ...module, lessons };
+          })
+        );
+
+        const course = {
+          ...courseResponse.data,
+          modules: modulesWithLessons,
+        };
+        setCourseData(course);
+
+        const isPreview = !lessonId;
+        setIsInstructorPreview(isPreview);
+
+        let lessonData;
+        if (isPreview) {
+          const allLessons = modulesWithLessons.flatMap((module) => module.lessons);
+          if (allLessons.length === 0) {
+            setError("No lessons available for this course.");
+            navigate(`/course/${courseId}`);
+            return;
+          }
+          lessonData = allLessons[0];
+          navigate(`/course/${courseId}/lesson/${lessonData.id}`, { replace: true });
+        } else {
+          const lessonResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          });
+          const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson=${lessonId}`, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          });
+          const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results[0] : progressResponse.data;
+          lessonData = {
+            ...lessonResponse.data,
+            is_completed: progressData ? progressData.is_completed : false,
+          };
+        }
+
+        if (lessonData) {
+          console.log("Active Lesson Video URL:", lessonData.video_url);
+          const normalizedLesson = {
+            ...lessonData,
+            learningObjectives: lessonData.learning_objectives || [],
+            keypoints: (lessonData.keypoints || []).map((kp) => ({
+              ...kp,
+              bullets: kp.bullets || [],
+            })),
+            code_examples: lessonData.code_examples || [],
+            questions: lessonData.questions || [],
+          };
+          setActiveLesson(normalizedLesson);
+        } else {
+          setError("Lesson not found.");
+          navigate(`/course/${courseId}`);
+        }
+
+        setExpandedModules(modulesWithLessons.map((m) => m.id));
+      } catch (err) {
+        console.error("Fetch error:", err.response?.status, err.response?.data);
+        if (err.response?.status === 401) {
+          const refreshed = await refreshToken();
+          if (refreshed) fetchCourseData();
+          else {
+            setError("Authentication failed. Please log in again.");
+            navigate("/login");
+          }
+        } else if (err.response?.status === 404) {
+          setError("Lesson or course not found.");
+          navigate(`/course/${courseId}`);
+        } else {
+          setError(err.response?.data?.detail || "Failed to fetch course data.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourseData();
+  }, [courseId, lessonId, isAuthenticated, refreshToken, navigate]);
+
+  const toggleModuleExpansion = (moduleId) => {
+    setExpandedModules((prev) =>
+      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
+    );
+  };
+
+  const selectLesson = async (lesson) => {
+    setActiveLesson(lesson);
+    setVideoCurrentTime(0);
+    setVideoProgress(0);
+    setVideoPlaying(false);
+    setQuizAnswers({});
+    navigate(`/course/${courseId}/lesson/${lesson.id}`);
+  };
+
+  const navigateToNextLesson = () => {
+    const allLessons = courseData?.modules.flatMap((module) => module.lessons) || [];
+    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
+    if (currentIndex < allLessons.length - 1) {
+      selectLesson(allLessons[currentIndex + 1]);
+    }
+  };
+
+  const navigateToPreviousLesson = () => {
+    const allLessons = courseData?.modules.flatMap((module) => module.lessons) || [];
+    const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
+    if (currentIndex > 0) {
+      selectLesson(allLessons[currentIndex - 1]);
+    }
+  };
+
+  const markLessonComplete = async () => {
+    if (isInstructorPreview) {
+      alert("Lesson previewed successfully!");
+      return;
+    }
+    try {
+      const accessToken = getAccessToken();
+      const csrfToken = await fetchCsrfToken();
+      await axios.post(
+        "https://127.0.0.1:8000/courses/api/progress/",
+        {
+          lesson: activeLesson.id,
+          is_completed: true,
+          video_progress: videoProgress,
+          video_current_time: videoCurrentTime,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      setActiveLesson({ ...activeLesson, is_completed: true });
+      setCourseData((prev) => ({
+        ...prev,
+        modules: prev.modules.map((module) => ({
+          ...module,
+          lessons: module.lessons.map((l) =>
+            l.id === activeLesson.id ? { ...l, is_completed: true } : l
+          ),
+        })),
+      }));
+      alert("Lesson marked as complete!");
+    } catch (err) {
+      console.error("Mark complete error:", err.response?.status, err.response?.data);
+      if (err.response?.status === 401) {
+        const refreshed = await refreshToken();
+        if (refreshed) markLessonComplete();
+        else setError("Authentication failed. Please log in again.");
+      } else {
+        setError(err.response?.data?.detail || "Failed to mark lesson complete.");
+      }
+    }
+  };
+
+  const submitQuiz = async () => {
+    if (isInstructorPreview) {
+      alert("Quiz previewed successfully!");
+      return;
+    }
+    if (Object.keys(quizAnswers).length !== activeLesson.questions.length) {
+      setError("Please answer all questions before submitting.");
+      return;
+    }
+
+    try {
+      const accessToken = getAccessToken();
+      const csrfToken = await fetchCsrfToken();
+      const response = await axios.post(
+        "https://127.0.0.1:8000/courses/api/quiz-submissions/",
+        {
+          lesson: activeLesson.id,
+          answers: quizAnswers,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      alert(`Quiz submitted successfully! Score: ${response.data.score}%`);
+      markLessonComplete();
+    } catch (err) {
+      console.error("Quiz submission error:", err.response?.status, err.response?.data);
+      if (err.response?.status === 401) {
+        const refreshed = await refreshToken();
+        if (refreshed) submitQuiz();
+        else setError("Authentication failed. Please log in again.");
+      } else {
+        setError(err.response?.data?.detail || "Failed to submit quiz.");
+      }
+    }
+  };
+
+  const handleQuizAnswer = (questionId, optionIndex) => {
+    setQuizAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+  };
+
+  const handleVideoPlayPause = () => {
+    if (playerRef.current) {
+      if (videoPlaying) {
+        console.log("Pausing video");
+        playerRef.current.pauseVideo();
+      } else {
+        console.log("Playing video");
+        playerRef.current.playVideo();
+      }
+      setVideoPlaying(!videoPlaying);
+    } else {
+      console.error("Player not initialized");
+      setError("YouTube player not initialized. Please try again.");
+    }
+  };
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
-  if (!courseData || !activeLesson) {
+  if (loading) {
     return (
       <div className="lesson-loading-container">
         <div className="lesson-loading-spinner"></div>
         <p>Loading course content...</p>
       </div>
-    )
+    );
+  }
+
+  if (error || !courseData || !activeLesson) {
+    return (
+      <div className="lesson-loading-container">
+        <p>{error || "Failed to load course content."}</p>
+      </div>
+    );
   }
 
   return (
     <div className="lesson-page-container">
-      {/* Course Navigation Sidebar */}
       <div className={`lesson-navigation-sidebar ${navigationOpen ? "expanded" : "collapsed"}`}>
         <div className="navigation-header">
           <button className="back-to-hub-btn" onClick={() => navigate("/learninghub")}>
@@ -414,21 +461,21 @@ print("Smoker status: " + str(is_smoker))`,
             <div className="course-overview-section">
               <h2 className="course-main-title">{courseData.title}</h2>
               <div className="course-instructor-info">
-                <span className="instructor-name">by {courseData.instructor}</span>
+                <span className="instructor-name">by {courseData.instructor.user}</span>
               </div>
 
               <div className="course-statistics">
                 <div className="stat-item">
                   <Star size={14} fill="currentColor" />
-                  <span>{courseData.rating}</span>
+                  <span>{courseData.rating.toFixed(1)}</span>
                 </div>
                 <div className="stat-item">
                   <Users size={14} />
-                  <span>{courseData.enrolledStudents.toLocaleString()}</span>
+                  <span>{courseData.enrolled_students.toLocaleString()}</span>
                 </div>
                 <div className="stat-item">
                   <Clock size={14} />
-                  <span>{courseData.totalDuration}</span>
+                  <span>{courseData.estimated_duration}</span>
                 </div>
               </div>
 
@@ -453,7 +500,7 @@ print("Smoker status: " + str(is_smoker))`,
                     </div>
                     <div className="module-progress-indicator">
                       <span className="module-progress-text">{module.progress}%</span>
-                      {module.isCompleted && <CheckCircle size={16} className="completed-icon" />}
+                      {module.is_completed && <CheckCircle size={16} className="completed-icon" />}
                     </div>
                   </button>
 
@@ -464,11 +511,11 @@ print("Smoker status: " + str(is_smoker))`,
                           key={lesson.id}
                           className={`lesson-navigation-item ${
                             activeLesson.id === lesson.id ? "active" : ""
-                          } ${lesson.isCompleted ? "completed" : ""}`}
+                          } ${lesson.is_completed ? "completed" : ""}`}
                           onClick={() => selectLesson(lesson)}
                         >
                           <div className="lesson-status-icon">
-                            {lesson.isCompleted ? (
+                            {lesson.is_completed ? (
                               <CheckCircle size={16} />
                             ) : lesson.type === "quiz" ? (
                               <FileText size={16} />
@@ -491,7 +538,6 @@ print("Smoker status: " + str(is_smoker))`,
         )}
       </div>
 
-      {/* Main Learning Content */}
       <div className="main-learning-content">
         <div className="lesson-header-section">
           <div className="lesson-breadcrumb">
@@ -518,22 +564,15 @@ print("Smoker status: " + str(is_smoker))`,
 
         {activeLesson.type === "video" ? (
           <div className="video-learning-section">
-            {/* Video Player */}
             <div className="video-player-container">
               <div className="video-player-wrapper">
-                <div className="video-placeholder">
-                  <div className="video-play-overlay">
-                    <button className="video-play-button">
-                      {videoPlaying ? <Pause size={32} /> : <Play size={32} />}
-                    </button>
-                  </div>
-                  <div className="video-info-overlay">
-                    <span className="video-duration">{activeLesson.duration}</span>
-                  </div>
-                </div>
-
+                {activeLesson.video_url ? (
+                  <div id="youtube-player" className="youtube-iframe"></div>
+                ) : (
+                  <p className="error">Invalid YouTube video URL</p>
+                )}
                 <div className="video-controls-bar">
-                  <button className="video-control-btn">
+                  <button className="video-control-btn" onClick={handleVideoPlayPause}>
                     {videoPlaying ? <Pause size={16} /> : <Play size={16} />}
                   </button>
 
@@ -542,7 +581,7 @@ print("Smoker status: " + str(is_smoker))`,
                       <div className="video-progress-fill" style={{ width: `${videoProgress}%` }}></div>
                     </div>
                     <span className="video-time-display">
-                      {formatTime(videoCurrentTime)} / {activeLesson.duration}
+                      {formatTime(videoCurrentTime)} / {formatTime(videoDuration)}
                     </span>
                   </div>
 
@@ -561,7 +600,6 @@ print("Smoker status: " + str(is_smoker))`,
               </div>
             </div>
 
-            {/* Structured Notes Content */}
             <div className="lesson-notes-container">
               <div className="notes-header">
                 <BookOpen size={20} />
@@ -569,39 +607,38 @@ print("Smoker status: " + str(is_smoker))`,
               </div>
 
               <div className="notes-content">
-                {/* Overview Section */}
-                <div className="notes-section">
-                  <h3 className="notes-section-title">Overview</h3>
-                  <p className="notes-paragraph">{activeLesson.content.overview}</p>
-                </div>
+                {activeLesson.overview && (
+                  <div className="notes-section">
+                    <h3 className="notes-section-title">Overview</h3>
+                    <p className="notes-paragraph">{activeLesson.overview}</p>
+                  </div>
+                )}
 
-                {/* Learning Objectives */}
-                {activeLesson.content.learningObjectives && (
+                {activeLesson.learning_objectives?.length > 0 && (
                   <div className="notes-section">
                     <h3 className="notes-section-title">Learning Objectives</h3>
                     <ul className="notes-objectives-list">
-                      {activeLesson.content.learningObjectives.map((objective, index) => (
+                      {activeLesson.learning_objectives.map((objective, index) => (
                         <li key={index} className="notes-objective-item">
-                          {objective}
+                          {objective.text}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Key Points */}
-                {activeLesson.content.keyPoints && (
+                {activeLesson.keypoints?.length > 0 && (
                   <div className="notes-section">
                     <h3 className="notes-section-title">Key Points</h3>
-                    {activeLesson.content.keyPoints.map((point, index) => (
+                    {activeLesson.keypoints.map((point, index) => (
                       <div key={index} className="notes-key-point">
                         <h4 className="notes-point-title">{point.title}</h4>
                         <p className="notes-point-content">{point.content}</p>
-                        {point.bullets && (
+                        {point.bullets?.length > 0 && (
                           <ul className="notes-bullet-list">
                             {point.bullets.map((bullet, bulletIndex) => (
                               <li key={bulletIndex} className="notes-bullet-item">
-                                {bullet}
+                                {bullet.text}
                               </li>
                             ))}
                           </ul>
@@ -611,25 +648,25 @@ print("Smoker status: " + str(is_smoker))`,
                   </div>
                 )}
 
-                {/* Code Example */}
-                {activeLesson.content.codeExample && (
+                {activeLesson.code_examples?.length > 0 && (
                   <div className="notes-section">
                     <h3 className="notes-section-title">Code Example</h3>
-                    <div className="notes-code-block">
-                      <h4 className="code-block-title">{activeLesson.content.codeExample.title}</h4>
-                      <pre className="code-block-content">
-                        <code>{activeLesson.content.codeExample.code}</code>
-                      </pre>
-                    </div>
+                    {activeLesson.code_examples.map((example, index) => (
+                      <div key={index} className="notes-code-block">
+                        <h4 className="code-block-title">{example.title}</h4>
+                        <pre className="code-block-content">
+                          <code>{example.code}</code>
+                        </pre>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {/* Summary */}
-                {activeLesson.content.summary && (
+                {activeLesson.summary && (
                   <div className="notes-section">
                     <h3 className="notes-section-title">Summary</h3>
                     <div className="notes-summary-box">
-                      <p className="notes-summary-text">{activeLesson.content.summary}</p>
+                      <p className="notes-summary-text">{activeLesson.summary}</p>
                     </div>
                   </div>
                 )}
@@ -637,7 +674,6 @@ print("Smoker status: " + str(is_smoker))`,
             </div>
           </div>
         ) : (
-          // Quiz Section
           <div className="quiz-learning-section">
             <div className="quiz-container">
               <div className="quiz-header">
@@ -659,6 +695,8 @@ print("Smoker status: " + str(is_smoker))`,
                             name={`question-${question.id}`}
                             value={optionIndex}
                             className="option-input"
+                            checked={quizAnswers[question.id] === optionIndex}
+                            onChange={() => handleQuizAnswer(question.id, optionIndex)}
                           />
                           <span className="option-text">{option}</span>
                         </label>
@@ -669,22 +707,31 @@ print("Smoker status: " + str(is_smoker))`,
               </div>
 
               <div className="quiz-actions">
-                <button className="quiz-submit-btn">Submit Assessment</button>
+                <button
+                  className="submit-quiz-button"
+                  onClick={submitQuiz}
+                  disabled={Object.keys(quizAnswers).length !== activeLesson.questions.length}
+                >
+                  Submit Quiz
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Lesson Completion Section */}
         <div className="lesson-completion-section">
-          <button className="complete-lesson-button">
+          <button
+            className="complete-lesson-button"
+            onClick={markLessonComplete}
+            disabled={activeLesson.is_completed}
+          >
             <CheckCircle size={18} />
-            <span>Mark as Complete</span>
+            <span>{activeLesson.is_completed ? "Lesson Completed" : "Mark as Complete"}</span>
           </button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default CourseLesson
+export default CourseLesson;
