@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,15 +21,69 @@ import {
   Users,
   TrendingUp,
   Upload,
+  Loader2,
 } from "lucide-react"
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "Datasets | Nexus Learning Hub",
-  description: "Browse and manage actuarial and financial datasets for your simulations and models.",
-}
+import { fetchDatasets, fetchDatasetStats, Dataset } from "@/lib/api"
 
 export default function DatasetsPage() {
+  const [datasets, setDatasets] = useState<Dataset[]>([])
+  const [stats, setStats] = useState({
+    total: 0,
+    public: 0,
+    downloads: 0,
+    contributors: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const [datasetsData, statsData] = await Promise.all([
+          fetchDatasets(),
+          fetchDatasetStats(),
+        ])
+        setDatasets(datasetsData)
+        setStats(statsData)
+      } catch (error) {
+        console.error("Failed to load datasets:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const filteredDatasets = datasets.filter((dataset) => {
+    const matchesSearch = dataset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         dataset.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCategory = selectedCategory === "all" || dataset.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
+
+  const getDatasetIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'csv':
+        return FileSpreadsheet
+      case 'database':
+        return Database
+      default:
+        return BarChart
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container py-10">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="container py-10">
       <div className="flex flex-col gap-6">
@@ -58,8 +115,8 @@ export default function DatasetsPage() {
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Available datasets</p>
             </CardContent>
           </Card>
           <Card>
@@ -68,8 +125,8 @@ export default function DatasetsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">856</div>
-              <p className="text-xs text-muted-foreground">69% of total</p>
+              <div className="text-2xl font-bold">{stats.public.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">{stats.total ? Math.round((stats.public / stats.total) * 100) : 0}% of total</p>
             </CardContent>
           </Card>
           <Card>
@@ -78,8 +135,8 @@ export default function DatasetsPage() {
               <Download className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">45.2K</div>
-              <p className="text-xs text-muted-foreground">+8% from last month</p>
+              <div className="text-2xl font-bold">{stats.downloads.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Total downloads</p>
             </CardContent>
           </Card>
           <Card>
@@ -88,8 +145,8 @@ export default function DatasetsPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">342</div>
-              <p className="text-xs text-muted-foreground">+23 new this month</p>
+              <div className="text-2xl font-bold">{stats.contributors.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Active contributors</p>
             </CardContent>
           </Card>
         </div>

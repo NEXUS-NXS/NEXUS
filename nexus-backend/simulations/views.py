@@ -5,7 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 import uuid
 from django.db.models import Q
 from simulations.models import Simulation, Model, Dataset, Result
-from simulations.serializers import SimulationSerializer, ResultSerializer, ModelSerializer, ModelValidationSerializer
+from simulations.serializers import (
+    SimulationSerializer, ResultSerializer, ModelSerializer, 
+    ModelValidationSerializer, DatasetSerializer, DatasetCreateSerializer
+)
 from simulations.tasks import run_simulation_task
 from simulations.engine import SimulationEngine
 from rest_framework import viewsets, permissions, filters, status
@@ -17,37 +20,167 @@ from django.db.models import Q
 
 class DatasetViewSet(viewsets.ModelViewSet):
     queryset = Dataset.objects.all()
-    serializer_class = DatasetSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'description']
+    search_fields = ['name', 'description', 'category', 'tags']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return DatasetCreateSerializer
+        return DatasetSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'destroy', 'share']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
         file = self.request.FILES.get('file')
         size = file.size if file else 0
-        serializer.save(owner=self.request.user, size=size)
+        
+        # Auto-detect file type if not provided
+        file_type = serializer.validated_data.get('type', '')
+        if not file_type and file:
+            if file.name.endswith('.csv'):
+                file_type = 'CSV'
+            elif file.name.endswith(('.xlsx', '.xls')):
+                file_type = 'Excel'
+            elif file.name.endswith('.json'):
+                file_type = 'JSON'
+            else:
+                file_type = 'File'
+        
+        serializer.save(owner=self.request.user, size=size, type=file_type)
 
     def get_queryset(self):
         user = self.request.user
+        queryset = Dataset.objects.all()
+        
+        # Filter by user permissions
         if user.is_authenticated:
-            return Dataset.objects.filter(Q(owner=user) | Q(is_public=True))
-        return Dataset.objects.filter(is_public=True)
+            queryset = queryset.filter(
+                Q(owner=user) | Q(is_public=True) | Q(shared_with=user)
+            ).distinct()
+        else:
+            queryset = queryset.filter(is_public=True)
+        
+        # Filter by category if provided
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        
+        # Filter by type if provided
+        dataset_type = self.request.query_params.get('type')
+        if dataset_type:
+            queryset = queryset.filter(type=dataset_type)
+        
+        # Filter by owner if provided
+        owner = self.request.query_params.get('owner')
+        if owner:
+            queryset = queryset.filter(owner__username=owner)
+        
+        return queryset
 
-    @action(detail=False, methods=['post'], url_path='share')
-    def share(self, request):
-        dataset_id = request.data.get('dataset_id')
-        dataset = Dataset.objects.filter(id=dataset_id, owner=request.user).first()
-        if not dataset:
-            return Response({'error': 'Dataset not found or permission denied'}, status=403)
-        dataset.is_public = True
-        dataset.save()
-        return Response({'status': 'shared'})
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to increment view count"""
+        instance = self.get_object()
+        
+        # Increment view count
+        instance.increment_views()
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='share')
+    def share_dataset(self, request, pk=None):
+        """Share dataset with specific users or make public"""
+        dataset = self.get_object()
+        
+        # Check if user owns the dataset
+        if dataset.owner != request.user:
+            return Response({'error': 'Permission denied'}, status=403)
+        
+        user_ids = request.data.get('user_ids', [])
+        make_public = request.data.get('make_public', False)
+        
+        if make_public:
+            dataset.is_public = True
+            dataset.save()
+        
+        if user_ids:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            users = User.objects.filter(id__in=user_ids)
+            dataset.shared_with.add(*users)
+        
+        return Response({'status': 'shared', 'shared_with_count': dataset.shared_with_count})
 
     @action(detail=True, methods=['get'], url_path='download')
+    def download(self, request, pk=None):
+        """Download dataset file and increment download count"""
+        dataset = self.get_object()
+        
+        # Check permissions
+        user = request.user
+        if not (dataset.is_public or 
+                (user.is_authenticated and (dataset.owner == user or dataset.shared_with.filter(id=user.id).exists()))):
+            return Response({'error': 'Permission denied'}, status=403)
+        
+        # Increment download count
+        dataset.increment_downloads()
+        
+        if dataset.file:
+            response = FileResponse(
+                dataset.file.open(),
+                as_attachment=True,
+                filename=dataset.file.name
+            )
+            return response
+        else:
+            return Response({'error': 'No file available for download'}, status=404)
+
+    @action(detail=False, methods=['get'], url_path='my-datasets')
+    def my_datasets(self, request):
+        """Get datasets owned by current user"""
+        if not request.user.is_authenticated:
+            return Response({'error': 'Authentication required'}, status=401)
+        
+        datasets = Dataset.objects.filter(owner=request.user)
+        serializer = self.get_serializer(datasets, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='shared-with-me')
+    def shared_with_me(self, request):
+        """Get datasets shared with current user"""
+        if not request.user.is_authenticated:
+            return Response({'error': 'Authentication required'}, status=401)
+        
+        datasets = Dataset.objects.filter(shared_with=request.user)
+        serializer = self.get_serializer(datasets, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='update-quality')
+    def update_quality_metrics(self, request, pk=None):
+        """Update quality metrics for a dataset"""
+        dataset = self.get_object()
+        
+        if dataset.owner != request.user:
+            return Response({'error': 'Permission denied'}, status=403)
+        
+        quality_data = request.data.get('quality', {})
+        
+        if 'completeness' in quality_data:
+            dataset.quality_completeness = quality_data['completeness']
+        if 'accuracy' in quality_data:
+            dataset.quality_accuracy = quality_data['accuracy']
+        if 'consistency' in quality_data:
+            dataset.quality_consistency = quality_data['consistency']
+        if 'timeliness' in quality_data:
+            dataset.quality_timeliness = quality_data['timeliness']
+        
+        dataset.save()
+        
+        serializer = self.get_serializer(dataset)
+        return Response(serializer.data)
     def download(self, request, pk=None):
         dataset = self.get_object()
         return FileResponse(dataset.file.open(), as_attachment=True, filename=dataset.file.name.split('/')[-1])

@@ -25,18 +25,75 @@ class Model(models.Model):
         return self.name
     
 class Dataset(models.Model):
+    # Basic information
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    long_description = models.TextField(blank=True)
+    
+    # File information
     file = models.FileField(null=True, upload_to='datasets/')
-    format = models.CharField(null=True, max_length=50)
-    size = models.BigIntegerField(null=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datasets', null=True)
-    is_public = models.BooleanField(default=False, null=True)
+    type = models.CharField(max_length=50, blank=True)  # CSV, Database, Time Series, etc.
+    size = models.BigIntegerField(null=True, blank=True)
+    row_count = models.IntegerField(null=True, blank=True)
+    column_count = models.IntegerField(null=True, blank=True)
+    
+    # Ownership and sharing
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datasets')
+    is_public = models.BooleanField(default=False)
+    shared_with = models.ManyToManyField(User, related_name='shared_datasets', blank=True)
+    
+    # Metadata
+    source = models.TextField(blank=True)
+    category = models.CharField(max_length=100, blank=True)
+    tags = JSONField(default=list, blank=True)
+    
+    # Quality metrics (0-100 scale)
+    quality_completeness = models.FloatField(default=0.0)
+    quality_accuracy = models.FloatField(default=0.0)
+    quality_consistency = models.FloatField(default=0.0)
+    quality_timeliness = models.FloatField(default=0.0)
+    
+    # Usage statistics
+    downloads = models.IntegerField(default=0)
+    views = models.IntegerField(default=0)
+    
+    # Schema and preview data (JSON fields)
+    schema = JSONField(default=list, blank=True)  # [{name, type, description, nullable}]
+    preview_data = JSONField(default=dict, blank=True)  # {columns: [], rows: []}
+    
+    # Usage statistics
+    usage_stats = JSONField(default=dict, blank=True)  # {models: int, modelNames: []}
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at']
+        
     def __str__(self):
         return self.name
+    
+    @property
+    def shared_with_count(self):
+        return self.shared_with.count()
+    
+    @property 
+    def quality_metrics(self):
+        return {
+            'completeness': self.quality_completeness,
+            'accuracy': self.quality_accuracy,
+            'consistency': self.quality_consistency,
+            'timeliness': self.quality_timeliness,
+        }
+    
+    def increment_views(self):
+        self.views += 1
+        self.save(update_fields=['views'])
+        
+    def increment_downloads(self):
+        self.downloads += 1
+        self.save(update_fields=['downloads'])
 
 class Simulation(models.Model):
     STATUS_CHOICES = [

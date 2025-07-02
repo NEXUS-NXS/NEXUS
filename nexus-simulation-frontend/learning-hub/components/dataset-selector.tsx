@@ -9,70 +9,41 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload, Database, Search, Download, Eye } from "lucide-react"
-
-interface Dataset {
-  id: string
-  name: string
-  description: string
-  size: string
-  format: string
-  category: string
-  lastUpdated: string
-}
+import { Dataset } from "@/lib/api"
 
 interface DatasetSelectorProps {
   selectedDatasets: string[]
   onChange: (datasets: string[]) => void
+  availableDatasets?: Dataset[]
 }
 
-const availableDatasets: Dataset[] = [
-  {
-    id: "mortality-2023",
-    name: "US Mortality Tables 2023",
-    description: "Latest mortality rates by age and gender",
-    size: "2.3 MB",
-    format: "CSV",
-    category: "Actuarial",
-    lastUpdated: "2023-12-01",
-  },
-  {
-    id: "climate-risk-data",
-    name: "Global Climate Risk Indicators",
-    description: "Climate risk metrics by region and scenario",
-    size: "15.7 MB",
-    format: "CSV",
-    category: "Climate",
-    lastUpdated: "2023-11-15",
-  },
-  {
-    id: "market-data-sp500",
-    name: "S&P 500 Historical Data",
-    description: "Daily prices and returns for S&P 500 components",
-    size: "45.2 MB",
-    format: "CSV",
-    category: "Financial",
-    lastUpdated: "2023-12-15",
-  },
-  {
-    id: "insurance-claims",
-    name: "Property Insurance Claims",
-    description: "Anonymized property insurance claims data",
-    size: "8.9 MB",
-    format: "CSV",
-    category: "Insurance",
-    lastUpdated: "2023-10-30",
-  },
-]
-
-export function DatasetSelector({ selectedDatasets, onChange }: DatasetSelectorProps) {
+export function DatasetSelector({ selectedDatasets, onChange, availableDatasets = [] }: DatasetSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
   const filteredDatasets = availableDatasets.filter(
     (dataset) =>
       dataset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dataset.description.toLowerCase().includes(searchTerm.toLowerCase()),
+      (dataset.description && dataset.description.toLowerCase().includes(searchTerm.toLowerCase())),
   )
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const getCategoryBadge = (dataset: Dataset) => {
+    // Determine category based on dataset name/description
+    const name = dataset.name.toLowerCase()
+    if (name.includes('mortality') || name.includes('actuarial')) return { label: 'Actuarial', color: 'bg-blue-500' }
+    if (name.includes('climate') || name.includes('environmental')) return { label: 'Climate', color: 'bg-green-500' }
+    if (name.includes('market') || name.includes('financial') || name.includes('s&p')) return { label: 'Financial', color: 'bg-emerald-500' }
+    if (name.includes('insurance') || name.includes('claims')) return { label: 'Insurance', color: 'bg-orange-500' }
+    return { label: 'General', color: 'bg-gray-500' }
+  }
 
   const toggleDataset = (datasetId: string) => {
     if (selectedDatasets.includes(datasetId)) {
@@ -109,40 +80,51 @@ export function DatasetSelector({ selectedDatasets, onChange }: DatasetSelectorP
 
           {/* Dataset Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredDatasets.map((dataset) => (
-              <Card
-                key={dataset.id}
-                className={`cursor-pointer transition-all ${
-                  selectedDatasets.includes(dataset.id) ? "ring-2 ring-blue-500 bg-blue-50" : "hover:shadow-md"
-                }`}
-                onClick={() => toggleDataset(dataset.id)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline">{dataset.category}</Badge>
-                    <Badge variant="secondary">{dataset.format}</Badge>
-                  </div>
-                  <CardTitle className="text-lg">{dataset.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-3">{dataset.description}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{dataset.size}</span>
-                    <span>Updated: {dataset.lastUpdated}</span>
-                  </div>
-                  <div className="flex space-x-2 mt-3">
-                    <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                      <Eye className="h-3 w-3 mr-1" />
-                      Preview
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                      <Download className="h-3 w-3 mr-1" />
-                      Download
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {filteredDatasets.length === 0 ? (
+              <div className="col-span-2 text-center py-8 text-gray-500">
+                <p>No datasets available. Upload some datasets to get started.</p>
+              </div>
+            ) : (
+              filteredDatasets.map((dataset) => {
+                const category = getCategoryBadge(dataset)
+                const fileExtension = dataset.file ? dataset.file.split('.').pop()?.toUpperCase() || 'FILE' : 'FILE'
+                
+                return (
+                  <Card
+                    key={dataset.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedDatasets.includes(dataset.id) ? "ring-2 ring-blue-500 bg-blue-50" : "hover:shadow-md"
+                    }`}
+                    onClick={() => toggleDataset(dataset.id)}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className={`${category.color} text-white`}>{category.label}</Badge>
+                        <Badge variant="secondary">{fileExtension}</Badge>
+                      </div>
+                      <CardTitle className="text-lg">{dataset.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-3">{dataset.description || "No description available"}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{formatFileSize(dataset.size || 0)}</span>
+                        <span>Created: {new Date(dataset.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex space-x-2 mt-3">
+                        <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                          <Eye className="h-3 w-3 mr-1" />
+                          Preview
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                          <Download className="h-3 w-3 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })
+            )}
           </div>
         </TabsContent>
 
