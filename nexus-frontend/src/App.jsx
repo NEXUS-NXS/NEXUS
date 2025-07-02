@@ -28,6 +28,7 @@ import CourseLesson from "./pages/CourseLesson"
 import CourseContentManager from "./pages/CourseContentManager"
 import CreateCourse from "./pages/CreateCourse"
 import MentorMatch from "./pages/MentorMatch"
+import ResourceDetails from "./pages/ResourceDetails"
 
 
 function AppContent({ isMobile }) {
@@ -88,6 +89,14 @@ function AppContent({ isMobile }) {
               element={
                 <ProtectedRoute>
                   <Resources />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/resources/:id"
+              element={
+                <ProtectedRoute>
+                  <ResourceDetails />
                 </ProtectedRoute>
               }
             />
