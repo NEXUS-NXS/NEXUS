@@ -9,14 +9,22 @@ class ModelSerializer(serializers.ModelSerializer):
 class DatasetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dataset
-        fields = ['id', 'name', 'file_path', 'metadata', 'created_at']
+        fields = '__all__'
+        read_only_fields = ['owner', 'size', 'created_at', 'updated_at']
 
 class SimulationSerializer(serializers.ModelSerializer):
     model = ModelSerializer()
     dataset = DatasetSerializer(allow_null=True)
+
     class Meta:
         model = Simulation
-        fields = ['session_id', 'model', 'parameters', 'dataset', 'status', 'progress', 'current_step', 'created_at', 'updated_at']
+        fields = [
+            'session_id', 'model', 'parameters', 'dataset',
+            'status', 'progress', 'current_step',
+            'start_time', 'estimated_completion',
+            'created_at', 'updated_at'
+        ]
+
 
 class ResultSerializer(serializers.ModelSerializer):
     simulation = SimulationSerializer()

@@ -14,6 +14,7 @@ import { Save, Code, Settings, Database, FileText } from "lucide-react"
 import { CodeEditor } from "@/components/simulation/code-editor"
 import { ParameterBuilder } from "@/components/simulation/parameter-builder"
 import { ValidationPanel } from "@/components/simulation/validation-panel"
+import { createModel, validateModel } from "@/lib/api"
 
 interface ModelCreatorProps {
   categories: any[]
@@ -36,35 +37,40 @@ export function ModelCreator({ categories, languages, onModelCreated }: ModelCre
   const [activeTab, setActiveTab] = useState("basic")
   const [validationResults, setValidationResults] = useState({ errors: [], warnings: [] })
 
-  const handleSave = () => {
-    const newModel = {
-      id: `model_${Date.now()}`,
-      ...modelData,
-      author: "Current User",
-      lastModified: new Date().toISOString().split("T")[0],
-      collaborators: 1,
-      runs: 0,
-      rating: 0,
+  const handleSave = async () => {
+    if (!modelData.title || !modelData.category || !modelData.code) {
+      return alert("Please fill out the required fields before saving.");
     }
-    onModelCreated(newModel)
+    try {
+      const token = localStorage.getItem("access_token")
+      const createdModel = await createModel(modelData, token!)
+      onModelCreated(createdModel)
+    } catch (err) {
+      console.error("Error saving model:", err)
+    }
   }
 
-  const handleValidate = () => {
-    // Mock validation logic
-    const errors = []
-    const warnings = []
-
-    if (!modelData.title) errors.push("Model title is required")
-    if (!modelData.category) errors.push("Model category is required")
-    if (!modelData.code) errors.push("Model code is required")
-
-    if (modelData.category === "actuarial" && !modelData.datasets.some((d) => d.includes("mortality"))) {
-      warnings.push("Actuarial models typically require mortality tables")
+  const handleValidate = async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      const validation = await validateModel(
+        {
+          code: modelData.code,
+          language: modelData.language,
+          parameters: {},
+          dataset_id: modelData.datasets[0],
+        },
+        token!
+      )
+      if (validation.errors) {
+        setValidationResults({ errors: validation.errors, warnings: [] })
+      } else {
+        setValidationResults({ errors: [], warnings: [] })
+      }
+    } catch (err) {
+      console.error("Validation error:", err)
     }
-
-    setValidationResults({ errors, warnings })
   }
-
   const getCodeTemplate = (language: string, category: string) => {
     const templates = {
       python: {

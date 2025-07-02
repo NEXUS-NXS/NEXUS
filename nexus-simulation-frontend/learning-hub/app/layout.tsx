@@ -1,6 +1,7 @@
 import type React from "react"
 import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/components/auth/AuthProvider"
 import SiteHeader from "@/components/site-header"
 import type { Metadata } from "next"
 
@@ -19,8 +20,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <SiteHeader />
-          <main>{children}</main>
+          <AuthProvider>
+            <SiteHeader />
+            <main>{children}</main>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

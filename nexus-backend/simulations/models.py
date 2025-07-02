@@ -1,7 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User
 from django.db.models import JSONField
 from django.conf import settings
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Model(models.Model):
     LANGUAGE_CHOICES = [
@@ -20,13 +23,17 @@ class Model(models.Model):
 
     def __str__(self):
         return self.name
-
+    
 class Dataset(models.Model):
     name = models.CharField(max_length=255)
-    file_path = models.CharField(max_length=500)  # Path to dataset file
-    metadata = JSONField(default=dict)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    description = models.TextField(blank=True)
+    file = models.FileField(null=True, upload_to='datasets/')
+    format = models.CharField(null=True, max_length=50)
+    size = models.BigIntegerField(null=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datasets', null=True)
+    is_public = models.BooleanField(default=False, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -46,6 +53,8 @@ class Simulation(models.Model):
     progress = models.FloatField(default=0.0)  # 0 to 100
     current_step = models.CharField(max_length=100, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(null=True, blank=True)
+    estimated_completion = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
