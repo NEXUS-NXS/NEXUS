@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,8 @@ import Link from "next/link"
 import { CodeEditor } from "@/components/code-editor"
 import { ParameterBuilder } from "@/components/parameter-builder"
 import { DatasetSelector } from "@/components/dataset-selector"
+import { fetchDatasets, Dataset } from "@/lib/api"
+import { useAuth } from "@/components/auth/AuthProvider"
 
 interface ModelConfig {
   title: string
@@ -28,6 +30,10 @@ interface ModelConfig {
 }
 
 export default function CreateModelPage() {
+  const { isAuthenticated } = useAuth()
+  const [datasets, setDatasets] = useState<Dataset[]>([])
+  const [loadingDatasets, setLoadingDatasets] = useState(false)
+  
   const [config, setConfig] = useState<ModelConfig>({
     title: "",
     description: "",
@@ -40,6 +46,25 @@ export default function CreateModelPage() {
   })
 
   const [activeTab, setActiveTab] = useState("basic")
+
+  // Load datasets when component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadDatasets()
+    }
+  }, [isAuthenticated])
+
+  const loadDatasets = async () => {
+    setLoadingDatasets(true)
+    try {
+      const datasetsData = await fetchDatasets()
+      setDatasets(datasetsData)
+    } catch (error) {
+      console.error('Failed to load datasets:', error)
+    } finally {
+      setLoadingDatasets(false)
+    }
+  }
 
   const handleSave = () => {
     // Save model logic
@@ -212,7 +237,11 @@ export default function CreateModelPage() {
                     <DatasetSelector
                       selectedDatasets={config.datasets}
                       onChange={(datasets) => setConfig((prev) => ({ ...prev, datasets }))}
+                      availableDatasets={datasets}
                     />
+                    {loadingDatasets && (
+                      <p className="text-sm text-gray-500 mt-2">Loading available datasets...</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
