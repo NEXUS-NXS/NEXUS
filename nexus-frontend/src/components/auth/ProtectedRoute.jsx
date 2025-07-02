@@ -1,16 +1,17 @@
-"use client"
-
-import { Navigate } from "react-router-dom"
-import { useUser } from "../../context/UserContext"
+// src/components/ProtectedRoute.js
+import { Navigate, useLocation } from "react-router-dom";
+import { useUser } from "../../context/UserContext";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useUser()
+  const { isAuthenticated } = useUser();
+  const location = useLocation(); // Get the current location
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    // Redirect to login, preserving the intended URL in state
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children
-}
+  return children;
+};
 
-export default ProtectedRoute
+export default ProtectedRoute;

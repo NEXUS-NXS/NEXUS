@@ -4,6 +4,8 @@ from django.db.models import JSONField
 import uuid
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+from django.core.validators import FileExtensionValidator
+
 
 User = get_user_model()
 
@@ -25,7 +27,7 @@ class Instructor(models.Model):
         return self.user.get_full_name() or self.user.username
 
 class Tag(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
@@ -71,6 +73,14 @@ class Course(models.Model):
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES)
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default="beginner")
     estimated_duration = models.CharField(max_length=100, blank=True)
+    cover_picture = models.ImageField(
+    upload_to='courses/covers/',
+    blank=True,
+    null=True,
+    validators=[
+        FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif']),
+    ]
+)
     tags = models.ManyToManyField(Tag, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
     created_at = models.DateTimeField(auto_now_add=True)

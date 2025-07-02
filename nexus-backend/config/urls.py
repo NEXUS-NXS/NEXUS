@@ -30,9 +30,6 @@ urlpatterns = [
     # path('api/courses/', include('apps.courses.urls')),
     path("api/mental_health/", include("mental_health.urls")),
     # Add other app URLs here
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Serve static and media files in development
-# if settings.DEBUG:
-#     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
