@@ -26,6 +26,7 @@ urlpatterns = [
     # API endpoints will be added here
     # path('api/', include('apps.users.urls')),
     # path('api/courses/', include('apps.courses.urls')),
+    path("api/mental_health/", include("mental_health.urls")),
     # Add other app URLs here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
