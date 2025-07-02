@@ -331,6 +331,20 @@ twisted = {version = ">=22.4", extras = ["tls"]}
 tests = ["black", "django", "flake8", "flake8-bugbear", "hypothesis", "mypy", "pytest", "pytest-asyncio", "pytest-cov", "tox"]
 
 [[package]]
+name = "dj-database-url"
+version = "3.0.1"
+description = "Use Database URLs in your Django Application."
+optional = false
+python-versions = "*"
+files = [
+    {file = "dj_database_url-3.0.1-py3-none-any.whl", hash = "sha256:43950018e1eeea486bf11136384aec0fe55b29fe6fd8a44553231b85661d9383"},
+    {file = "dj_database_url-3.0.1.tar.gz", hash = "sha256:8994961efb888fc6bf8c41550870c91f6f7691ca751888ebaa71442b7f84eff8"},
+]
+
+[package.dependencies]
+Django = ">=4.2"
+
+[[package]]
 name = "django"
 version = "5.1.11"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
@@ -874,6 +888,17 @@ typing-extensions = {version = ">=4.9", markers = "python_version < \"3.13\" and
 [package.extras]
 docs = ["sphinx (!=5.2.0,!=5.2.0.post0,!=7.2.5)", "sphinx_rtd_theme"]
 test = ["pretend", "pytest (>=3.0.1)", "pytest-rerunfailures"]
+
+[[package]]
+name = "python-decouple"
+version = "3.8"
+description = "Strict separation of settings from code."
+optional = false
+python-versions = "*"
+files = [
+    {file = "python-decouple-3.8.tar.gz", hash = "sha256:ba6e2657d4f376ecc46f77a3a615e058d93ba5e465c01bbe57289bfb7cce680f"},
+    {file = "python_decouple-3.8-py3-none-any.whl", hash = "sha256:d0d45340815b25f4de59c974b855bb38d03151d81b037d9e3f463b0c9f8cbd66"},
+]
 
 [[package]]
 name = "python-dotenv"
@@ -1443,4 +1468,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "3617b8c0e856d36e726bf2a96789de5690dabcd0439418b475b76458806e8330"
+content-hash = "5c434c0110d86d6e4cb843b788c2cbd38519e1bc8563e84c9d8f635584b6029d"

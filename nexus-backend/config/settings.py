@@ -1,6 +1,9 @@
+import dj_database_url
+from decouple import config
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -165,11 +168,9 @@ CHANNEL_LAYERS = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / os.getenv('DB_NAME', 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(default=config('DATABASE_URL'))
 }
+
 
 
 # Password validation
