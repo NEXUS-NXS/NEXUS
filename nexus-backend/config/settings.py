@@ -38,20 +38,22 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'django_filters',
     'channels',
     'django_extensions',
-    'django_filters',
+    'sslserver',
     
     # Local apps
     'users.apps.UsersConfig',
     'courses.apps.CoursesConfig',
     'study_groups.apps.StudyGroupsConfig',
-    'resources.apps.ResourcesConfig',
+    'resources',  # Using the app name directly instead of ResourcesConfig
     'chat.apps.ChatConfig',
     'accounts.apps.AccountsConfig',
     'simulations',
     'mental_health.apps.MentalHealthConfig',
     'career_mentorship.apps.CareerMentorshipConfig',
+    'certificates.apps.CertificatesConfig',
     'learnhub.apps.LearnhubConfig',
 ]   
 
@@ -69,7 +71,6 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-# CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 CORS_ALLOWED_ORIGINS = [
     'https://127.0.0.1:5173',
     'http://127.0.0.1:5173',
@@ -105,7 +106,11 @@ CORS_ALLOW_HEADERS = [
 
 
 # REST Framework settings
+
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
     
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'chat.authentication.CookieJWTAuthentication',  # Add your custom class

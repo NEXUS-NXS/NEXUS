@@ -30,6 +30,14 @@ restrictedpython = {markers = "python_version < \"3.14\" and python_version >= \
 google-generativeai = "^0.8.5"
 axios = "^0.4.0"
 openai = "^1.93.0"
+django-sslserver = "^0.22"
+uvicorn = "^0.34.3"
+django-filter = "^25.1"
+pypdf2 = "^3.0.1"
+python-magic = "^0.4.27"  # For better file type detection
+django-cleanup = "^8.0.0"  # For automatic file cleanup
+python-dateutil = "^2.9.0"  # For date parsing
+python-slugify = "^8.0.4"  # For creating URL-friendly slugs
 
 
 [tool.poetry.group.dev.dependencies]

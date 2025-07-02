@@ -27,6 +27,7 @@ import CreateCourse from "./pages/CreateCourse";
 import MentorMatch from "./pages/MentorMatch";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CourseLibrary from "./pages/CourseLibrary";
+import ResourceDetails from "./pages/ResourceDetails";
 
 function AppContent({ isMobile }) {
   const location = useLocation();
@@ -92,6 +93,14 @@ function AppContent({ isMobile }) {
                   }
                 />
                 <Route
+                  path="/resources/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ResourceDetails />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/learninghub"
                   element={
                     <ProtectedRoute>
@@ -118,13 +127,12 @@ function AppContent({ isMobile }) {
                 <Route
                   path="/course/:courseId"
                   element={
-                    
-                      <CourseLesson />
-                    
+
+                    <CourseLesson />
+
                   }
                 />
-                
-                <Route path="/admin/course-library" element={<ProtectedRoute><CourseLibrary/></ProtectedRoute>}/>
+                <Route path="/admin/course-library" element={<CourseLibrary />} />
                 <Route
                   path="/my-certificates"
                   element={
@@ -192,9 +200,9 @@ function AppContent({ isMobile }) {
                 <Route
                   path="/create-course"
                   element={
-                    
-                      <CreateCourse />
-                    
+
+                    <CreateCourse />
+
                   }
                 />
                 <Route

@@ -2,9 +2,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Search, Filter, Star, Users, Clock, BookOpen, Play, Award, TrendingUp } from "lucide-react";
+import { Search, Filter, Star, Users, Clock, BookOpen, Play, Award, TrendingUp, FileText } from "lucide-react";
 import "./LearningHub.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import axios from "axios";
 
@@ -29,8 +29,18 @@ const courseLevels = [
 
 const LearningHub = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, fetchCsrfToken, refreshToken } = useUser();
   const [activeTab, setActiveTab] = useState("enrolled");
+  
+  // Update active tab based on current route
+  useEffect(() => {
+    if (location.pathname === '/my-certificates') {
+      setActiveTab('certificates');
+    } else if (location.pathname === '/learninghub') {
+      setActiveTab('enrolled');
+    }
+  }, [location.pathname]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -435,6 +445,13 @@ const LearningHub = () => {
           >
             <TrendingUp size={20} />
             All Available Courses ({availableCourses.length})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "certificates" ? "active" : ""}`}
+            onClick={() => navigate("/my-certificates")}
+          >
+            <FileText size={20} />
+            My Certificates
           </button>
         </div>
       </div>
