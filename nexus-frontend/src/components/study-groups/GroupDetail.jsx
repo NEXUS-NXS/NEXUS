@@ -89,7 +89,7 @@ useEffect(() => {
     setError(null);
     try {
       const messagesRes = await axios.get(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/messages/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/messages/`,
         { withCredentials: true }
       );
       setMessages(messagesRes.data.map(msg => ({
@@ -107,7 +107,7 @@ useEffect(() => {
       })));
 
       const membersRes = await axios.get(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/`,
         { withCredentials: true }
       );
       setMembers(membersRes.data.map(m => ({
@@ -293,7 +293,7 @@ const handleUpdateGroup = (updatedGroup) => {
         formData.append('message_type', fileType.toUpperCase())
 
         const response = await axios.post(
-          `https://127.0.0.1:8000/chats/groups/${group.id}/messages/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/messages/`,
           formData,
           {
             headers: {
@@ -332,7 +332,7 @@ const handleUpdateGroup = (updatedGroup) => {
     try {
       const csrfToken = getCookie('csrftoken')
       await axios.delete(
-        `https://127.0.0.1:8000/chats/messages/${messageId}/delete/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/messages/${messageId}/delete/`,
         {
           headers: { 'X-CSRFToken': csrfToken },
           withCredentials: true

@@ -42,9 +42,9 @@ const StudyGroups = () => {
     setIsLoading(true)
     setError(null)
     try {
-      let url = "https://127.0.0.1:8000/chats/groups/"
+      let url = "https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/"
       if (activeTab === "my-groups") {
-        url = "https://127.0.0.1:8000/chats/my-groups/"
+        url = "https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/my-groups/"
       }
       const response = await axios.get(url, { withCredentials: true })
       setGroups(response.data)
@@ -63,8 +63,8 @@ const StudyGroups = () => {
   const fetchCategoriesAndExams = async () => {
     try {
       const [categoriesRes, examsRes] = await Promise.all([
-        axios.get("https://127.0.0.1:8000/chats/categories/", { withCredentials: true }),
-        axios.get("https://127.0.0.1:8000/chats/exam-focus/", { withCredentials: true })
+        axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/categories/", { withCredentials: true }),
+        axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/exam-focus/", { withCredentials: true })
       ])
       setCategories(categoriesRes.data)
       setExamFocuses(examsRes.data)
@@ -121,7 +121,7 @@ const StudyGroups = () => {
 
       const csrfToken = getCookie('csrftoken')
       const response = await axios.post(
-        "https://127.0.0.1:8000/chats/groups/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/",
         formData,
         {
           headers: {
@@ -151,7 +151,7 @@ const StudyGroups = () => {
       const token = localStorage.getItem("access_token"); // Get JWT token
 
       const response = await axios.post(
-        `https://127.0.0.1:8000/chats/groups/${groupId}/join/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${groupId}/join/`,
         {},
         {
         headers: {
@@ -186,7 +186,7 @@ const StudyGroups = () => {
     try {
       const csrfToken = getCookie('csrftoken')
       const response = await axios.post(
-        `https://127.0.0.1:8000/chats/groups/${groupId}/leave/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${groupId}/leave/`,
         {},
         { 
           headers: { 'X-CSRFToken': csrfToken },
@@ -210,7 +210,7 @@ const StudyGroups = () => {
     try {
       const csrfToken = getCookie('csrftoken')
       const response = await axios.post(
-        `https://127.0.0.1:8000/chats/join/${inviteLink}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/join/${inviteLink}/`,
         {},
         { 
           headers: { 'X-CSRFToken': csrfToken },
