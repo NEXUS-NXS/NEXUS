@@ -70,10 +70,10 @@ MIDDLEWARE = [
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 CORS_ALLOWED_ORIGINS = [
-    'https://vermillion-cajeta-3f48b9.netlify.app',
+    'https://golden-axolotl-3ef9e6.netlify.app/',
 ]
 
-CSRF_TRUSTED_ORIGINS = ['https://vermillion-cajeta-3f48b9.netlify.app']
+CSRF_TRUSTED_ORIGINS = ['https://golden-axolotl-3ef9e6.netlify.app']
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -235,7 +235,7 @@ CSRF_COOKIE_SAMESITE = 'None'  # Or 'None' if you're working across domains
 CSRF_COOKIE_SECURE = True  # True in production (when using https)
 CSRF_COOKIE_DOMAIN = '.herokuapp.com'
 CSRF_TRUSTED_ORIGINS = [
-    'https://vermillion-cajeta-3f48b9.netlify.app',
+    'https://golden-axolotl-3ef9e6.netlify.app',
     'https://nexus-test-api-8bf398f16fc4.herokuapp.com'
 ]
 
