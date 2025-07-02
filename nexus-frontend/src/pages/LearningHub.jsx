@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Search, Filter, Star, Users, Clock, BookOpen, Play, Award, TrendingUp } from "lucide-react";
 import "./LearningHub.css";
 import { useNavigate } from "react-router-dom";
@@ -35,12 +36,14 @@ const LearningHub = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [availableCourses, setAvailableCourses] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [coverPictures, setCoverPictures] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const loggedErrors = useRef(new Set());
 
   const getAccessToken = () => localStorage.getItem("access_token");
 
+  // Fetch courses
   useEffect(() => {
     const fetchCourses = async () => {
       setLoading(true);
@@ -49,6 +52,8 @@ const LearningHub = () => {
         const csrfToken = await fetchCsrfToken();
         if (!accessToken || !isAuthenticated) {
           setError("Please log in to view courses.");
+          setLoading(false);
+          navigate("/login");
           return;
         }
 
@@ -61,9 +66,8 @@ const LearningHub = () => {
           withCredentials: true,
         });
 
-        // Use backend-provided progress data
         const enrichedCourses = (enrolledResponse.data.results || []).map((course) => {
-          console.log(`Course ${course.id} Data:`, {
+          console.log(`Enrolled Course ${course.id} Data:`, {
             progress: course.progress,
             completed_lessons: course.completed_lessons,
             total_lessons: course.total_lessons,
@@ -94,28 +98,90 @@ const LearningHub = () => {
           }
         );
         setAvailableCourses(availableResponse.data.results || []);
-        setFilteredCourses(availableResponse.data.results || []);
+
+        setLoading(false);
       } catch (err) {
-        console.error("Fetch courses error:", err.response?.status, err.response?.data);
+        console.error("Fetch courses error:", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
         if (err.response?.status === 401) {
           const refreshed = await refreshToken();
           if (refreshed) {
             fetchCourses();
           } else {
             setError("Authentication failed. Please log in again.");
+            navigate("/login");
           }
         } else {
           setError(err.response?.data?.detail || "Failed to fetch courses.");
         }
-      } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchCsrfToken, refreshToken, navigate]);
 
+  // Fetch cover images using individual get-cover calls
   useEffect(() => {
+    const fetchCoverImages = async () => {
+      const allCourses = [...enrolledCourses, ...availableCourses];
+      const uniqueCourseIds = [...new Set(allCourses.map(course => course.id))];
+      if (uniqueCourseIds.length === 0) return;
+
+      console.log("Fetching cover images for course IDs:", uniqueCourseIds.join(","));
+
+      try {
+        const accessToken = getAccessToken();
+        const csrfToken = await fetchCsrfToken();
+        const coverPicturePromises = uniqueCourseIds.map(async (courseId) => {
+          try {
+            const coverResponse = await axios.get(
+              `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "X-CSRFToken": csrfToken,
+                  "Content-Type": "application/json",
+                },
+                withCredentials: true,
+                timeout: 5000,
+              }
+            );
+            console.log(`Cover picture for course ${courseId}:`, coverResponse.data.cover_picture);
+            return { id: courseId, cover_picture: coverResponse.data.cover_picture };
+          } catch (err) {
+            console.error(`Failed to fetch cover for course ${courseId}:`, {
+              status: err.response?.status,
+              data: err.response?.data,
+              message: err.message,
+            });
+            return { id: courseId, cover_picture: null };
+          }
+        });
+
+        const coverPicturesData = await Promise.all(coverPicturePromises);
+        const coverPicturesMap = coverPicturesData.reduce((acc, { id, cover_picture }) => {
+          acc[id] = cover_picture;
+          return acc;
+        }, {});
+        console.log("Cover pictures map:", coverPicturesMap);
+        setCoverPictures(coverPicturesMap);
+      } catch (err) {
+        console.error("Failed to fetch cover pictures:", {
+          message: err.message,
+          stack: err.stack,
+        });
+        setCoverPictures({});
+      }
+    };
+
+    fetchCoverImages();
+  }, [enrolledCourses, availableCourses, fetchCsrfToken]);
+
+  const filteredCourses = useMemo(() => {
     const coursesToFilter = activeTab === "enrolled" ? enrolledCourses : availableCourses;
     let filtered = [...coursesToFilter];
 
@@ -137,7 +203,7 @@ const LearningHub = () => {
       );
     }
 
-    setFilteredCourses(filtered);
+    return filtered;
   }, [activeTab, selectedCategory, selectedLevel, searchQuery, enrolledCourses, availableCourses]);
 
   const handleEnroll = async (courseId) => {
@@ -165,7 +231,6 @@ const LearningHub = () => {
         withCredentials: true,
       });
 
-      // Use backend-provided progress data for new course
       const newCourse = enrolledResponse.data.results.find((c) => c.id === courseId);
       if (newCourse) {
         const updatedCourse = {
@@ -186,9 +251,40 @@ const LearningHub = () => {
         setEnrolledCourses([...enrolledCourses.filter((c) => c.id !== courseId), updatedCourse]);
       }
 
+      // Update cover picture for the new enrolled course
+      try {
+        const coverResponse = await axios.get(
+          `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+            timeout: 5000,
+          }
+        );
+        console.log(`Cover picture for enrolled course ${courseId}:`, coverResponse.data.cover_picture);
+        setCoverPictures((prev) => ({
+          ...prev,
+          [courseId]: coverResponse.data.cover_picture,
+        }));
+      } catch (err) {
+        console.error(`Failed to fetch cover for enrolled course ${courseId}:`, {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+      }
+
       alert("Successfully enrolled!");
     } catch (err) {
-      console.error("Enroll error:", err.response?.status, err.response?.data);
+      console.error("Enroll error:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+      });
       if (err.response?.status === 401) {
         const refreshed = await refreshToken();
         if (refreshed) handleEnroll(courseId);
@@ -207,7 +303,18 @@ const LearningHub = () => {
   const renderEnrolledCourse = (course) => (
     <div key={course.id} className="enrolled-course-card">
       <div className="course-thumbnail">
-        <img src={course.thumbnail || "/placeholder.svg"} alt={course.title} />
+        <img
+          src={coverPictures[course.id] || "/placeholder.svg"}
+          alt={course.title}
+          className="thumbnail-image"
+          onError={(e) => {
+            if (!loggedErrors.current.has(`enrolled-${course.id}`)) {
+              console.log(`Image load failed for enrolled course ${course.id}:`, coverPictures[course.id]);
+              loggedErrors.current.add(`enrolled-${course.id}`);
+              e.target.src = "/placeholder.svg";
+            }
+          }}
+        />
         <div className="progress-overlay">
           <div className="progress-circle">
             <span>{course.progress}%</span>
@@ -248,7 +355,18 @@ const LearningHub = () => {
     <div key={course.id} className="available-course-card">
       {course.is_popular && <div className="popular-badge">Popular</div>}
       <div className="course-thumbnail">
-        <img src={course.thumbnail || "/placeholder.svg"} alt={course.title} />
+        <img
+          src={coverPictures[course.id] || "/placeholder.svg"}
+          alt={course.title}
+          className="thumbnail-image"
+          onError={(e) => {
+            if (!loggedErrors.current.has(`available-${course.id}`)) {
+              console.log(`Image load failed for available course ${course.id}:`, coverPictures[course.id]);
+              loggedErrors.current.add(`available-${course.id}`);
+              e.target.src = "/placeholder.svg";
+            }
+          }}
+        />
         <div className="course-overlay">
           <button
             className="preview-btn"
