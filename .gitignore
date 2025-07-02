@@ -30,8 +30,9 @@ static/*
 !static/.gitkeep
 
 #ignore all django migration files
-**/migrations/*.py
+# Only ignore compiled migration files
 **/migrations/*.pyc
+
 
 # Environment variables
 .env
