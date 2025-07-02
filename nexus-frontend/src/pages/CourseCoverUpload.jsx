@@ -39,7 +39,7 @@ const CourseCoverUpload = ({ courseId, onClose, accessToken, fetchCsrfToken }) =
       formData.append("cover_picture", file);
 
       const response = await axios.patch(
-        `https://127.0.0.1:8000/courses/api/courses/${courseId}/upload-cover/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/upload-cover/`,
         formData,
         {
           headers: {

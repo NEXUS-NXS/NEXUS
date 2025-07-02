@@ -199,7 +199,7 @@ useEffect(() => {
           return;
         }
 
-        const courseResponse = await axios.get(`https://127.0.0.1:8000/courses/api/courses/${courseId}/`, {
+        const courseResponse = await axios.get(`https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "X-CSRFToken": csrfToken,
@@ -207,7 +207,7 @@ useEffect(() => {
           withCredentials: true,
         });
 
-        const modulesResponse = await axios.get(`https://127.0.0.1:8000/courses/api/modules/?course_id=${courseId}`, {
+        const modulesResponse = await axios.get(`https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/modules/?course_id=${courseId}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "X-CSRFToken": csrfToken,
@@ -219,7 +219,7 @@ useEffect(() => {
 
         const modulesWithLessons = await Promise.all(
           modulesData.map(async (module) => {
-            const lessonsResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/?module_id=${module.id}`, {
+            const lessonsResponse = await axios.get(`https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/?module_id=${module.id}`, {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
                 "X-CSRFToken": csrfToken,
@@ -227,7 +227,7 @@ useEffect(() => {
               withCredentials: true,
             });
 
-            const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson__module=${module.id}`, {
+            const progressResponse = await axios.get(`https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/progress/?lesson__module=${module.id}`, {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
                 "X-CSRFToken": csrfToken,
@@ -287,14 +287,14 @@ useEffect(() => {
           lessonData = allLessons.find((lesson) => lesson.id === parseInt(lessonId));
           if (!lessonData) {
             try {
-              const lessonResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`, {
+              const lessonResponse = await axios.get(`https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/${lessonId}/`, {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
                   "X-CSRFToken": csrfToken,
                 },
                 withCredentials: true,
               });
-              const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson=${lessonId}`, {
+              const progressResponse = await axios.get(`https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/progress/?lesson=${lessonId}`, {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
                   "X-CSRFToken": csrfToken,
@@ -484,7 +484,7 @@ const navigateToNextLesson = () => {
       });
 
       await axios.post(
-        "https://127.0.0.1:8000/courses/api/progress/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/progress/",
         {
           lesson: activeLesson.id,
           is_completed: true,
@@ -546,7 +546,7 @@ const navigateToNextLesson = () => {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       const response = await axios.post(
-        "https://127.0.0.1:8000/courses/api/quiz-submissions/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/quiz-submissions/",
         {
           lesson: activeLesson.id,
           answers: quizAnswers,

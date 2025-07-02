@@ -64,7 +64,7 @@ const CourseLibrary = () => {
       setLoading(true);
       const accessToken = getAccessToken();
       console.log("Fetching courses with token:", accessToken);
-      const response = await axios.get("https://127.0.0.1:8000/courses/api/courses/", {
+      const response = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
@@ -83,7 +83,7 @@ const CourseLibrary = () => {
       const coverPicturePromises = coursesData.map(async (course) => {
         try {
           const coverResponse = await axios.get(
-            `https://127.0.0.1:8000/courses/api/courses/${course.id}/get-cover/`,
+            `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${course.id}/get-cover/`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,

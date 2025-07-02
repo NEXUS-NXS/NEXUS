@@ -28,7 +28,7 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         console.log(`Fetching CSRF token (attempt ${i + 1})...`);
-        await axios.get("https://127.0.0.1:8000/auth/csrf/", {
+        await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/", {
           withCredentials: true,
         });
 
@@ -58,7 +58,7 @@ export const UserProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       console.log("Checking authentication...");
-      await axios.get("https://127.0.0.1:8000/auth/protected/", {
+      await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/protected/", {
         headers: {
           Authorization: `Bearer ${getAccessToken()}`,
         },
@@ -84,7 +84,7 @@ export const UserProvider = ({ children }) => {
       console.log("Fetching chat user ID...");
       const accessToken = getAccessToken();
       if (!accessToken) throw new Error("No access token for chat user ID fetch");
-      const response = await axios.get("https://127.0.0.1:8000/chats/api/me/", {
+      const response = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/api/me/", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -132,7 +132,7 @@ export const UserProvider = ({ children }) => {
       try {
         console.log("Fetching profile...");
         const profileResponse = await axios.get(
-          "https://127.0.0.1:8000/auth/api/profile/me/", // Use /profile/ for consistency with previous logs
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/", // Use /profile/ for consistency with previous logs
           {
             headers: {
               Authorization: `Bearer ${access}`,
@@ -200,7 +200,7 @@ export const UserProvider = ({ children }) => {
 
       console.log("Registering with email:", email);
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/register/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/register/",
         {
           full_name: fullName,
           email,
@@ -224,7 +224,7 @@ export const UserProvider = ({ children }) => {
       try {
         console.log("Fetching profile after registration...");
         const profileResponse = await axios.get(
-          "https://127.0.0.1:8000/auth/api/profile/me/", // Use /profile/ for consistency
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/", // Use /profile/ for consistency
           {
             headers: {
               Authorization: `Bearer ${access}`,
@@ -320,7 +320,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
       console.log("Refreshing token with CSRF:", csrfToken);
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/token/refresh/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/token/refresh/",
         {},
         {
           headers: { "X-CSRFToken": csrfToken },

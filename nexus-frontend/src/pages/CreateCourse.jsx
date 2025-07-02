@@ -154,7 +154,7 @@ const CreateCourse = () => {
       console.log("Access token for email check:", accessToken);
       if (!accessToken) throw new Error("No access token found");
 
-      const response = await axios.get("https://127.0.0.1:8000/auth/api/profile-by-email/by-email/", {
+      const response = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile-by-email/by-email/", {
         params: { email: email.toLowerCase() },
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -323,7 +323,7 @@ const CreateCourse = () => {
     console.log("Course data payload:", courseData);
 
     const response = await axios.post(
-      "https://127.0.0.1:8000/courses/api/courses/",
+      "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/",
       courseData,
       {
         headers: {

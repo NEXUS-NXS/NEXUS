@@ -58,7 +58,7 @@ const LearningHub = () => {
         }
 
         // Fetch enrolled courses
-        const enrolledResponse = await axios.get("https://127.0.0.1:8000/courses/api/enrolled-courses/", {
+        const enrolledResponse = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrolled-courses/", {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "X-CSRFToken": csrfToken,
@@ -88,7 +88,7 @@ const LearningHub = () => {
 
         // Fetch available courses
         const availableResponse = await axios.get(
-          "https://127.0.0.1:8000/courses/api/courses/?status=published",
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/?status=published",
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -139,7 +139,7 @@ const LearningHub = () => {
         const coverPicturePromises = uniqueCourseIds.map(async (courseId) => {
           try {
             const coverResponse = await axios.get(
-              `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+              `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/get-cover/`,
               {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
@@ -211,7 +211,7 @@ const LearningHub = () => {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       await axios.post(
-        "https://127.0.0.1:8000/courses/api/enrollments/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrollments/",
         { course: courseId },
         {
           headers: {
@@ -223,7 +223,7 @@ const LearningHub = () => {
         }
       );
       // Refresh enrolled courses
-      const enrolledResponse = await axios.get("https://127.0.0.1:8000/courses/api/enrolled-courses/", {
+      const enrolledResponse = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrolled-courses/", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "X-CSRFToken": csrfToken,
@@ -254,7 +254,7 @@ const LearningHub = () => {
       // Update cover picture for the new enrolled course
       try {
         const coverResponse = await axios.get(
-          `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/get-cover/`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,

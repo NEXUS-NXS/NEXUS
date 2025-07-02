@@ -90,7 +90,7 @@ const Profile = () => {
       // Fallback: Fetch profile ID from /me/
       console.warn("Profile ID missing, fetching from /me/");
       const profileResponse = await axios.get(
-        "https://127.0.0.1:8000/auth/api/profile/me/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/",
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -120,7 +120,7 @@ const Profile = () => {
 
     // ✅ This PATCH block is now OUTSIDE the `if (!profileId)` block
     const response = await axios.patch(
-      `https://127.0.0.1:8000/auth/api/profile/${profileId}/`,
+      `https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/${profileId}/`,
       formData,
       {
         headers: {
