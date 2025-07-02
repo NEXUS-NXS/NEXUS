@@ -24,6 +24,7 @@ urlpatterns = [
     path('auth/', include('accounts.urls')),
     path('chats/', include('chat.urls')),
     path('courses/', include('learnhub.urls')),
+    path("api/mental_health/", include("mental_health.urls")),
     
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
