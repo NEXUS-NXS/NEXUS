@@ -1,18 +1,53 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Zap, CheckCircle } from "lucide-react"
 
 interface SimulationProgressProps {
-  progress: number
-  currentStep: string
-  status: "validating" | "running"
+  sessionId: string
   startTime?: Date
 }
 
-export function SimulationProgress({ progress, currentStep, status, startTime }: SimulationProgressProps) {
+export function SimulationProgress({ sessionId, startTime }: SimulationProgressProps) {
+  const [progress, setProgress] = useState(0)
+  const [currentStep, setCurrentStep] = useState("Starting...")
+  const [status, setStatus] = useState<"validating" | "running" | "completed" | "failed">("running")
+
+  const wsRef = useRef<WebSocket | null>(null)
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+    const wsUrl = `${protocol}://${window.location.host}/ws/simulation/${sessionId}/`
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      console.log("WebSocket connected to:", wsUrl)
+    }
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      if (data.progress !== undefined) setProgress(data.progress)
+      if (data.current_step) setCurrentStep(data.current_step)
+      if (data.status) setStatus(data.status)
+    }
+
+    ws.onclose = () => {
+      console.log("WebSocket disconnected")
+    }
+
+    ws.onerror = (e) => {
+      console.error("WebSocket error", e)
+    }
+
+    return () => {
+      ws.close()
+    }
+  }, [sessionId])
+
   const getElapsedTime = () => {
     if (!startTime) return "0s"
     const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000)
@@ -37,7 +72,13 @@ export function SimulationProgress({ progress, currentStep, status, startTime }:
             ) : (
               <CheckCircle className="mr-2 h-5 w-5 text-blue-600" />
             )}
-            {status === "validating" ? "Validating Model" : "Running Simulation"}
+            {status === "validating"
+              ? "Validating Model"
+              : status === "completed"
+              ? "Simulation Completed"
+              : status === "failed"
+              ? "Simulation Failed"
+              : "Running Simulation"}
           </CardTitle>
           <Badge variant={status === "validating" ? "secondary" : "default"}>{progress}% Complete</Badge>
         </div>
@@ -62,7 +103,6 @@ export function SimulationProgress({ progress, currentStep, status, startTime }:
           </div>
         </div>
 
-        {/* Progress Steps */}
         <div className="grid grid-cols-4 gap-2 mt-4">
           {[
             { step: "Validate", threshold: 25 },
@@ -74,7 +114,9 @@ export function SimulationProgress({ progress, currentStep, status, startTime }:
               <div
                 className={`w-full h-2 rounded-full mb-1 ${progress >= threshold ? "bg-blue-600" : "bg-gray-200"}`}
               />
-              <span className={`text-xs ${progress >= threshold ? "text-blue-900 font-medium" : "text-gray-500"}`}>
+              <span
+                className={`text-xs ${progress >= threshold ? "text-blue-900 font-medium" : "text-gray-500"}`}
+              >
                 {step}
               </span>
             </div>

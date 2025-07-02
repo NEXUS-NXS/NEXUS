@@ -69,7 +69,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         if user and user.check_password(password):
             refresh = RefreshToken.for_user(user)
-            profile = Profile.objects.get(user=user)
+            profile, created = Profile.objects.get_or_create(user=user)
 
             # Include tokens in the JSON response
             response_data = {

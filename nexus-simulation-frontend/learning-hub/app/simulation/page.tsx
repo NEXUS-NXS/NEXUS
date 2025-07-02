@@ -1,17 +1,28 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Play, Plus, Search, Users, Code, Database, BarChart3, FileText, Upload } from "lucide-react"
+import { Play, Plus, Search, Users, Code, Database, BarChart3, FileText, Upload, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ModelLibrary } from "@/components/simulation/model-library"
 import { ModelCreator } from "@/components/simulation/model-creator"
 import { SimulationWorkspace } from "@/components/simulation/simulation-workspace"
 import { CollaborationHub } from "@/components/simulation/collaboration-hub"
 import { DatasetManager } from "@/components/simulation/dataset-manager"
+import { useAuth } from "@/components/auth/AuthProvider"
+import { 
+  fetchModels, 
+  fetchDatasets, 
+  runSimulation,
+  fetchSimulationSessions,
+  SimulationModel as APIModel,
+  Dataset,
+  SimulationSession as APISession
+} from "@/lib/api"
 
 interface SimulationModel {
   id: string
@@ -37,12 +48,133 @@ interface SimulationSession {
 }
 
 export default function SimulationPage() {
+  const { user, isAuthenticated, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState("library")
   const [selectedModel, setSelectedModel] = useState<SimulationModel | null>(null)
   const [currentSession, setCurrentSession] = useState<SimulationSession | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedLanguage, setSelectedLanguage] = useState("all")
+  
+  // API state
+  const [models, setModels] = useState<SimulationModel[]>([])
+  const [datasets, setDatasets] = useState<Dataset[]>([])
+  const [sessions, setSessions] = useState<APISession[]>([])
+  const [apiError, setApiError] = useState<string | null>(null)
+  const [dataLoading, setDataLoading] = useState(false)
+
+  // Load data when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadData()
+    }
+  }, [isAuthenticated, user, selectedCategory, selectedLanguage])
+
+  const loadData = async () => {
+    setDataLoading(true)
+    setApiError(null)
+    
+    try {
+      // Fetch models with filters
+      const modelsData = await fetchModels({
+        ...(selectedCategory !== 'all' && { category: selectedCategory }),
+        ...(selectedLanguage !== 'all' && { language: selectedLanguage })
+      })
+      
+      // Transform API models to frontend format
+      const transformedModels: SimulationModel[] = modelsData.map((model: APIModel) => ({
+        id: model.id,
+        title: model.name,
+        description: model.description || '',
+        category: model.category,
+        language: model.language,
+        author: model.owner,
+        lastModified: model.updated_at,
+        isPublic: model.isPublic || false,
+        collaborators: 0, // TODO: Add to backend
+        runs: 0, // TODO: Add to backend  
+        rating: 0, // TODO: Add to backend
+      }))
+      
+      setModels(transformedModels)
+      
+      // Fetch datasets and sessions in parallel
+      const [datasetsData, sessionsData] = await Promise.all([
+        fetchDatasets(),
+        fetchSimulationSessions()
+      ])
+      
+      setDatasets(datasetsData)
+      setSessions(sessionsData)
+      
+    } catch (error) {
+      console.error('Failed to load data:', error)
+      setApiError(error instanceof Error ? error.message : 'Failed to load data')
+    } finally {
+      setDataLoading(false)
+    }
+  }
+
+  const handleModelSelect = (model: SimulationModel) => {
+    setSelectedModel(model)
+    setActiveTab("workspace")
+  }
+
+  const handleRunSimulation = async (modelId: string, parameters: any, datasetId?: string) => {
+    try {
+      const response = await runSimulation({
+        model_id: modelId,
+        parameters,
+        dataset_id: datasetId
+      })
+      
+      // Create session object
+      const newSession: SimulationSession = {
+        id: response.session_id,
+        modelId,
+        status: 'running',
+        progress: 0,
+        collaborators: [user?.full_name || 'You'],
+        results: null
+      }
+      
+      setCurrentSession(newSession)
+      setActiveTab("workspace")
+      
+      // Refresh sessions list
+      loadData()
+      
+    } catch (error) {
+      console.error('Failed to run simulation:', error)
+      setApiError(error instanceof Error ? error.message : 'Failed to run simulation')
+    }
+  }
+
+  // Show loading spinner during auth check
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  // Show auth required message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">
+            You need to be logged in to access the Nexus Simulation Platform.
+          </p>
+          <Button onClick={() => window.location.href = 'https://127.0.0.1:5173/login?from_simulation=true'}>
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   const categories = [
     { id: "actuarial", name: "Actuarial Models", icon: "📊", color: "bg-blue-500" },
@@ -59,379 +191,171 @@ export default function SimulationPage() {
     { id: "fel", name: "Fast Expression Language", icon: "⚡" },
   ]
 
-  const mockModels: SimulationModel[] = [
-    {
-      id: "1",
-      title: "Monte Carlo Portfolio Risk",
-      description: "Simulate portfolio risk using Monte Carlo methods with multiple asset classes",
-      category: "financial",
-      language: "python",
-      author: "Dr. Sarah Chen",
-      lastModified: "2023-12-15",
-      isPublic: true,
-      collaborators: 3,
-      runs: 1247,
-      rating: 4.8,
-    },
-    {
-      id: "2",
-      title: "Climate Risk Assessment",
-      description: "Assess climate-related financial risks using scenario analysis",
-      category: "climate",
-      language: "r",
-      author: "Prof. Michael Torres",
-      lastModified: "2023-12-14",
-      isPublic: true,
-      collaborators: 2,
-      runs: 892,
-      rating: 4.6,
-    },
-    {
-      id: "3",
-      title: "Mortality Rate Projection",
-      description: "Project future mortality rates using Lee-Carter model",
-      category: "actuarial",
-      language: "python",
-      author: "Dr. Emma Wilson",
-      lastModified: "2023-12-13",
-      isPublic: true,
-      collaborators: 4,
-      runs: 634,
-      rating: 4.7,
-    },
-    {
-      id: "4",
-      title: "Epidemic Spread Model",
-      description: "SEIR model for disease spread with intervention scenarios",
-      category: "health",
-      language: "fel",
-      author: "Dr. James Park",
-      lastModified: "2023-12-12",
-      isPublic: true,
-      collaborators: 2,
-      runs: 445,
-      rating: 4.5,
-    },
-    {
-      id: "5",
-      title: "Neural Network Pricing",
-      description: "Deep learning model for insurance premium calculation",
-      category: "ml",
-      language: "python",
-      author: "Lisa Zhang",
-      lastModified: "2023-12-11",
-      isPublic: true,
-      collaborators: 3,
-      runs: 789,
-      rating: 4.9,
-    },
-    {
-      id: "6",
-      title: "Life Insurance Valuation",
-      description: "Comprehensive life insurance product valuation model",
-      category: "insurance",
-      language: "r",
-      author: "Robert Kim",
-      lastModified: "2023-12-10",
-      isPublic: true,
-      collaborators: 2,
-      runs: 356,
-      rating: 4.4,
-    },
-  ]
-
-  const filteredModels = mockModels.filter((model) => {
-    const matchesSearch =
-      model.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      model.description.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter models based on search and selections
+  const filteredModels = models.filter((model) => {
+    const matchesSearch = model.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         model.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === "all" || model.category === selectedCategory
     const matchesLanguage = selectedLanguage === "all" || model.language === selectedLanguage
     return matchesSearch && matchesCategory && matchesLanguage
   })
 
-  const handleModelSelect = (model: SimulationModel) => {
-    setSelectedModel(model)
-    setActiveTab("workspace")
-    setCurrentSession({
-      id: `session_${Date.now()}`,
-      modelId: model.id,
-      status: "idle",
-      progress: 0,
-      collaborators: ["current_user"],
-    })
-  }
-
-  const handleCreateNew = () => {
-    setSelectedModel(null)
-    setActiveTab("creator")
-  }
-
-  const handleRunSimulation = () => {
-    if (currentSession) {
-      setCurrentSession({
-        ...currentSession,
-        status: "running",
-        progress: 0,
-      })
-      // Simulate progress
-      simulateProgress()
-    }
-  }
-
-  const simulateProgress = () => {
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 15
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(interval)
-        setCurrentSession((prev) =>
-          prev
-            ? {
-                ...prev,
-                status: "completed",
-                progress: 100,
-                results: generateMockResults(),
-              }
-            : null,
-        )
-      } else {
-        setCurrentSession((prev) =>
-          prev
-            ? {
-                ...prev,
-                progress: Math.min(progress, 100),
-              }
-            : null,
-        )
-      }
-    }, 800)
-  }
-
-  const generateMockResults = () => {
-    return {
-      summary:
-        "Simulation completed successfully with 10,000 iterations. Portfolio shows expected annual return of 8.2% with volatility of 15.3%.",
-      metrics: {
-        expectedReturn: 0.082,
-        volatility: 0.153,
-        sharpeRatio: 1.24,
-        var95: -0.18,
-        maxDrawdown: 0.22,
-      },
-      charts: [
-        { type: "line", title: "Portfolio Value Over Time" },
-        { type: "histogram", title: "Return Distribution" },
-        { type: "scatter", title: "Risk-Return Analysis" },
-      ],
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="container py-10">
+      <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Simulation Platform</h1>
-              <p className="mt-2 text-gray-600">
-                Create, run, and collaborate on simulation models across multiple domains
+              <h1 className="text-3xl font-bold tracking-tight">Simulation Platform</h1>
+              <p className="text-muted-foreground">
+                Build, run, and collaborate on advanced simulations
               </p>
             </div>
-            <div className="flex space-x-3">
-              <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Model
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setActiveTab("collaborate")}>
+                <Users className="mr-2 h-4 w-4" />
+                Collaborate
               </Button>
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Import Model
+              <Button size="sm" onClick={() => setActiveTab("create")}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Model
               </Button>
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Code className="h-8 w-8 text-blue-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-500">Total Models</p>
-                    <p className="text-2xl font-bold text-gray-900">{mockModels.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Users className="h-8 w-8 text-green-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-500">Active Collaborations</p>
-                    <p className="text-2xl font-bold text-gray-900">12</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <BarChart3 className="h-8 w-8 text-purple-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-500">Simulations Run</p>
-                    <p className="text-2xl font-bold text-gray-900">4,363</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Database className="h-8 w-8 text-orange-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-500">Datasets Available</p>
-                    <p className="text-2xl font-bold text-gray-900">156</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* API Error Alert */}
+          {apiError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {apiError}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-2"
+                  onClick={() => {
+                    setApiError(null)
+                    loadData()
+                  }}
+                >
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Search and filters */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search models, datasets, or sessions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.icon} {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Languages</SelectItem>
+                {languages.map((language) => (
+                  <SelectItem key={language.id} value={language.id}>
+                    {language.icon} {language.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="library">
-              <Database className="mr-2 h-4 w-4" />
+        {/* Main content tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="library" className="flex items-center gap-2">
+              <Code className="h-4 w-4" />
               Model Library
             </TabsTrigger>
-            <TabsTrigger value="creator">
-              <Code className="mr-2 h-4 w-4" />
-              Model Creator
+            <TabsTrigger value="datasets" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Datasets
             </TabsTrigger>
-            <TabsTrigger value="workspace" disabled={!selectedModel && !currentSession}>
-              <Play className="mr-2 h-4 w-4" />
-              Simulation Workspace
+            <TabsTrigger value="workspace" className="flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              Workspace
             </TabsTrigger>
-            <TabsTrigger value="collaboration">
-              <Users className="mr-2 h-4 w-4" />
-              Collaboration Hub
+            <TabsTrigger value="create" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create
             </TabsTrigger>
-            <TabsTrigger value="datasets">
-              <FileText className="mr-2 h-4 w-4" />
-              Dataset Manager
+            <TabsTrigger value="collaborate" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Collaborate
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="library">
-            <div className="space-y-6">
-              {/* Filters */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search models..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="w-full md:w-48">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.icon} {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                      <SelectTrigger className="w-full md:w-48">
-                        <SelectValue placeholder="Language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Languages</SelectItem>
-                        {languages.map((language) => (
-                          <SelectItem key={language.id} value={language.id}>
-                            {language.icon} {language.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Category Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {categories.map((category) => {
-                  const categoryModels = mockModels.filter((m) => m.category === category.id)
-                  return (
-                    <Card
-                      key={category.id}
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => setSelectedCategory(category.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center">
-                          <div className={`p-3 rounded-lg ${category.color} text-white text-xl`}>{category.icon}</div>
-                          <div className="ml-3">
-                            <h3 className="font-semibold">{category.name}</h3>
-                            <p className="text-sm text-gray-500">{categoryModels.length} models</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-
-              {/* Model Grid */}
-              <ModelLibrary
-                models={filteredModels}
-                onModelSelect={handleModelSelect}
-                categories={categories}
-                languages={languages}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="creator">
-            <ModelCreator
-              categories={categories}
-              languages={languages}
-              onModelCreated={(model) => {
-                setSelectedModel(model)
-                setActiveTab("workspace")
-              }}
+          <TabsContent value="library" className="space-y-4">
+            <ModelLibrary
+              models={filteredModels}
+              onModelSelect={handleModelSelect}
+              searchTerm={searchTerm}
+              selectedCategory={selectedCategory}
+              selectedLanguage={selectedLanguage}
+              isLoading={dataLoading}
             />
           </TabsContent>
 
-          <TabsContent value="workspace">
-            {(selectedModel || currentSession) && (
-              <SimulationWorkspace
-                model={selectedModel}
-                session={currentSession}
-                onRunSimulation={handleRunSimulation}
-                onSessionUpdate={setCurrentSession}
-              />
-            )}
+          <TabsContent value="datasets" className="space-y-4">
+            <DatasetManager
+              datasets={datasets}
+              onDatasetUpload={loadData}
+              isLoading={dataLoading}
+            />
           </TabsContent>
 
-          <TabsContent value="collaboration">
-            <CollaborationHub />
+          <TabsContent value="workspace" className="space-y-4">
+            <SimulationWorkspace
+              selectedModel={selectedModel}
+              currentSession={currentSession}
+              datasets={datasets}
+              onRunSimulation={handleRunSimulation}
+              onSessionUpdate={setCurrentSession}
+            />
           </TabsContent>
 
-          <TabsContent value="datasets">
-            <DatasetManager categories={categories} />
+          <TabsContent value="create" className="space-y-4">
+            <ModelCreator
+              onModelCreated={loadData}
+              categories={categories}
+              languages={languages}
+            />
+          </TabsContent>
+
+          <TabsContent value="collaborate" className="space-y-4">
+            <CollaborationHub
+              sessions={sessions}
+              onSessionSelect={(session) => {
+                setCurrentSession(session)
+                setActiveTab("workspace")
+              }}
+              isLoading={dataLoading}
+            />
           </TabsContent>
         </Tabs>
       </div>
