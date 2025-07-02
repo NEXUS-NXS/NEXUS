@@ -11,6 +11,16 @@ from rest_framework.response import Response
 from .models import Profile
 from rest_framework.permissions import AllowAny
 
+from learnhub.models import Instructor
+from learnhub.serializers import InstructorSerializer
+
+from rest_framework import viewsets, permissions
+from .models import Profile
+from .serializers import ProfileSerializer
+from rest_framework.decorators import action
+
+from django.middleware.csrf import get_token
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -32,8 +42,10 @@ class RegisterView(APIView):
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "date_joined": user.date_joined.isoformat(),  # Add date_joined
                     "gender": profile.gender,
                     "education": profile.education,
+                    "profile_photo": profile.profile_photo.url if profile.profile_photo else None,  # Add profile_photo
                 },
             }
 
@@ -70,7 +82,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             refresh = RefreshToken.for_user(user)
             profile = Profile.objects.get(user=user)
 
-            # Include tokens in the JSON response
+           # Include tokens in the JSON response
             response_data = {
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
@@ -79,8 +91,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "date_joined": user.date_joined.isoformat(),  # Add date_joined
                     "gender": profile.gender,
                     "education": profile.education,
+                    "profile_photo": profile.profile_photo.url if profile.profile_photo else None,  # Add profile_photo
                 },
             }
 
@@ -122,11 +136,6 @@ class LogoutView(APIView):
         response.delete_cookie("refresh_token")
         return response
     
-# auth/views.py
-from django.middleware.csrf import get_token
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny  # Add this import
 
 class CsrfTokenView(APIView):
     permission_classes = [AllowAny]
@@ -143,3 +152,42 @@ class CsrfTokenView(APIView):
             max_age=86400,
         )
         return response
+    
+
+
+
+class ProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Profile.objects.filter(user=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        profile = Profile.objects.get(user=request.user)
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
+
+
+
+class ProfileByEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        email = request.query_params.get('email')
+        if not email:
+            return Response({"detail": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email.lower())
+            instructor = Instructor.objects.get(user=user)
+            serializer = InstructorSerializer(instructor, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Instructor.DoesNotExist:
+            return Response({"detail": "Instructor profile not found"}, status=status.HTTP_404_NOT_FOUND)

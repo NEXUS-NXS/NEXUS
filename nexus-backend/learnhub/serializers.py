@@ -78,26 +78,39 @@ class CourseSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags', [])
         objectives_data = validated_data.pop('learning_objectives', [])
         prerequisites_data = validated_data.pop('prerequisites', [])
-        
+
         user = self.context['request'].user
         instructor, created = Instructor.objects.get_or_create(user=user)
+
         if not created:
+            expertise_data = instructor_data.pop('expertise', None)
+
             for attr, value in instructor_data.items():
                 setattr(instructor, attr, value)
             instructor.save()
-                
+
+            if expertise_data:
+                expertise_objs = []
+                for item in expertise_data:
+                    obj, _ = Expertise.objects.get_or_create(name=item['name'])
+                    expertise_objs.append(obj)
+                instructor.expertise.set(expertise_objs)
+
         course = Course.objects.create(instructor=instructor, **validated_data)
-        
+
+        # Handle tags - modified to skip existing tags without error
         for tag_data in tags_data:
             tag, _ = Tag.objects.get_or_create(name=tag_data['name'])
             course.tags.add(tag)
+        
         for obj_data in objectives_data:
             objective = LearningObjective.objects.create(course=course, **obj_data)
             course.learning_objectives.add(objective)
+
         for pre_data in prerequisites_data:
             prerequisite = Prerequisite.objects.create(course=course, **pre_data)
             course.prerequisites.add(prerequisite)
-        
+
         return course
 
     def update(self, instance, validated_data):
@@ -318,7 +331,7 @@ class EnrolledCourseSerializer(CourseSerializer):
                 user=self.context['request'].user, lesson=lesson, is_completed=True
             ).exists():
                 return str(lesson.id)
-        return None
+        return str(lessons.first().id) if lessons.exists() else None
 
     def get_next_lesson(self, obj):
         next_lesson_id = self.get_next_lesson_id(obj)

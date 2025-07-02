@@ -13,6 +13,8 @@ import {
   CheckCircle,
   Clock,
   MapPin,
+  Play,
+  RefreshCw,
 } from "lucide-react"
 import { useUser } from "../context/UserContext"
 import "./MyCertificates.css"
@@ -33,7 +35,7 @@ const certificateStatuses = [
 ]
 
 const MyCertificates = () => {
-  const { user } = useUser()
+  const { user, getAccessToken } = useUser()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -41,142 +43,313 @@ const MyCertificates = () => {
   const [filteredCertificates, setFilteredCertificates] = useState([])
   const [selectedCertificate, setSelectedCertificate] = useState(null)
   const [activeTab, setActiveTab] = useState("certificates")
-  const [upcomingExams, setUpcomingExams] = useState([])
   const [recommendedCertifications, setRecommendedCertifications] = useState([])
+  const [courseProgress, setCourseProgress] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [lastUpdated, setLastUpdated] = useState(null)
+
+  // Mock course progress data for fallback
+  const mockCourseProgress = {
+    1: {
+      progress: 65,
+      completed_lessons: 13,
+      total_lessons: 20,
+      next_lesson: 'Advanced Probability Models',
+      last_accessed: '2023-10-15T14:30:00Z'
+    },
+    2: {
+      progress: 30,
+      completed_lessons: 6,
+      total_lessons: 20,
+      next_lesson: 'Data Visualization with Python',
+      last_accessed: '2023-10-10T09:15:00Z'
+    }
+  };
+
+  const fetchWithRetry = async (url, options, retries = 2, delay = 1000) => {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const error = new Error(`HTTP error! status: ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
+      return await response.json();
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        error.message = 'Request timed out. Please check your connection and try again.';
+        error.isNetworkError = true;
+        throw error;
+      }
+      
+      if (error instanceof TypeError) {
+        error.isNetworkError = true;
+        error.message = 'Unable to connect to the server. Please check your internet connection.';
+        throw error;
+      }
+
+      if (retries > 0) {
+        console.warn(`Request failed, ${retries} retries left. Retrying in ${delay}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry(url, options, retries - 1, delay * 2);
+      }
+      
+      throw error;
+    }
+  };
+
+  const fetchCourseProgress = async () => {
+    let errorMessage = 'Unable to fetch course progress. ';
+    
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        errorMessage += 'No authentication token found. Please log in again.';
+        throw new Error(errorMessage);
+      }
+
+      const apiUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://127.0.0.1:8000/courses/api/enrolled-courses/'
+        : '/courses/api/enrolled-courses/';
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+      const options = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        credentials: 'include',
+        signal: controller.signal
+      };
+      
+      try {
+        const data = await fetchWithRetry(apiUrl, options);
+        clearTimeout(timeoutId);
+        
+        if (!data || !Array.isArray(data)) {
+          console.warn('Invalid data format received from API:', data);
+          throw new Error('Received invalid data format from server');
+        }
+        
+        const progressMap = {};
+        let hasValidCourses = false;
+        
+        data.forEach(course => {
+          if (course?.id) {
+            progressMap[course.id] = {
+              progress: Math.min(100, Math.max(0, course.progress || 0)), // Ensure progress is between 0-100
+              completed_lessons: Math.max(0, course.completed_lessons || 0),
+              total_lessons: Math.max(1, course.total_lessons || 1), // Ensure at least 1 to avoid division by zero
+              next_lesson: course.next_lesson || 'Not specified'
+            };
+            hasValidCourses = true;
+          }
+        });
+        
+        if (!hasValidCourses) {
+          console.log('No valid course data found in response');
+          return {}; // Return empty object if no valid courses
+        }
+        
+        setCourseProgress(progressMap);
+        return progressMap;
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
+      
+    } catch (error) {
+      console.error('Error in fetchCourseProgress:', error);
+      
+      if (error.isNetworkError) {
+        errorMessage += 'Network error - ' + error.message;
+      } else if (error.status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (error.status === 403) {
+        errorMessage = 'You do not have permission to view this content.';
+      } else if (error.status === 404) {
+        errorMessage = 'The requested resource was not found.';
+      } else if (error.status >= 500) {
+        errorMessage = 'The server is currently unavailable. Please try again later.';
+      } else if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. The server is taking too long to respond.';
+      } else {
+        errorMessage += error.message || 'An unknown error occurred.';
+      }
+      
+      setError(errorMessage);
+      setCourseProgress({});
+      return {};
+    }
+  };
 
   useEffect(() => {
-    fetchCertificates()
-    fetchUpcomingExams()
-    fetchRecommendedCertifications()
-  }, [])
+    const fetchData = async (isRetry = false) => {
+      if (loading && !isRetry) return; // Prevent multiple simultaneous requests
+      
+      setLoading(true);
+      if (isRetry) {
+        setError(null); // Clear error on retry
+      }
+      
+      try {
+        // Only fetch the data we need for the current view
+        await Promise.all([
+          fetchCertificates().catch(err => {
+            if (!isRetry) console.warn('Error fetching certificates:', err);
+            return null;
+          }),
+          fetchCourseProgress().catch(err => {
+            if (!isRetry) console.warn('Error in fetchCourseProgress:', err);
+            return null;
+          })
+        ]);
+        
+        // Update last successful update time
+        setLastUpdated(new Date());
+      } catch (err) {
+        console.error('Critical error in fetchData:', err);
+        if (!error) {
+          setError(isOnline 
+            ? 'Unable to load certificate data. The server may be unavailable.'
+            : 'You are currently offline. Please check your internet connection.'
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Initial data fetch
+    fetchData();
+    
+    // Set up a refresh interval to try fetching data again every 2 minutes
+    const refreshInterval = setInterval(() => {
+      if (navigator.onLine) { // Only try to refresh if we're online
+        console.log('Refreshing certificate data...');
+        fetchData();
+      }
+    }, 120000); // 2 minutes
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, [error, certificates.length]); // Only re-run if error state changes
 
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true)
+      // Try to refresh data when coming back online
+      if (error || certificates.length === 0) {
+        fetchData()
+      }
+    }
+    
+    const handleOffline = () => {
+      setIsOnline(false)
+      if (!error) {
+        setError('You are currently offline. Some features may be limited.')
+      }
+    }
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [error, certificates.length])
+  
+  // Filter certificates when dependencies change
   useEffect(() => {
     filterCertificates()
   }, [selectedCategory, selectedStatus, searchQuery, certificates])
 
   const fetchCertificates = async () => {
-    // Simulate API call
-    const mockCertificates = [
-      {
-        id: 1,
-        title: "Actuarial Science Fundamentals",
-        issuer: "Nexus Academy",
-        category: "actuarial",
-        status: "completed",
-        completionDate: "2023-12-15T10:00:00Z",
-        expirationDate: "2025-12-15T10:00:00Z",
-        credentialId: "NSA-ACT-2023-1234",
-        description:
-          "This certificate validates proficiency in fundamental actuarial concepts, including probability theory, financial mathematics, and basic modeling techniques.",
-        skills: [
-          "Probability Theory",
-          "Financial Mathematics",
-          "Statistical Modeling",
-          "Risk Assessment",
-          "Actuarial Notation",
-        ],
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: 2,
-        title: "Python for Actuarial Analysis",
-        issuer: "Nexus Academy",
-        category: "technical",
-        status: "completed",
-        completionDate: "2023-10-20T14:30:00Z",
-        expirationDate: "2025-10-20T14:30:00Z",
-        credentialId: "NSA-PYT-2023-5678",
-        description:
-          "This certificate demonstrates proficiency in using Python programming for actuarial analysis, including data manipulation, statistical analysis, and visualization.",
-        skills: [
-          "Python Programming",
-          "Data Analysis with Pandas",
-          "Statistical Modeling with NumPy",
-          "Data Visualization",
-          "Actuarial Calculations",
-        ],
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: 3,
-        title: "Advanced Statistical Methods",
-        issuer: "Nexus Academy",
-        category: "data",
-        status: "in-progress",
-        progress: 65,
-        estimatedCompletionDate: "2024-03-15T00:00:00Z",
-        description:
-          "This certificate covers advanced statistical methods used in actuarial science, including regression analysis, time series analysis, and predictive modeling.",
-        requiredCourses: [
-          { id: 101, title: "Regression Analysis", completed: true },
-          { id: 102, title: "Time Series Analysis", completed: true },
-          { id: 103, title: "Predictive Modeling", completed: false },
-          { id: 104, title: "Multivariate Analysis", completed: false },
-        ],
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: 4,
-        title: "Professional Ethics in Actuarial Practice",
-        issuer: "Actuarial Standards Board",
-        category: "professional",
-        status: "completed",
-        completionDate: "2023-08-05T09:15:00Z",
-        expirationDate: "2024-08-05T09:15:00Z",
-        credentialId: "ASB-ETH-2023-9012",
-        description:
-          "This certificate validates understanding of ethical principles and professional standards in actuarial practice, including confidentiality, integrity, and professional responsibility.",
-        skills: [
-          "Ethical Decision Making",
-          "Professional Standards",
-          "Regulatory Compliance",
-          "Conflict of Interest Management",
-          "Client Communication",
-        ],
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: 5,
-        title: "Machine Learning for Insurance",
-        issuer: "Data Science Institute",
-        category: "data",
-        status: "in-progress",
-        progress: 30,
-        estimatedCompletionDate: "2024-05-20T00:00:00Z",
-        description:
-          "This certificate covers the application of machine learning techniques to insurance problems, including pricing, claims prediction, and customer segmentation.",
-        requiredCourses: [
-          { id: 201, title: "Introduction to Machine Learning", completed: true },
-          { id: 202, title: "Supervised Learning Techniques", completed: false },
-          { id: 203, title: "Unsupervised Learning Techniques", completed: false },
-          { id: 204, title: "ML Applications in Insurance", completed: false },
-        ],
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: 6,
-        title: "Risk Management Principles",
-        issuer: "Global Risk Management Institute",
-        category: "actuarial",
-        status: "expired",
-        completionDate: "2022-05-10T11:30:00Z",
-        expirationDate: "2023-05-10T11:30:00Z",
-        credentialId: "GRMI-RMP-2022-3456",
-        description:
-          "This certificate validates understanding of risk management principles and practices, including risk identification, assessment, mitigation, and monitoring.",
-        skills: [
-          "Risk Identification",
-          "Risk Assessment",
-          "Risk Mitigation Strategies",
-          "Risk Monitoring",
-          "Enterprise Risk Management",
-        ],
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ]
+    let errorMessage = 'Unable to fetch certificates. ';
+    
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        errorMessage += 'No authentication token found. Please log in again.';
+        throw new Error(errorMessage);
+      }
 
-    setCertificates(mockCertificates)
-    setFilteredCertificates(mockCertificates)
+      const apiUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://127.0.0.1:8000/api/certificates/'
+        : '/api/certificates/';
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const options = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        credentials: 'include',
+        signal: controller.signal
+      };
+      
+      try {
+        const response = await fetchWithRetry(apiUrl, options);
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const error = new Error(`HTTP error! status: ${response.status}`);
+          error.status = response.status;
+          throw error;
+        }
+        
+        const data = await response.json();
+        const certs = Array.isArray(data.results) ? data.results : [];
+        
+        // Clear any previous errors if we got a successful response
+        if (error) {
+          setError(null);
+        }
+        
+        setCertificates(certs);
+        return certs;
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
+      
+    } catch (err) {
+      console.error('Error in fetchCertificates:', err);
+      
+      if (err.isNetworkError) {
+        errorMessage += 'Network error - ' + err.message;
+      } else if (err.status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (err.status === 403) {
+        errorMessage = 'You do not have permission to view certificates.';
+      } else if (err.status === 404) {
+        errorMessage = 'The certificates endpoint was not found.';
+      } else if (err.status >= 500) {
+        errorMessage = 'The server is currently unavailable. Please try again later.';
+      } else if (err.name === 'AbortError') {
+        errorMessage = 'Request timed out. The server is taking too long to respond.';
+      } else {
+        errorMessage += err.message || 'An unknown error occurred.';
+      }
+      
+      setError(errorMessage);
+      setCertificates([]);
+      return [];
+    }
   }
 
   const fetchUpcomingExams = async () => {
@@ -227,7 +400,7 @@ const MyCertificates = () => {
         description:
           "The CAA is designed for those working in analytical or technical roles in insurance and financial services who want to develop their careers with an internationally recognized qualification.",
         relevance: "High match based on your profile",
-        image: "/placeholder.svg?height=150&width=150",
+        image: "/assets/nexus-white-logo.png",
       },
       {
         id: 102,
@@ -239,7 +412,7 @@ const MyCertificates = () => {
         description:
           "The ASA designation is a significant milestone toward fellowship in the SOA and demonstrates a mastery of the fundamental concepts and techniques for modeling and managing risk.",
         relevance: "Career advancement opportunity",
-        image: "/placeholder.svg?height=150&width=150",
+        image: "/assets/nexus-white-logo.png",
       },
       {
         id: 103,
@@ -251,7 +424,7 @@ const MyCertificates = () => {
         description:
           "This certification combines actuarial principles with modern data science techniques, preparing actuaries for the evolving landscape of data-driven decision making.",
         relevance: "Complements your current skills",
-        image: "/placeholder.svg?height=150&width=150",
+        image: "/assets/nexus-white-logo.png",
       },
       {
         id: 104,
@@ -263,7 +436,7 @@ const MyCertificates = () => {
         description:
           "The CERA credential equips risk professionals to identify, measure, and manage risk within complex business environments across all industries and sectors.",
         relevance: "Expanding career opportunities",
-        image: "/placeholder.svg?height=150&width=150",
+        image: "/assets/nexus-white-logo.png",
       },
     ]
 
@@ -319,10 +492,47 @@ const MyCertificates = () => {
     setSelectedCertificate(null)
   }
 
+  // Format last updated time
+  const formatLastUpdated = (date) => {
+    if (!date) return 'Never';
+    return `Last updated: ${date.toLocaleTimeString()}`;
+  };
+
   return (
     <div className="certificates-page">
+      {/* Status Bar */}
+      <div className={`status-bar ${!isOnline ? 'offline' : ''}`}>
+        <div className="status-indicator">
+          <div className={`status-dot ${isOnline ? 'online' : 'offline'}`}></div>
+          <span>{isOnline ? 'Online' : 'Offline'}</span>
+        </div>
+        {lastUpdated && (
+          <div className="last-updated">
+            {formatLastUpdated(lastUpdated)}
+          </div>
+        )}
+        {loading && (
+          <div className="status-loading">
+            <RefreshCw size={14} className="spinner" />
+            <span>Updating...</span>
+          </div>
+        )}
+        {error && !loading && (
+          <div className="status-error">
+            <span>{error}</span>
+            <button 
+              className="retry-button"
+              onClick={() => fetchData(true)}
+              disabled={!isOnline}
+            >
+              <RefreshCw size={14} />
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="certificates-header">
-        <h1>My Certificates</h1>
         <p>Track your professional certifications and credentials</p>
       </div>
 
@@ -330,20 +540,12 @@ const MyCertificates = () => {
         <button
           className={`tab-btn ${activeTab === "certificates" ? "active" : ""}`}
           onClick={() => setActiveTab("certificates")}
+          aria-selected={activeTab === "certificates"}
+          aria-controls="certificates-tab"
+          id="certificates-tab-button"
         >
-          <Award size={16} />
-          My Certificates
-        </button>
-        <button className={`tab-btn ${activeTab === "exams" ? "active" : ""}`} onClick={() => setActiveTab("exams")}>
-          <Calendar size={16} />
-          Upcoming Exams
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "recommended" ? "active" : ""}`}
-          onClick={() => setActiveTab("recommended")}
-        >
-          <BookOpen size={16} />
-          Recommended Certifications
+          <Award size={16} className="tab-icon" />
+          <span className="tab-text">My Certificates</span>
         </button>
       </div>
 
@@ -387,62 +589,100 @@ const MyCertificates = () => {
 
               <div className="certificates-grid">
                 {filteredCertificates.length > 0 ? (
-                  filteredCertificates.map((certificate) => (
-                    <div
-                      key={certificate.id}
-                      className={`certificate-card ${certificate.status}`}
-                      onClick={() => handleCertificateClick(certificate)}
-                    >
-                      <div className="certificate-image">
-                        <img src={certificate.image || "/placeholder.svg"} alt={certificate.title} />
-                        <div className={`certificate-status ${certificate.status}`}>
-                          {certificate.status === "completed" && "Completed"}
-                          {certificate.status === "in-progress" && "In Progress"}
-                          {certificate.status === "expired" && "Expired"}
+                  filteredCertificates.map((certificate) => {
+                    const progress = courseProgress[certificate.course_id]
+                    const isInProgress = certificate.status === 'in-progress' || (progress && progress.progress < 100)
+                    
+                    return (
+                      <div 
+                        key={certificate.id} 
+                        className="certificate-card"
+                        onClick={() => setSelectedCertificate(certificate)}
+                      >
+                        <div className="certificate-image">
+                          <img 
+                            src={certificate.image || "/assets/nexus-white-logo.png"} 
+                            alt={certificate.title} 
+                          />
+                        </div>
+                        <div className="certificate-details">
+                          <h3>{certificate.title}</h3>
+                          <p className="issuer">{certificate.issuer}</p>
+                          
+                          {isInProgress && progress ? (
+                            <div className="progress-container">
+                              <div className="progress-bar">
+                                <div 
+                                  className="progress-fill" 
+                                  style={{ width: `${progress.progress}%` }}
+                                />
+                              </div>
+                              <div className="progress-stats">
+                                <span>{progress.completed_lessons || 0} of {progress.total_lessons || 0} lessons</span>
+                                <span>{Math.round(progress.progress || 0)}% Complete</span>
+                              </div>
+                              {progress.next_lesson && (
+                                <div className="next-lesson">
+                                  <Play size={14} /> Next: {progress.next_lesson}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="status-badge">
+                              <div className={`status-dot ${certificate.status}`} />
+                              <span className="status-text">
+                                {certificate.status === 'completed' ? 'Completed' : 'Not Started'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="certificate-info">
-                        <h3>{certificate.title}</h3>
-                        <p className="certificate-issuer">Issued by {certificate.issuer}</p>
-
-                        {certificate.status === "completed" && (
-                          <div className="certificate-dates">
-                            <div className="date-item">
-                              <span className="date-label">Completed:</span>
-                              <span className="date-value">{formatDate(certificate.completionDate)}</span>
-                            </div>
-                            <div className="date-item">
-                              <span className="date-label">Expires:</span>
-                              <span className="date-value">{formatDate(certificate.expirationDate)}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {certificate.status === "in-progress" && (
-                          <div className="certificate-progress">
-                            <div className="progress-text">
-                              <span>{certificate.progress}% Complete</span>
-                              <span>Est. completion: {formatDate(certificate.estimatedCompletionDate)}</span>
-                            </div>
-                            <div className="progress-bar">
-                              <div className="progress-fill" style={{ width: `${certificate.progress}%` }}></div>
-                            </div>
-                          </div>
-                        )}
-
-                        {certificate.status === "expired" && (
-                          <div className="certificate-expired">
-                            <p>Expired on {formatDate(certificate.expirationDate)}</p>
-                            <button className="renew-btn">Renew Certificate</button>
-                          </div>
-                        )}
+                    )
+                  })
+                ) : certificates.length === 0 ? (
+                  <div className="no-certificates">
+                    <div className="empty-state">
+                      <img 
+                        src="/assets/nexus-big-logo.png" 
+                        alt="No certificates" 
+                        className="empty-state-image"
+                      />
+                      <h3>No Enrolled Courses</h3>
+                      <p>You haven't enrolled in any courses yet. Explore our learning hub to find courses that interest you!</p>
+                      <div className="empty-state-actions">
+                        <button 
+                          className="primary-button"
+                          onClick={() => {
+                            window.location.href = '/learninghub';
+                          }}
+                        >
+                          <BookOpen size={16} style={{ marginRight: '8px' }} />
+                          Browse Courses
+                        </button>
+                        <button 
+                          className="secondary-button"
+                          onClick={() => navigate("/my-certificates")}
+                        >
+                          <RefreshCw size={16} style={{ marginRight: '8px' }} />
+                          Refresh
+                        </button>
                       </div>
-                      <button className="view-certificate-btn">View Details</button>
                     </div>
-                  ))
+                  </div>
                 ) : (
                   <div className="no-certificates">
-                    <p>No certificates found matching your criteria.</p>
+                    <p>No certificates match your current filters.</p>
+                    <button 
+                      className="secondary-button"
+                      onClick={() => {
+                        // Reset all filters
+                        setSearchQuery('');
+                        setSelectedCategory('all');
+                        setSelectedStatus('all');
+                      }}
+                    >
+                      Clear Filters
+                    </button>
                   </div>
                 )}
               </div>
@@ -650,7 +890,7 @@ const MyCertificates = () => {
               <div key={cert.id} className="recommended-card">
                 <div className="recommended-header">
                   <div className="recommended-image">
-                    <img src={cert.image || "/placeholder.svg"} alt={cert.title} />
+                    <img src={cert.image || "/public/assets/nexus (1).png"} alt={cert.title} />
                   </div>
                   <div className="recommended-info">
                     <h3>{cert.title}</h3>
