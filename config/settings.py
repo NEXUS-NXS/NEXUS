@@ -75,7 +75,7 @@ CORS_ALLOWED_ORIGINS = [
 
 CSRF_TRUSTED_ORIGINS = ['https://vermillion-cajeta-3f48b9.netlify.app']
 
-CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = ['Set-Cookie']
 
