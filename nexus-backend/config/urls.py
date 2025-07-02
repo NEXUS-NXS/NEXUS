@@ -20,12 +20,20 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
+    
+    # API endpoints
+    path('api/resources/', include('resources.api.urls')),
     path('auth/', include('accounts.urls')),
     path('chats/', include('chat.urls')),
+    path('api/certificates/', include('certificates.urls')),
+    path('courses/', include('learnhub.urls')),
+    
     # API endpoints will be added here
     # path('api/', include('apps.users.urls')),
     # path('api/courses/', include('apps.courses.urls')),
+    path("api/mental_health/", include("mental_health.urls")),
     # Add other app URLs here
     path('api/simulations/', include('simulations.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

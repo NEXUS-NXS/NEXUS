@@ -38,39 +38,124 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useUser } from "../context/UserContext"
+import axios from "axios";
 import "./Profile.css"
 
 const Profile = () => {
-  const { user, logout } = useUser()
-  const [activeTab, setActiveTab] = useState("overview")
-  const [isEditing, setIsEditing] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const { user, logout, setUser } = useUser();
+
+  const [activeTab, setActiveTab] = useState("overview");
+  const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: user?.name || "Alexandra Chen",
-    email: user?.email || "alexandra.chen@email.com",
-    phone: "+1 (555) 987-6543",
-    location: "San Francisco, CA",
-    bio: "Passionate actuarial science student with a focus on risk analytics and financial modeling. Currently preparing for SOA Fellowship exams while working on innovative insurance technology solutions.",
-    university: "Stanford University",
-    major: "Actuarial Science & Statistics",
-    graduationYear: "2024",
-    linkedIn: "linkedin.com/in/alexandrachen",
-    github: "github.com/alexchen",
-    website: "alexandrachen.dev",
-  })
+    name: user?.full_name || "Alexandra Chen", // Use full_name from user
+    email: user?.email || "alexandra.chen@email.com", // Use email from user
+    created_at: user?.created_at || "2023-01-01", // Use created_at from user
+    profile_photo: user?.profile_photo || "/placeholder.svg?height=140&width=140", // Use profile_photo from user
+    phone: "+1 (555) 987-6543", // Dummy data
+    location: "San Francisco, CA", // Dummy data
+    bio: "Passionate actuarial science student with a focus on risk analytics and financial modeling. Currently preparing for SOA Fellowship exams while working on innovative insurance technology solutions.", // Dummy data
+    university: "Stanford University", // Dummy data
+    major: "Actuarial Science & Statistics", // Dummy data
+    graduationYear: "2024", // Dummy data
+    linkedIn: "linkedin.com/in/alexandrachen", // Dummy data
+    github: "github.com/alexchen", // Dummy data
+    website: "alexandrachen.dev", // Dummy data
+  });
 
-  const fileInputRef = useRef(null)
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        console.log("Image uploaded:", e.target.result)
+  const fileInputRef = useRef(null);
+
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+
+ const handleImageUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("profile_photo", file);
+
+  try {
+    const csrfToken = getCookie("csrftoken");
+    const accessToken = localStorage.getItem("access_token");
+
+    let profileId = user?.profile_id;
+
+    if (!profileId) {
+      // Fallback: Fetch profile ID from /me/
+      console.warn("Profile ID missing, fetching from /me/");
+      const profileResponse = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      console.log("Profile response from /me/:", profileResponse.data);
+
+      if (profileResponse.data && profileResponse.data.user && profileResponse.data.user.id) {
+        
+        const profileId = profileResponse.data?.id; // ✅ profile ID to PATCH
+
+
+        console.log("Fetched profileId from /me/:", profileId);
+
+        setUser((prev) => {
+          const updatedUser = { ...prev, profile_id: profileId };
+          localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
+          return updatedUser;
+        });
+      } else {
+        console.warn("Unexpected /me/ profile response:", profileResponse.data);
+        throw new Error("No profile data found in /me/");
       }
-      reader.readAsDataURL(file)
+    }
+
+    // ✅ This PATCH block is now OUTSIDE the `if (!profileId)` block
+    const response = await axios.patch(
+      `https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/${profileId}/`,
+      formData,
+      {
+        headers: {
+          "X-CSRFToken": csrfToken,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      }
+    );
+
+    const updatedProfilePhoto = response.data.profile_photo;
+
+    // Update user context
+    setUser((prev) => {
+      const updatedUser = { ...prev, profile_photo: updatedProfilePhoto };
+      localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+
+    // Update local state for UI
+    setProfileData((prev) => ({
+      ...prev,
+      profile_photo: updatedProfilePhoto,
+    }));
+
+    console.log("✅ Profile photo uploaded:", updatedProfilePhoto);
+  } catch (error) {
+    console.error("❌ Profile photo upload failed:", error);
+    if (error.response) {
+      console.error("Response data:", error.response.data);
+      console.error("Response status:", error.response.status);
     }
   }
+};
 
   const handleSave = () => {
     setIsEditing(false)
@@ -207,9 +292,19 @@ const Profile = () => {
           <div className="profile-main-info">
             <div className="profile-avatar-container">
               <div className="avatar-wrapper">
-                <img src="/placeholder.svg?height=140&width=140" alt="Profile" className="profile-avatar-img" />
+                <img
+                  src={profileData.profile_photo}
+                  alt="Profile"
+                  className="profile-avatar-img"
+                  onError={(e) => {
+                    e.target.src = "/placeholder.svg?height=140&width=140";
+                  }}
+                />
                 <div className="avatar-status-indicator"></div>
-                <button className="avatar-upload-btn" onClick={() => fileInputRef.current?.click()}>
+                <button
+                  className="avatar-upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Camera size={18} />
                 </button>
                 <input
@@ -250,14 +345,23 @@ const Profile = () => {
                 </div>
                 <div className="meta-item">
                   <Calendar size={14} />
-                  <span>Joined January 2023</span>
+                  <span>
+                    Joined{" "}
+                    {new Date(profileData.created_at).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
                 </div>
               </div>
 
               <div className="profile-quick-stats">
                 {learningStats.map((stat, index) => (
                   <div key={index} className="quick-stat-item">
-                    <div className="stat-icon-wrapper" style={{ backgroundColor: `${stat.color}20` }}>
+                    <div
+                      className="stat-icon-wrapper"
+                      style={{ backgroundColor: `${stat.color}20` }}
+                    >
                       <stat.icon size={16} style={{ color: stat.color }} />
                     </div>
                     <div className="stat-details">
@@ -271,7 +375,10 @@ const Profile = () => {
           </div>
 
           <div className="profile-actions-section">
-            <button className="action-btn primary" onClick={() => setIsEditing(!isEditing)}>
+            <button
+              className="action-btn primary"
+              onClick={() => setIsEditing(!isEditing)}
+            >
               <Edit3 size={16} />
               {isEditing ? "Cancel Edit" : "Edit Profile"}
             </button>
@@ -323,7 +430,9 @@ const Profile = () => {
                     <div className="edit-form">
                       <textarea
                         value={profileData.bio}
-                        onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({ ...profileData, bio: e.target.value })
+                        }
                         placeholder="Tell us about yourself..."
                         rows={4}
                         className="modern-textarea"
@@ -348,16 +457,7 @@ const Profile = () => {
                       </div>
                       <div className="contact-details">
                         <span className="contact-label">Email</span>
-                        {isEditing ? (
-                          <input
-                            type="email"
-                            value={profileData.email}
-                            onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                            className="modern-input"
-                          />
-                        ) : (
-                          <span className="contact-value">{profileData.email}</span>
-                        )}
+                        <span className="contact-value">{profileData.email}</span>
                       </div>
                     </div>
 
@@ -371,7 +471,9 @@ const Profile = () => {
                           <input
                             type="tel"
                             value={profileData.phone}
-                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, phone: e.target.value })
+                            }
                             className="modern-input"
                           />
                         ) : (
@@ -390,7 +492,9 @@ const Profile = () => {
                           <input
                             type="url"
                             value={profileData.website}
-                            onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, website: e.target.value })
+                            }
                             className="modern-input"
                           />
                         ) : (
@@ -425,7 +529,9 @@ const Profile = () => {
                           <input
                             type="text"
                             value={profileData.university}
-                            onChange={(e) => setProfileData({ ...profileData, university: e.target.value })}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, university: e.target.value })
+                            }
                             className="modern-input"
                           />
                         ) : (
@@ -437,7 +543,9 @@ const Profile = () => {
                           <input
                             type="text"
                             value={profileData.major}
-                            onChange={(e) => setProfileData({ ...profileData, major: e.target.value })}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, major: e.target.value })
+                            }
                             className="modern-input"
                           />
                         ) : (
@@ -450,7 +558,12 @@ const Profile = () => {
                           <input
                             type="text"
                             value={profileData.graduationYear}
-                            onChange={(e) => setProfileData({ ...profileData, graduationYear: e.target.value })}
+                            onChange={(e) =>
+                              setProfileData({
+                                ...profileData,
+                                graduationYear: e.target.value,
+                              })
+                            }
                             className="modern-input inline"
                           />
                         ) : (
@@ -498,7 +611,10 @@ const Profile = () => {
                   <Save size={16} />
                   Save Changes
                 </button>
-                <button className="action-btn secondary large" onClick={() => setIsEditing(false)}>
+                <button
+                  className="action-btn secondary large"
+                  onClick={() => setIsEditing(false)}
+                >
                   <X size={16} />
                   Cancel
                 </button>
@@ -506,7 +622,7 @@ const Profile = () => {
             )}
           </div>
         )}
-
+  {/* ########################################################### */}
         {activeTab === "learning" && (
           <div className="learning-section">
             <div className="content-grid">

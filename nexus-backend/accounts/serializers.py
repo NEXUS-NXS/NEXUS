@@ -4,6 +4,8 @@ User = get_user_model()
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from .models import Profile
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(max_length=255, required=True, write_only=True)
@@ -59,11 +61,31 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
         )
 
-        # Create profile
-        Profile.objects.create(
-            user=user,
-            gender=gender,
-            education=education,
-        )
+       # Let signal create Profile, then update it
+        profile = Profile.objects.get(user=user)
+        profile.gender = gender
+        profile.education = education
+        profile.save()
 
         return user
+    
+
+
+
+# auth/serializers.py
+from rest_framework import serializers
+from .models import Profile
+from django.contrib.auth.models import User
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'date_joined']
+
+class ProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    profile_photo = serializers.ImageField(allow_null=True, required=False)
+
+    class Meta:
+        model = Profile
+        fields = ['id','user', 'gender', 'education', 'profile_photo']

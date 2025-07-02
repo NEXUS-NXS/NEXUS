@@ -21,11 +21,57 @@ export interface Dataset {
   id: string;
   name: string;
   description: string;
+  long_description: string;
   file: string;
+  type: string;
   size: number;
+  row_count: number;
+  column_count: number;
   owner: string;
   is_public: boolean;
+  shared_with: Array<{
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  }>;
+  shared_with_count: number;
+  source: string;
+  category: string;
+  tags: string[];
+  quality_completeness: number;
+  quality_accuracy: number;
+  quality_consistency: number;
+  quality_timeliness: number;
+  quality: {
+    completeness: number;
+    accuracy: number;
+    consistency: number;
+    timeliness: number;
+  };
+  downloads: number;
+  views: number;
+  schema: Array<{
+    name: string;
+    type: string;
+    description?: string;
+    nullable?: boolean;
+  }>;
+  preview_data: {
+    columns: string[];
+    rows: any[][];
+  };
+  preview: {
+    columns: string[];
+    rows: any[][];
+  };
+  usage_stats: {
+    models: number;
+    modelNames: string[];
+  };
   created_at: string;
+  updated_at: string;
 }
 
 export interface SimulationSession {
@@ -83,6 +129,10 @@ export async function fetchModels(params?: { category?: string; language?: strin
   return apiCall(`/models/${query ? `?${query}` : ''}`);
 }
 
+export async function getModel(id: string): Promise<SimulationModel> {
+  return apiCall(`/models/${id}/`);
+}
+
 export async function createModel(model: {
   name: string;
   category: string;
@@ -91,14 +141,19 @@ export async function createModel(model: {
   description?: string;
   isPublic?: boolean;
 }) {
-  return apiCall('/models/create/', {
+  return apiCall('/models/', {
     method: 'POST',
-    body: JSON.stringify(model),
+    body: JSON.stringify({
+      name: model.name,
+      category: model.category,
+      language: model.language,
+      code: model.code,
+      metadata: { 
+        description: model.description,
+        isPublic: model.isPublic 
+      },
+    }),
   });
-}
-
-export async function getModel(id: string) {
-  return apiCall(`/models/${id}/`);
 }
 
 export async function updateModel(id: string, model: Partial<SimulationModel>) {
@@ -131,8 +186,24 @@ export async function validateModel(data: {
 // DATASET ENDPOINTS
 // ==========================
 
-export async function fetchDatasets() {
-  return apiCall('/datasets/');
+export async function fetchDatasets(params?: { 
+  category?: string; 
+  type?: string; 
+  owner?: string; 
+  search?: string;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.set('category', params.category);
+  if (params?.type) searchParams.set('type', params.type);
+  if (params?.owner) searchParams.set('owner', params.owner);
+  if (params?.search) searchParams.set('search', params.search);
+  
+  const query = searchParams.toString();
+  return apiCall(`/datasets/${query ? `?${query}` : ''}`);
+}
+
+export async function getDataset(id: string): Promise<Dataset> {
+  return apiCall(`/datasets/${id}/`);
 }
 
 export async function uploadDataset(formData: FormData) {
@@ -155,16 +226,26 @@ export async function uploadDataset(formData: FormData) {
   return response.json();
 }
 
+export async function updateDataset(id: string, data: Partial<Dataset>) {
+  return apiCall(`/datasets/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function deleteDataset(id: string) {
   return apiCall(`/datasets/${id}/`, {
     method: 'DELETE',
   });
 }
 
-export async function shareDataset(id: string) {
-  return apiCall(`/datasets/share/`, {
+export async function shareDataset(id: string, data: { 
+  user_ids?: number[]; 
+  make_public?: boolean; 
+}) {
+  return apiCall(`/datasets/${id}/share/`, {
     method: 'POST',
-    body: JSON.stringify({ dataset_id: id }),
+    body: JSON.stringify(data),
   });
 }
 
@@ -183,6 +264,22 @@ export async function downloadDataset(id: string) {
   }
   
   return response;
+}
+
+export async function fetchMyDatasets() {
+  return apiCall('/datasets/my-datasets/');
+}
+
+export async function fetchDatasetStats() {
+  // This would need to be implemented on the backend if needed
+  // For now, return mock data or calculate from datasets
+  const datasets = await fetchDatasets();
+  return {
+    total: datasets.length,
+    public: datasets.filter((d: Dataset) => d.is_public).length,
+    downloads: datasets.reduce((sum: number, d: Dataset) => sum + d.downloads, 0),
+    contributors: [...new Set(datasets.map((d: Dataset) => d.owner))].length,
+  };
 }
 
 // ==========================

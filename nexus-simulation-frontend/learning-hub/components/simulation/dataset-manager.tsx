@@ -6,74 +6,47 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, Database, Search, Download, Eye, Share2, Trash2 } from "lucide-react"
+import { Upload, Database, Search, Download, Eye, Share2, Trash2, Loader2 } from "lucide-react"
+import { Dataset } from "@/lib/api"
 
 interface DatasetManagerProps {
-  categories: any[]
+  datasets: Dataset[]
+  onDatasetUpload: () => void
+  isLoading: boolean
 }
 
-export function DatasetManager({ categories }: DatasetManagerProps) {
+export function DatasetManager({ datasets, onDatasetUpload, isLoading }: DatasetManagerProps) {
   const [searchTerm, setSearchTerm] = useState("")
-
-  const datasets = [
-    {
-      id: "1",
-      name: "S&P 500 Historical Data",
-      description: "Daily prices and returns for S&P 500 components (2000-2023)",
-      category: "financial",
-      format: "CSV",
-      size: "45.2 MB",
-      lastUpdated: "2023-12-15",
-      downloads: 1247,
-      isPublic: true,
-      owner: "Market Data Corp",
-    },
-    {
-      id: "2",
-      name: "US Mortality Tables 2023",
-      description: "Latest mortality rates by age, gender, and region",
-      category: "actuarial",
-      format: "Excel",
-      size: "2.3 MB",
-      lastUpdated: "2023-12-01",
-      downloads: 892,
-      isPublic: true,
-      owner: "Actuarial Society",
-    },
-    {
-      id: "3",
-      name: "Climate Risk Indicators",
-      description: "Global climate risk metrics by region and scenario",
-      category: "climate",
-      format: "JSON",
-      size: "15.7 MB",
-      lastUpdated: "2023-11-15",
-      downloads: 634,
-      isPublic: true,
-      owner: "Climate Research Institute",
-    },
-    {
-      id: "4",
-      name: "Insurance Claims Database",
-      description: "Anonymized property insurance claims data",
-      category: "insurance",
-      format: "CSV",
-      size: "8.9 MB",
-      lastUpdated: "2023-10-30",
-      downloads: 445,
-      isPublic: false,
-      owner: "You",
-    },
-  ]
 
   const filteredDatasets = datasets.filter(
     (dataset) =>
       dataset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dataset.description.toLowerCase().includes(searchTerm.toLowerCase()),
+      (dataset.description && dataset.description.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
   const getCategoryInfo = (categoryId: string) => {
+    const categories = [
+      { id: "actuarial", name: "Actuarial Models", icon: "📊", color: "bg-blue-500" },
+      { id: "climate", name: "Climate & Environmental", icon: "🌍", color: "bg-green-500" },
+      { id: "financial", name: "Financial Models", icon: "💰", color: "bg-emerald-500" },
+      { id: "health", name: "Health & Demographic", icon: "🏥", color: "bg-red-500" },
+      { id: "ml", name: "AI & Machine Learning", icon: "🤖", color: "bg-purple-500" },
+      { id: "insurance", name: "Insurance Products", icon: "🛡️", color: "bg-orange-500" },
+    ]
     return categories.find((c) => c.id === categoryId) || { name: categoryId, icon: "📊", color: "bg-gray-500" }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const getUserDatasets = () => {
+    // Filter datasets owned by current user
+    return datasets.filter(dataset => dataset.owner === 'current_user') // TODO: Replace with actual user check
   }
 
   return (
@@ -122,66 +95,90 @@ export function DatasetManager({ categories }: DatasetManagerProps) {
               />
             </div>
 
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">Loading datasets...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!isLoading && filteredDatasets.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">
+                  <h3 className="text-lg font-medium mb-2">No datasets found</h3>
+                  <p>Try adjusting your search criteria or upload a new dataset.</p>
+                </div>
+              </div>
+            )}
+
             {/* Dataset Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredDatasets.map((dataset) => {
-                const category = getCategoryInfo(dataset.category)
-                return (
-                  <Card key={dataset.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <Badge className={`${category.color} text-white`}>
-                          {category.icon} {category.name}
-                        </Badge>
-                        <div className="flex items-center space-x-1">
-                          <Badge variant="outline">{dataset.format}</Badge>
-                          {!dataset.isPublic && <Badge variant="secondary">Private</Badge>}
+            {!isLoading && filteredDatasets.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredDatasets.map((dataset) => {
+                  const category = getCategoryInfo(dataset.name.toLowerCase().includes('mortality') ? 'actuarial' : 
+                                                  dataset.name.toLowerCase().includes('climate') ? 'climate' :
+                                                  dataset.name.toLowerCase().includes('market') || dataset.name.toLowerCase().includes('financial') ? 'financial' :
+                                                  dataset.name.toLowerCase().includes('insurance') ? 'insurance' : 'actuarial')
+                  const fileExtension = dataset.file ? dataset.file.split('.').pop()?.toUpperCase() || 'FILE' : 'FILE'
+                  
+                  return (
+                    <Card key={dataset.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <Badge className={`${category.color} text-white`}>
+                            {category.icon} {category.name}
+                          </Badge>
+                          <div className="flex items-center space-x-1">
+                            <Badge variant="outline">{fileExtension}</Badge>
+                            {!dataset.is_public && <Badge variant="secondary">Private</Badge>}
+                          </div>
                         </div>
-                      </div>
-                      <CardTitle className="text-lg">{dataset.name}</CardTitle>
-                      <CardDescription className="line-clamp-2">{dataset.description}</CardDescription>
-                    </CardHeader>
+                        <CardTitle className="text-lg">{dataset.name}</CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {dataset.description || "No description available"}
+                        </CardDescription>
+                      </CardHeader>
 
-                    <CardContent className="space-y-3">
-                      {/* Metadata */}
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                        <div>
-                          <span className="font-medium">Size:</span> {dataset.size}
+                      <CardContent className="space-y-3">
+                        {/* Metadata */}
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                          <div>
+                            <span className="font-medium">Size:</span> {formatFileSize(dataset.size || 0)}
+                          </div>
+                          <div>
+                            <span className="font-medium">Owner:</span> {dataset.owner}
+                          </div>
+                          <div className="col-span-2">
+                            <span className="font-medium">Created:</span> {new Date(dataset.created_at).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium">Downloads:</span> {dataset.downloads}
-                        </div>
-                        <div>
-                          <span className="font-medium">Owner:</span> {dataset.owner}
-                        </div>
-                        <div>
-                          <span className="font-medium">Updated:</span> {dataset.lastUpdated}
-                        </div>
-                      </div>
 
-                      {/* Actions */}
-                      <div className="flex space-x-2">
-                        <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                          <Download className="mr-1 h-3 w-3" />
-                          Use Dataset
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Share2 className="h-3 w-3" />
-                        </Button>
-                        {dataset.owner === "You" && (
+                        {/* Actions */}
+                        <div className="flex space-x-2">
+                          <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                            <Download className="mr-1 h-3 w-3" />
+                            Use Dataset
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Share2 className="h-3 w-3" />
+                          </Button>
                           <Button variant="outline" size="sm">
                             <Trash2 className="h-3 w-3" />
                           </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -214,11 +211,12 @@ export function DatasetManager({ categories }: DatasetManagerProps) {
                     <label className="block text-sm font-medium mb-1">Category</label>
                     <select className="w-full p-2 border rounded-md">
                       <option value="">Select category...</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.icon} {category.name}
-                        </option>
-                      ))}
+                      <option value="actuarial">📊 Actuarial Models</option>
+                      <option value="climate">🌍 Climate & Environmental</option>
+                      <option value="financial">💰 Financial Models</option>
+                      <option value="health">🏥 Health & Demographic</option>
+                      <option value="ml">🤖 AI & Machine Learning</option>
+                      <option value="insurance">🛡️ Insurance Products</option>
                     </select>
                   </div>
                 </div>
@@ -236,7 +234,12 @@ export function DatasetManager({ categories }: DatasetManagerProps) {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button className="bg-blue-600 hover:bg-blue-700">Upload Dataset</Button>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={onDatasetUpload}
+                  >
+                    Upload Dataset
+                  </Button>
                   <Button variant="outline">Cancel</Button>
                 </div>
               </div>
@@ -246,45 +249,63 @@ export function DatasetManager({ categories }: DatasetManagerProps) {
 
         <TabsContent value="my-datasets">
           <div className="space-y-4">
-            {datasets
-              .filter((d) => d.owner === "You")
-              .map((dataset) => {
-                const category = getCategoryInfo(dataset.category)
-                return (
-                  <Card key={dataset.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className={`p-2 rounded-lg ${category.color} text-white`}>{category.icon}</div>
-                          <div>
-                            <h4 className="font-medium">{dataset.name}</h4>
-                            <p className="text-sm text-gray-500">{dataset.description}</p>
-                            <div className="flex items-center space-x-4 text-xs text-gray-400 mt-1">
-                              <span>{dataset.size}</span>
-                              <span>{dataset.downloads} downloads</span>
-                              <span>Updated {dataset.lastUpdated}</span>
-                            </div>
+            {isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">Loading your datasets...</p>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && getUserDatasets().length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">
+                  <h3 className="text-lg font-medium mb-2">No datasets found</h3>
+                  <p>You haven't uploaded any datasets yet. Upload your first dataset to get started.</p>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && getUserDatasets().map((dataset) => {
+              const category = getCategoryInfo(dataset.name.toLowerCase().includes('mortality') ? 'actuarial' : 
+                                            dataset.name.toLowerCase().includes('climate') ? 'climate' :
+                                            dataset.name.toLowerCase().includes('market') || dataset.name.toLowerCase().includes('financial') ? 'financial' :
+                                            dataset.name.toLowerCase().includes('insurance') ? 'insurance' : 'actuarial')
+              return (
+                <Card key={dataset.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-2 rounded-lg ${category.color} text-white`}>{category.icon}</div>
+                        <div>
+                          <h4 className="font-medium">{dataset.name}</h4>
+                          <p className="text-sm text-gray-500">{dataset.description || "No description available"}</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-400 mt-1">
+                            <span>{formatFileSize(dataset.size || 0)}</span>
+                            <span>Created {new Date(dataset.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-1 h-3 w-3" />
-                            View
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Share2 className="mr-1 h-3 w-3" />
-                            Share
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="mr-1 h-3 w-3" />
-                            Delete
-                          </Button>
-                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="mr-1 h-3 w-3" />
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Share2 className="mr-1 h-3 w-3" />
+                          Share
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </TabsContent>
       </Tabs>

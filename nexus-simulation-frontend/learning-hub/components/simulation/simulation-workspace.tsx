@@ -21,15 +21,23 @@ import {
 import { SimulationProgress } from "@/components/simulation-progress"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { ParameterForm } from "@/components/parameter-form"
+import { Dataset } from "@/lib/api"
 
 interface SimulationWorkspaceProps {
-  model: any
-  session: any
-  onRunSimulation: () => void
+  selectedModel: any
+  currentSession: any
+  datasets: Dataset[]
+  onRunSimulation: (modelId: string, parameters: any, datasetId?: string) => void
   onSessionUpdate: (session: any) => void
 }
 
-export function SimulationWorkspace({ model, session, onRunSimulation, onSessionUpdate }: SimulationWorkspaceProps) {
+export function SimulationWorkspace({ 
+  selectedModel, 
+  currentSession, 
+  datasets, 
+  onRunSimulation, 
+  onSessionUpdate 
+}: SimulationWorkspaceProps) {
   const [activeTab, setActiveTab] = useState("parameters")
   const [parameters, setParameters] = useState({
     initial_value: 100000,
@@ -45,17 +53,23 @@ export function SimulationWorkspace({ model, session, onRunSimulation, onSession
   ])
 
   useEffect(() => {
-    if (session?.status === "completed") {
+    if (currentSession?.status === "completed") {
       setActiveTab("results")
     }
-  }, [session?.status])
+  }, [currentSession?.status])
 
   const stopSimulation = () => {
     onSessionUpdate({
-      ...session,
+      ...currentSession,
       status: "idle",
       progress: 0,
     })
+  }
+
+  const handleRunSimulation = () => {
+    if (selectedModel) {
+      onRunSimulation(selectedModel.id, parameters)
+    }
   }
 
   const exportResults = () => {
@@ -63,7 +77,7 @@ export function SimulationWorkspace({ model, session, onRunSimulation, onSession
     console.log("Exporting results...")
   }
 
-  if (!model && !session) {
+  if (!selectedModel && !currentSession) {
     return (
       <div className="text-center py-12">
         <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -81,25 +95,25 @@ export function SimulationWorkspace({ model, session, onRunSimulation, onSession
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center space-x-2">
-                <span>{model?.title || "Custom Model"}</span>
-                {model?.category && <Badge variant="outline">{model.category}</Badge>}
-                {model?.language && <Badge variant="secondary">{model.language}</Badge>}
+                <span>{selectedModel?.title || "Custom Model"}</span>
+                {selectedModel?.category && <Badge variant="outline">{selectedModel.category}</Badge>}
+                {selectedModel?.language && <Badge variant="secondary">{selectedModel.language}</Badge>}
               </CardTitle>
-              <CardDescription>{model?.description || "Custom simulation model"}</CardDescription>
+              <CardDescription>{selectedModel?.description || "Custom simulation model"}</CardDescription>
             </div>
             <div className="flex space-x-2">
-              {session?.status === "running" ? (
+              {currentSession?.status === "running" ? (
                 <Button variant="outline" onClick={stopSimulation}>
                   <Square className="mr-2 h-4 w-4" />
                   Stop
                 </Button>
               ) : (
-                <Button onClick={onRunSimulation} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleRunSimulation} className="bg-blue-600 hover:bg-blue-700">
                   <Play className="mr-2 h-4 w-4" />
                   Run Simulation
                 </Button>
               )}
-              {session?.results && (
+              {currentSession?.results && (
                 <Button variant="outline" onClick={exportResults}>
                   <Download className="mr-2 h-4 w-4" />
                   Export PDF
@@ -153,11 +167,11 @@ export function SimulationWorkspace({ model, session, onRunSimulation, onSession
       </Card>
 
       {/* Simulation Progress */}
-      {(session?.status === "running" || session?.status === "validating") && (
+      {(currentSession?.status === "running" || currentSession?.status === "validating") && (
         <SimulationProgress
-          progress={session.progress}
-          currentStep={session.status === "validating" ? "Validating model and parameters" : "Running simulation"}
-          status={session.status}
+          progress={currentSession.progress}
+          currentStep={currentSession.status === "validating" ? "Validating model and parameters" : "Running simulation"}
+          status={currentSession.status}
           startTime={new Date()}
         />
       )}
@@ -176,7 +190,7 @@ export function SimulationWorkspace({ model, session, onRunSimulation, onSession
                 <FileText className="mr-2 h-4 w-4" />
                 Datasets
               </TabsTrigger>
-              <TabsTrigger value="results" disabled={!session?.results}>
+              <TabsTrigger value="results" disabled={!currentSession?.results}>
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Results
               </TabsTrigger>
@@ -211,26 +225,25 @@ export function SimulationWorkspace({ model, session, onRunSimulation, onSession
 
                     <div>
                       <h4 className="font-medium mb-2">Available Datasets</h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <span className="font-medium">S&P 500 Historical Data</span>
-                            <p className="text-sm text-gray-500">Daily prices and returns (2000-2023)</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Use Dataset
-                          </Button>
+                      {datasets.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No datasets available. Upload some datasets to get started.</p>
                         </div>
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <span className="font-medium">Mortality Tables 2023</span>
-                            <p className="text-sm text-gray-500">US mortality rates by age and gender</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Use Dataset
-                          </Button>
+                      ) : (
+                        <div className="space-y-2">
+                          {datasets.map((dataset) => (
+                            <div key={dataset.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <span className="font-medium">{dataset.name}</span>
+                                <p className="text-sm text-gray-500">{dataset.description || "No description available"}</p>
+                              </div>
+                              <Button variant="outline" size="sm">
+                                Use Dataset
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>

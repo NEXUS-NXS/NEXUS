@@ -38,17 +38,23 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'django_filters',
     'channels',
     'django_extensions',
+    'sslserver',
     
     # Local apps
     'users.apps.UsersConfig',
     'courses.apps.CoursesConfig',
     'study_groups.apps.StudyGroupsConfig',
-    'resources.apps.ResourcesConfig',
+    'resources',  # Using the app name directly instead of ResourcesConfig
     'chat.apps.ChatConfig',
     'accounts.apps.AccountsConfig',
     'simulations',
+    'mental_health.apps.MentalHealthConfig',
+    'career_mentorship.apps.CareerMentorshipConfig',
+    'certificates.apps.CertificatesConfig',
+    'learnhub.apps.LearnhubConfig',
 ]   
 
 MIDDLEWARE = [
@@ -61,20 +67,37 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
 ]
 
 # CORS settings
-# CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 CORS_ALLOWED_ORIGINS = [
     'https://127.0.0.1:5173',
     'http://127.0.0.1:5173',
+    "http://localhost:5173",
+    "https://localhost:5173",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://127.0.0.1:5173',
+    'http://127.0.0.1:5173',
+    "http://localhost:5173",
+    "https://localhost:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+
 CORS_ALLOW_HEADERS = [
     'content-type',
     'x-csrftoken',
@@ -83,7 +106,12 @@ CORS_ALLOW_HEADERS = [
 
 
 # REST Framework settings
+
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
+    
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'chat.authentication.CookieJWTAuthentication',  # Add your custom class
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -91,6 +119,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100,
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+
 }
 
 from datetime import timedelta

@@ -1329,7 +1329,7 @@ const Chats = () => {
   }
 
   const api = axios.create({
-    baseURL: 'https://127.0.0.1:8000/chats/',
+    baseURL: 'https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/',
     withCredentials: true,
     headers: {
       'X-CSRFToken': getCookie('csrftoken'),
