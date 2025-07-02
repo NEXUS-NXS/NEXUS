@@ -70,7 +70,7 @@ MIDDLEWARE = [
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 CORS_ALLOWED_ORIGINS = [
-    'https://the-nexus.co', 
+    'https://the-nexus.co'
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://the-nexus.co']
@@ -237,6 +237,7 @@ CSRF_COOKIE_DOMAIN = '.herokuapp.com'
 CSRF_TRUSTED_ORIGINS = [
     'https://the-nexus.co',
     'https://nexus-test-api-8bf398f16fc4.herokuapp.com'
+    
 ]
 
 SESSION_COOKIE_SECURE = True
