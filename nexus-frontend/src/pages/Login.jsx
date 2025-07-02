@@ -1,13 +1,12 @@
-"use client"
-
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { useUser } from "../context/UserContext"
-import "./Login.css"
-import MathClock from "../components/clock/MathClock"
+// src/components/Login.js
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Add useLocation
+import { useUser } from "../context/UserContext";
+import "./Login.css";
+import MathClock from "../components/clock/MathClock";
 
 const Login = () => {
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -15,32 +14,36 @@ const Login = () => {
     confirmPassword: "",
     gender: "",
     education: "",
-  })
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { login, register } = useUser()
-  const navigate = useNavigate()
+  const { login, register } = useUser();
+  const navigate = useNavigate();
+  const location = useLocation(); // Get the location to access state.from
+
+  // Get the intended destination, default to "/"
+  const from = location.state?.from?.pathname || "/";
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
       if (isSignUp) {
         if (formData.password !== formData.confirmPassword) {
-          setError("Passwords do not match")
-          setIsLoading(false)
-          return
+          setError("Passwords do not match");
+          setIsLoading(false);
+          return;
         }
         const success = await register(
           formData.fullName,
@@ -49,32 +52,32 @@ const Login = () => {
           formData.confirmPassword,
           formData.gender,
           formData.education
-        )
+        );
         if (success) {
-          navigate("/")
+          navigate(from, { replace: true }); // Redirect to intended URL
         } else {
-          setError("Registration failed. Please try again.")
+          setError("Registration failed. Please try again.");
         }
       } else {
-        const success = await login(formData.email, formData.password)
+        const success = await login(formData.email, formData.password);
         if (success) {
-          navigate("/")
+          navigate(from, { replace: true }); // Redirect to intended URL
         } else {
-          setError("Invalid email or password")
+          setError("Invalid email or password");
         }
       }
     } catch (err) {
-      setError(err.message || "An error occurred. Please try again.")
-      console.error(err)
+      setError(err.message || "An error occurred. Please try again.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSocialLogin = (provider) => {
-    console.log(`Login with ${provider}`)
+    console.log(`Login with ${provider}`);
     // Social login not implemented
-  }
+  };
 
   return (
     <div className="nexus-login-page">
@@ -308,10 +311,8 @@ const Login = () => {
           </div>
         </div>
       </div>
-      {/* Website Footer */}
-      
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

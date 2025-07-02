@@ -144,7 +144,6 @@ class CourseSerializer(serializers.ModelSerializer):
 
         return instance
 
-
 # learnhub/serializers.py
 class ModuleSerializer(serializers.ModelSerializer):
     progress = serializers.SerializerMethodField()
@@ -378,3 +377,40 @@ class UserLessonProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserLessonProgress
         fields = ['id', 'lesson', 'is_completed', 'completed_at', 'video_progress', 'video_current_time']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# courses/serializers.py
+from rest_framework import serializers
+from .models import Course
+from django.core.validators import FileExtensionValidator
+
+class CourseCoverImageSerializer(serializers.ModelSerializer):
+    cover_picture = serializers.ImageField(
+        validators=[
+            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif'])
+        ]
+    )
+
+    class Meta:
+        model = Course
+        fields = ['cover_picture']
+
+    def validate_cover_picture(self, value):
+        # Optional: Add additional validation for file size or other constraints
+        if value.size > 5 * 1024 * 1024:  # 5MB limit
+            raise serializers.ValidationError("Image file size must be less than 5MB.")
+        return value

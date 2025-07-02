@@ -6,6 +6,7 @@ import { Plus, BookOpen, Users, Target } from "lucide-react";
 import "./CreateCourse.css";
 import { useUser } from "../context/UserContext";
 import axios from "axios";
+import CourseCoverUpload from "./CourseCoverUpload"; // Import the new component
 
 const CreateCourse = () => {
   const navigate = useNavigate();
@@ -36,6 +37,9 @@ const CreateCourse = () => {
   const [emailCheckStatus, setEmailCheckStatus] = useState(null);
   const [emailCheckTimeout, setEmailCheckTimeout] = useState(null);
   const [error, setError] = useState(null);
+
+  const [showCoverUpload, setShowCoverUpload] = useState(false); // State for popup
+  const [courseId, setCourseId] = useState(null); // Store course ID
 
   const categories = [
     "programming",
@@ -332,7 +336,12 @@ const CreateCourse = () => {
     );
 
     console.log("Course creation response:", response.data);
-    navigate(`/course/${response.data.id}/content-manager`);
+
+
+    setCourseId(response.data.id); // Store course ID
+    setShowCoverUpload(true); // Open the upload popup
+
+
   } catch (err) {
     console.error("Course creation failed:", err);
     if (err.response) {
@@ -381,6 +390,13 @@ const CreateCourse = () => {
     setIsSubmitting(false);
   }
 };
+
+
+const handleCloseCoverUpload = () => {
+    setShowCoverUpload(false);
+    navigate(`/course/${courseId}/content-manager`); // Navigate after upload or cancel
+
+  };
 
   useEffect(() => {
     return () => {
@@ -730,7 +746,17 @@ const CreateCourse = () => {
             </button>
           </div>
         </form>
+
       </div>
+
+      {showCoverUpload && (
+        <CourseCoverUpload
+          courseId={courseId}
+          onClose={handleCloseCoverUpload}
+          accessToken={getAccessToken()}
+          fetchCsrfToken={fetchCsrfToken}
+        />
+      )}
     </div>
   );
 };

@@ -15,7 +15,8 @@ from .serializers import (
     LearningObjectiveSerializer, PrerequisiteSerializer, CourseSerializer,
     ModuleSerializer, LessonSerializer, KeyPointSerializer,
     BulletPointSerializer, CodeExampleSerializer, QuestionSerializer, CourseEnrollmentSerializer,
-    EnrolledCourseSerializer, CourseRatingSerializer, QuizSubmissionSerializer,
+    EnrolledCourseSerializer, CourseRatingSerializer, QuizSubmissionSerializer, CourseCoverImageSerializer,
+
 )
 from .permissions import IsInstructor, IsInstructorOrReadOnly
 
@@ -48,6 +49,10 @@ class PrerequisiteViewSet(viewsets.ModelViewSet):
     permission_classes = [IsInstructorOrReadOnly]
 
 from .permissions import IsInstructorOrReadOnly, IsEnrolled, IsInstructorOrEnrolled 
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework import status
+
+from .permissions import IsInstructorOrReadOnly, IsEnrolled, IsInstructorOrEnrolled 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
@@ -77,7 +82,31 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = CourseSerializer(course, context={'request': request})
         return Response(serializer.data)
     
-   
+
+
+
+    # Existing actions (publish, preview) remain unchanged
+
+    @action(detail=True, methods=['patch'], permission_classes=[IsInstructorOrReadOnly], url_path='upload-cover')
+    def upload_cover(self, request, pk=None):
+        course = self.get_object()
+        serializer = CourseCoverImageSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'status': 'Cover image uploaded successfully',
+                'cover_picture': request.build_absolute_uri(course.cover_picture.url) if course.cover_picture else None
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny], url_path='get-cover')
+    def get_cover(self, request, pk=None):
+        course = self.get_object()
+        return Response({
+            'cover_picture': request.build_absolute_uri(course.cover_picture.url) if course.cover_picture else None
+        }, status=status.HTTP_200_OK)
+    
 
 class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()

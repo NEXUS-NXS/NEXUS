@@ -1,7 +1,6 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+// src/components/CourseLibrary.jsx
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Users,
@@ -17,23 +16,24 @@ import {
   Calendar,
   Award,
   TrendingUp,
-} from "lucide-react"
-import "./CourseLibrary.css"
-import { useUser } from "../context/UserContext"
-import axios from "axios"
+} from "lucide-react";
+import "./CourseLibrary.css";
+import { useUser } from "../context/UserContext";
+import axios from "axios";
 
 const CourseLibrary = () => {
-  const navigate = useNavigate()
-  const { isAuthenticated, getAccessToken, refreshToken } = useUser()
+  const navigate = useNavigate();
+  const { isAuthenticated, getAccessToken, refreshToken } = useUser();
 
-  const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedDifficulty, setSelectedDifficulty] = useState("all")
-  const [viewMode, setViewMode] = useState("grid")
-  const [sortBy, setSortBy] = useState("recent")
+  const [courses, setCourses] = useState([]);
+  const [coverPictures, setCoverPictures] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [viewMode, setViewMode] = useState("grid");
+  const [sortBy, setSortBy] = useState("recent");
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -43,36 +43,27 @@ const CourseLibrary = () => {
     { value: "risk-management", label: "Risk Management" },
     { value: "programming", label: "Programming" },
     { value: "compliance", label: "Compliance" },
-  ]
+  ];
 
   const difficulties = [
     { value: "all", label: "All Levels" },
     { value: "beginner", label: "Beginner", color: "#10b981" },
     { value: "intermediate", label: "Intermediate", color: "#f59e0b" },
     { value: "advanced", label: "Advanced", color: "#ef4444" },
-  ]
+  ];
 
   const sortOptions = [
     { value: "recent", label: "Most Recent" },
     { value: "popular", label: "Most Popular" },
     { value: "rating", label: "Highest Rated" },
     { value: "title", label: "Alphabetical" },
-  ]
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setError("Please log in to view your courses.")
-      setLoading(false)
-      navigate("/login")
-      return
-    }
-    fetchCourses()
-  }, [isAuthenticated])
+  ];
 
   const fetchCourses = async () => {
     try {
-      setLoading(true)
-      const accessToken = getAccessToken()
+      setLoading(true);
+      const accessToken = getAccessToken();
+      console.log("Fetching courses with token:", accessToken);
       const response = await axios.get("https://127.0.0.1:8000/courses/api/courses/", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -80,83 +71,122 @@ const CourseLibrary = () => {
         },
         withCredentials: true,
         params: {
-          instructor_courses: true, // Filter for courses by the authenticated instructor
+          instructor_courses: true,
         },
-      })
-      setCourses(response.data.results || response.data)
-      setLoading(false)
+        timeout: 10000,
+      });
+      console.log("Courses response:", response.data);
+      const coursesData = response.data.results || response.data;
+      setCourses(coursesData);
+
+      // Fetch cover pictures for each course
+      const coverPicturePromises = coursesData.map(async (course) => {
+        try {
+          const coverResponse = await axios.get(
+            `https://127.0.0.1:8000/courses/api/courses/${course.id}/get-cover/`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              withCredentials: true,
+              timeout: 5000,
+            }
+          );
+          console.log(`Cover picture for course ${course.id}:`, coverResponse.data.cover_picture);
+          return { id: course.id, cover_picture: coverResponse.data.cover_picture };
+        } catch (err) {
+          console.error(`Failed to fetch cover for course ${course.id}:`, err.response?.data || err.message);
+          return { id: course.id, cover_picture: null };
+        }
+      });
+
+      const coverPicturesData = await Promise.all(coverPicturePromises);
+      const coverPicturesMap = coverPicturesData.reduce((acc, { id, cover_picture }) => {
+        acc[id] = cover_picture;
+        return acc;
+      }, {});
+      console.log("Cover pictures map:", coverPicturesMap);
+      setCoverPictures(coverPicturesMap);
+
+      setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch courses:", err)
-      if (err.response?.status === 401) {
-        const refreshed = await refreshToken()
+      console.error("Failed to fetch courses:", err.response?.data || err.message);
+      if (err.code === "ECONNABORTED") {
+        setError("Request timed out. Please try again.");
+      } else if (err.response?.status === 401) {
+        const refreshed = await refreshToken();
         if (refreshed) {
-          fetchCourses()
+          fetchCourses();
         } else {
-          setError("Authentication failed. Please log in again.")
-          navigate("/login")
+          setError("Authentication failed. Please log in again.");
+          navigate("/login");
         }
       } else {
-        setError("Failed to fetch your courses: " + (err.response?.data?.detail || err.message))
+        setError("Failed to fetch your courses: " + (err.response?.data?.detail || err.message));
       }
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const filteredAndSortedCourses = courses
-    .filter((course) => {
-      const matchesSearch =
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
-      const matchesDifficulty = selectedDifficulty === "all" || course.difficulty === selectedDifficulty
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setError("Please log in to view your courses.");
+      setLoading(false);
+      navigate("/login");
+      return;
+    }
+    fetchCourses();
+  }, [isAuthenticated, getAccessToken, refreshToken, navigate]);
 
-      return matchesSearch && matchesCategory && matchesDifficulty
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "recent":
-          return new Date(b.updated_at) - new Date(a.updated_at)
-        case "popular":
-          return b.enrollment_count - a.enrollment_count
-        case "rating":
-          return b.rating - a.rating
-        case "title":
-          return a.title.localeCompare(b.title)
-        default:
-          return 0
-      }
-    })
+  const filteredAndSortedCourses = useMemo(() => {
+    return courses
+      .filter((course) => {
+        const matchesSearch =
+          course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.tags.some((tag) => tag.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesCategory = selectedCategory === "all" || course.category === selectedCategory;
+        const matchesDifficulty = selectedDifficulty === "all" || course.difficulty === selectedDifficulty;
+
+        return matchesSearch && matchesCategory && matchesDifficulty;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "recent":
+            return new Date(b.updated_at) - new Date(a.updated_at);
+          case "popular":
+            return b.enrolled_students - a.enrolled_students;
+          case "rating":
+            return b.rating - a.rating;
+          case "title":
+            return a.title.localeCompare(b.title);
+          default:
+            return 0;
+        }
+      });
+  }, [courses, searchTerm, selectedCategory, selectedDifficulty, sortBy]);
 
   const handleCourseClick = (courseId) => {
-    navigate(`/course/${courseId}/content-manager`)
-  }
+    navigate(`/course/${courseId}/content-manager`);
+  };
 
   const handlePreviewCourse = (courseId) => {
-    navigate(`/course/${courseId}/preview`)
-  }
+    navigate(`/course/${courseId}/preview`);
+  };
 
   const getDifficultyColor = (difficulty) => {
-    const diff = difficulties.find((d) => d.value === difficulty)
-    return diff?.color || "#6b7280"
-  }
+    const diff = difficulties.find((d) => d.value === difficulty);
+    return diff?.color || "#6b7280";
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    })
-  }
-
-  if (loading) {
-    return (
-      <div className="course-library-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading your courses...</p>
-      </div>
-    )
-  }
+    });
+  };
 
   return (
     <div className="course-library">
@@ -184,7 +214,7 @@ const CourseLibrary = () => {
                 <Users size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-number">{courses.reduce((sum, course) => sum + course.enrollment_count, 0)}</span>
+                <span className="stat-number">{courses.reduce((sum, course) => sum + course.enrolled_students, 0)}</span>
                 <span className="stat-label">Total Enrollments</span>
               </div>
             </div>
@@ -292,7 +322,15 @@ const CourseLibrary = () => {
           filteredAndSortedCourses.map((course) => (
             <div key={course.id} className="course-card">
               <div className="course-thumbnail">
-                <img src={course.thumbnail || "/placeholder.svg"} alt={course.title} className="thumbnail-image" />
+                <img
+                  src={coverPictures[course.id] || "/placeholder.svg"}
+                  alt={course.title}
+                  className="thumbnail-image"
+                  onError={(e) => {
+                    console.log(`Image load failed for course ${course.id}:`, coverPictures[course.id]);
+                    e.target.src = "/placeholder.svg";
+                  }}
+                />
                 <div className="course-status">
                   <span className={`status-badge ${course.status}`}>{course.status}</span>
                 </div>
@@ -343,7 +381,7 @@ const CourseLibrary = () => {
                     </div>
                     <div className="meta-item">
                       <Users size={14} />
-                      <span>{course.enrollment_count} enrolled</span>
+                      <span>{course.enrolled_students} enrolled</span>
                     </div>
                   </div>
 
@@ -355,7 +393,7 @@ const CourseLibrary = () => {
                       </div>
                       <div className="meta-item">
                         <Award size={14} />
-                        <span>{course.completion_rate}% completion</span>
+                        <span>{course.completion_rate || 0}% completion</span>
                       </div>
                     </div>
                   )}
@@ -395,7 +433,7 @@ const CourseLibrary = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default CourseLibrary
+export default CourseLibrary;

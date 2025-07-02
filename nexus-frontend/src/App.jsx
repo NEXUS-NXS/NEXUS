@@ -123,7 +123,8 @@ function AppContent({ isMobile }) {
                     
                   }
                 />
-                <Route path="/admin/course-library" element={<CourseLibrary/>}/>
+                
+                <Route path="/admin/course-library" element={<ProtectedRoute><CourseLibrary/></ProtectedRoute>}/>
                 <Route
                   path="/my-certificates"
                   element={
