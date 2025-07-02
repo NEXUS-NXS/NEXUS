@@ -1,3 +1,7 @@
+import axios from "axios"
+const api = axios.create({ baseURL: "https://127.0.0.1:8000" })
+import ReactMarkdown from 'react-markdown' 
+
 "use client"
 
 import { useState, useRef, useEffect } from "react"
@@ -129,70 +133,84 @@ const WellBeingCenter = () => {
   }, [messages])
 
   // Handle sending a message
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
-
-    // Add user message
+  
     const userMessage = {
       id: messages.length + 1,
       sender: "user",
       content: inputMessage,
       timestamp: new Date().toISOString(),
     }
-
+  
     setMessages([...messages, userMessage])
     setInputMessage("")
-
-    // Simulate AI typing
     setIsTyping(true)
-
-    // Generate AI response based on user input
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage)
-
+  
+    setTimeout(async () => {
+      const aiResponse = await generateAIResponse(inputMessage) // Await here
       const aiMessage = {
         id: messages.length + 2,
         sender: "ai",
         content: aiResponse,
         timestamp: new Date().toISOString(),
       }
-
+  
       setMessages((prevMessages) => [...prevMessages, aiMessage])
       setIsTyping(false)
     }, 1500)
   }
 
   // Generate AI response based on user input
-  const generateAIResponse = (userInput) => {
-    const input = userInput.toLowerCase()
-
-    if (
-      input.includes("stress") ||
-      input.includes("stressed") ||
-      input.includes("anxiety") ||
-      input.includes("anxious")
-    ) {
-      return "I understand you're feeling stressed. Stress is common among actuarial students. I recommend trying the 4-7-8 breathing technique: inhale for 4 seconds, hold for 7 seconds, and exhale for 8 seconds. Would you like me to guide you through a quick breathing exercise?"
+  const generateAIResponse = async (userInput) => {
+    try {
+      const response = await api.post("/api/mental_health/chat/gemini/", { message: userInput });
+  
+      if (response.status === 200 && response.data?.response) {
+        return response.data.response;
+      } else {
+        console.warn("Gemini responded with non-200 status:", response.status);
+        throw new Error("Non-200 response from Gemini");
+      }
+  
+    } catch (error) {
+      console.error("Gemini failed, using OpenAI fallback:", error);
+  
+      try {
+        const fallbackResponse = await api.post("/api/mental_health/chat_openai/", { message: userInput });
+        if (fallbackResponse.status === 200 && fallbackResponse.data?.response) {
+          console.info("OpenAI fallback succeeded.");
+          return fallbackResponse.data.response;
+        } else {
+          console.warn("OpenAI responded with non-200 status:", fallbackResponse.status);
+          throw new Error("Non-200 response from OpenAI");
+        }
+      } catch (fallbackError) {
+        console.error("OpenAI fallback also failed:", fallbackError);
+  
+        // Final manual fallback response based on keywords
+        const input = userInput.toLowerCase();
+        if (input.includes("stress") || input.includes("stressed") || input.includes("anxiety") || input.includes("anxious")) {
+          return "I understand you're feeling stressed. Stress is common among actuarial students. I recommend trying the 4-7-8 breathing technique: inhale for 4 seconds, hold for 7 seconds, and exhale for 8 seconds. Would you like me to guide you through a quick breathing exercise?";
+        }
+        if (input.includes("tired") || input.includes("exhausted") || input.includes("sleep")) {
+          return "Feeling tired is normal during intense study periods. Consider taking a 20-minute power nap, which can boost alertness without causing sleep inertia. Also, make sure you're getting 7-8 hours of sleep each night. Would you like me to suggest a relaxation technique to help you sleep better?";
+        }
+        if (input.includes("exam") || input.includes("test") || input.includes("study")) {
+          return "Actuarial exams can be challenging. I recommend the Pomodoro technique: study for 25 minutes, then take a 5-minute break. This helps maintain focus and prevent burnout. Would you like me to create a personalized study schedule for you?";
+        }
+        if (input.includes("meditation") || input.includes("meditate") || input.includes("relax")) {
+          return "Meditation is excellent for mental clarity and stress reduction. I can guide you through a quick 5-minute meditation focused on clearing your mind and reducing exam anxiety. Would you like to try it now?";
+        }
+        if (input.includes("hello") || input.includes("hi") || input.includes("hey")) {
+          return "Hello! I'm your AI well-being assistant. I'm here to help you manage stress, improve your study habits, and maintain mental wellness throughout your actuarial journey. How can I assist you today?";
+        }
+  
+        return "Thank you for sharing. As your AI well-being assistant, I'm here to support your mental health journey. Would you like some personalized recommendations based on your current state? I can suggest meditation exercises, study techniques, or stress management strategies specifically designed for actuarial students.";
+      }
     }
-
-    if (input.includes("tired") || input.includes("exhausted") || input.includes("sleep")) {
-      return "Feeling tired is normal during intense study periods. Consider taking a 20-minute power nap, which can boost alertness without causing sleep inertia. Also, make sure you're getting 7-8 hours of sleep each night. Would you like me to suggest a relaxation technique to help you sleep better?"
-    }
-
-    if (input.includes("exam") || input.includes("test") || input.includes("study")) {
-      return "Actuarial exams can be challenging. I recommend the Pomodoro technique: study for 25 minutes, then take a 5-minute break. This helps maintain focus and prevent burnout. Would you like me to create a personalized study schedule for you?"
-    }
-
-    if (input.includes("meditation") || input.includes("meditate") || input.includes("relax")) {
-      return "Meditation is excellent for mental clarity and stress reduction. I can guide you through a quick 5-minute meditation focused on clearing your mind and reducing exam anxiety. Would you like to try it now?"
-    }
-
-    if (input.includes("hello") || input.includes("hi") || input.includes("hey")) {
-      return "Hello! I'm your AI well-being assistant. I'm here to help you manage stress, improve your study habits, and maintain mental wellness throughout your actuarial journey. How can I assist you today?"
-    }
-
-    return "Thank you for sharing. As your AI well-being assistant, I'm here to support your mental health journey. Would you like some personalized recommendations based on your current state? I can suggest meditation exercises, study techniques, or stress management strategies specifically designed for actuarial students."
-  }
+  };
+  
 
   // Handle mood selection
   const handleMoodSelection = (mood) => {
@@ -357,7 +375,7 @@ const WellBeingCenter = () => {
                       {message.sender === "ai" ? <Bot size={20} /> : <User size={20} />}
                     </div>
                     <div className="nexus-wellbeing-message-content">
-                      <p>{message.content}</p>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
                       <span className="nexus-wellbeing-message-time">
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
@@ -1155,7 +1173,10 @@ const WellBeingCenter = () => {
                     <Clock size={16} />
                     <span>Try Pomodoro Timer</span>
                   </button>
-                  <button className="nexus-wellbeing-insight-btn secondary">
+                  <button
+                    className="nexus-wellbeing-insight-btn secondary"
+                    onClick={() => setActiveTab("chat")} // Add this
+                  >
                     <MessageSquare size={16} />
                     <span>Ask AI for Details</span>
                   </button>
