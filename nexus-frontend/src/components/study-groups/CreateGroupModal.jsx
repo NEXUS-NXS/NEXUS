@@ -29,9 +29,9 @@ const CreateGroupModal = ({ onClose, onCreateGroup }) => {
     const fetchData = async () => {
       try {
         const [categoriesRes, examFocusRes, tagsRes] = await Promise.all([
-          axios.get("https://127.0.0.1:8000/chats/categories/", { withCredentials: true }),
-          axios.get("https://127.0.0.1:8000/chats/exam-focus/", { withCredentials: true }),
-          axios.get("https://127.0.0.1:8000/chats/tags/", { withCredentials: true }),
+          axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/categories/", { withCredentials: true }),
+          axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/exam-focus/", { withCredentials: true }),
+          axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/tags/", { withCredentials: true }),
         ])
 
         setCategories(categoriesRes.data.map(cat => ({
@@ -113,7 +113,7 @@ const CreateGroupModal = ({ onClose, onCreateGroup }) => {
 
     try {
       // Fetch CSRF token
-      const csrfToken = await axios.get("https://127.0.0.1:8000/auth/csrf/", {
+      const csrfToken = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/", {
         withCredentials: true,
       }).then(() => {
         const cookie = document.cookie
@@ -139,7 +139,7 @@ const CreateGroupModal = ({ onClose, onCreateGroup }) => {
       }
 
       const response = await axios.post(
-        "https://127.0.0.1:8000/chats/groups/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/",
         payload,
         {
           headers: { "X-CSRFToken": csrfToken },

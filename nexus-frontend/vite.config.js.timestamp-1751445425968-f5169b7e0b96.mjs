@@ -15,7 +15,7 @@ var vite_config_default = defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "https://127.0.0.1:8000",
+        target: "https://nexus-test-api-8bf398f16fc4.herokuapp.com",
         changeOrigin: true,
         secure: false
         // Ignore self-signed SSL certs

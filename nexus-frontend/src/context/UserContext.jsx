@@ -23,7 +23,7 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         // Trigger Django to set the csrf cookie
-        await axios.get("https://127.0.0.1:8000/auth/csrf/", {
+        await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/", {
           withCredentials: true,
         });
 
@@ -61,7 +61,7 @@ export const UserProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      await axios.get("https://127.0.0.1:8000/auth/protected/", {
+      await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/protected/", {
         withCredentials: true,
       });
       setIsAuthenticated(true);
@@ -79,7 +79,7 @@ export const UserProvider = ({ children }) => {
 
   const fetchChatUserId = async () => {
   try {
-    const response = await axios.get("https://127.0.0.1:8000/chats/api/me/", {
+    const response = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/api/me/", {
       withCredentials: true,
     });
     const chatUserId = response.data.id;
@@ -102,7 +102,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/token/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/token/",
         { email, password },
         {
           headers: { "X-CSRFToken": csrfToken },
@@ -150,7 +150,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       const response = await axios.post(  
-        "https://127.0.0.1:8000/auth/register/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/register/",
         {
           full_name: fullName,
           email,
@@ -189,7 +189,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (csrfToken) {
         await axios.post(
-          "https://127.0.0.1:8000/auth/logout/",
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/logout/",
           {},
           {
             headers: { "X-CSRFToken": csrfToken },
@@ -211,7 +211,7 @@ export const UserProvider = ({ children }) => {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
       await axios.post(
-        "https://127.0.0.1:8000/auth/token/refresh/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/token/refresh/",
         {},
         {
           headers: { "X-CSRFToken": csrfToken },

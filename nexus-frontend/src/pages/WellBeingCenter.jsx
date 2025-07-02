@@ -1,5 +1,5 @@
 import axios from "axios"
-const api = axios.create({ baseURL: "https://127.0.0.1:8000" })
+const api = axios.create({ baseURL: "https://nexus-test-api-8bf398f16fc4.herokuapp.com" })
 import ReactMarkdown from 'react-markdown' 
 
 "use client"

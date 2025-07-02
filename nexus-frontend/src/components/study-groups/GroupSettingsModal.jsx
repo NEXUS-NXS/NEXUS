@@ -76,7 +76,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
         // Fetch pending join requests
         const requestsRes = await axios.get(
-          `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/pending-requests/`,
           { 
             headers,
             withCredentials: true 
@@ -99,7 +99,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
         // Fetch group members
         const membersRes = await axios.get(
-          `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/`,
           { 
             headers,
             withCredentials: true 
@@ -174,7 +174,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       };
       console.log(`Sending join request action: ${action} for ID ${requestId}`, { headers });
       const response = await axios.post(
-        `https://127.0.0.1:8000/chats/join-requests/${requestId}/manage/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/join-requests/${requestId}/manage/`,
         { action },
         {
           headers,
@@ -184,7 +184,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       console.log(`Join request ${action} response:`, JSON.stringify(response.data, null, 2));
       // Refetch both join requests and members
       const requestsRes = await axios.get(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/pending-requests/`,
         { 
           headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true 
@@ -204,7 +204,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         }))
       );
       const membersRes = await axios.get(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/`,
         { 
           headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true 
@@ -253,7 +253,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       };
       console.log(`Managing member ${memberId} with action ${action}`, { headers });
       await axios.post(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/members/${memberId}/manage/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/${memberId}/manage/`,
         { action },
         {
           headers,
@@ -320,7 +320,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       };
 
       const response = await axios.put(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/`,
         formData,
         {
           headers,
@@ -365,7 +365,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         "X-CSRFToken": csrfToken 
       };
       await axios.delete(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/`,
         {
           headers,
           withCredentials: true,
@@ -411,7 +411,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           "X-CSRFToken": csrfToken 
         };
         const response = await axios.post(
-          `https://127.0.0.1:8000/chats/tags/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/tags/`,
           { name: newTag.trim() },
           {
             headers,
