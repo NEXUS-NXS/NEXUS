@@ -9,13 +9,13 @@ A full-stack educational platform built with React, Vite, and Django, providing 
 - **Interactive UI**: Built with modern React 18 components
 - **Real-time Updates**: Live chat and notifications
 - **Progress Tracking**: Visualize learning progress
-- **Resource Management**: Upload and share learning materials
+- **Resource Management**: Upload, view, and manage learning materials with rich metadata
 
 ### Backend
 - **RESTful API**: Powered by Django REST Framework
 - **Authentication**: JWT and session-based auth
 - **Real-time Chat**: WebSocket support with Django Channels
-- **File Storage**: Secure file uploads and management
+- **File Storage**: Secure file uploads and management with metadata extraction
 - **Database**: PostgreSQL with SQLite for development
 - **Caching**: Redis for improved performance
 

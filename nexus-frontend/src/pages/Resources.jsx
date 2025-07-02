@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Search, Filter, BookOpen, FileText, Download } from "lucide-react"
 import "./Resources.css"
 import axios from 'axios';
@@ -152,6 +153,10 @@ const Resources = () => {
   const [filteredResources, setFilteredResources] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   // Format resource data for display
   const formatResource = (resource) => ({
@@ -165,7 +170,7 @@ const Resources = () => {
     // Set download URL
     downloadUrl: resource.download_url || '#',
     // Use cover image URL if available, otherwise use a default
-    coverImage: resource.coverImage || "/assets/default-cover.jpg"
+    // coverImage: resource.coverImage || "/assets/default-cover.jpg"
   });
 
   // Fetch resources from the API
@@ -291,108 +296,135 @@ const Resources = () => {
 
   // Handle download button click
   const handleDownload = async (resourceId, isPremium = false) => {
-    setDownloadingId(resourceId);
-    setError(null);
-
+    console.log('Starting download for resource:', resourceId);
+    
+    // Check if already downloading
+    if (downloadingId === resourceId) return;
+    
+    // Check if user is logged in for premium resources
+    if (isPremium && !user) {
+      const errorMsg = 'Please sign in to download premium resources';
+      console.log(errorMsg);
+      setError(errorMsg);
+      setShowLoginModal(true);
+      return;
+    }
+    
     try {
-      // Check if the resource is premium and user is not authenticated
-      if (isPremium && !isAuthenticated) {
-        setError('Please sign in to download premium resources.');
-        setShowLoginModal(true);
-        setDownloadingId(null);
-        return;
-      }
-
-      // Find the resource in the resources array
-      const resource = resources.find(r => r.id === resourceId);
-      if (!resource) {
-        setError('Resource not found');
-        return;
-      }
-
-      // Make the download request
-      const response = await apiClient.get(`/api/resources/${resourceId}/download/`, {
+      setDownloadingId(resourceId);
+      setError(null);
+      
+      const downloadUrl = `/api/resources/resources/${resourceId}/download/`;
+      console.log('Making download request to:', downloadUrl);
+      
+      // Make API request to get the file
+      const response = await apiClient.get(downloadUrl, {
         responseType: 'blob',
       });
       
-      // Handle URL-based resources (redirect)
-      if (response.data && typeof response.data === 'object' && 'redirect' in response.data) {
-        // For external URLs, open in a new tab
-        window.open(response.data.redirect, '_blank');
-        toast.success('Opening download in a new tab...');
-        return;
+      console.log('Download response received:', {
+        status: response.status,
+        headers: response.headers,
+        dataType: response.data?.constructor.name
+      });
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
       }
       
-      // Handle direct file downloads
-      if (response.data instanceof Blob) {
-        // Create a blob URL for the file
-        const url = window.URL.createObjectURL(response.data);
-        
-        // Create a temporary anchor element to trigger the download
-        const link = document.createElement('a');
-        link.href = url;
-        
-        // Try to get filename from response headers or use resource title
-        let filename = resource.title || 'resource';
-        const contentDisposition = response.headers['content-disposition'];
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-          if (filenameMatch != null && filenameMatch[1]) { 
-            filename = filenameMatch[1].replace(/['"]/g, '');
+      // Create a blob URL for the file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Create a temporary anchor element to trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get the resource to access its title
+      const resource = resources.find(r => r.id === resourceId);
+      
+      // Create a safe filename from the resource title or use a default
+      let filename = 'document.pdf';
+      if (resource && resource.title) {
+        // Remove special characters and replace spaces with underscores
+        const cleanTitle = resource.title
+          .replace(/[^\w\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '_')      // Replace spaces with underscores
+          .toLowerCase();             // Convert to lowercase
+        filename = `${cleanTitle}.pdf`;
+      }
+      
+      // If we have a content-disposition header, use that filename instead
+      const contentDisposition = response.headers['content-disposition'];
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch != null && filenameMatch[1]) { 
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      console.log('Triggering download for file:', filename);
+      
+      // Set download attributes and trigger click
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      link.remove();
+      
+      // Show success message
+      console.log('Download started successfully!');
+      
+      // Reset downloading state after a short delay
+      setTimeout(() => {
+        setDownloadingId(null);
+      }, 5000);
+      
+    } catch (error) {
+      console.error('Download error:', {
+        error,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers,
+          data: error.response.data
+        } : 'No response data'
+      });
+      
+      let errorMessage = 'Failed to download the file. Please try again.';
+      
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Please sign in to download this resource';
+          setShowLoginModal(true);
+        } else if (error.response.status === 403) {
+          errorMessage = 'You do not have permission to download this resource';
+        } else if (error.response.status === 404) {
+          errorMessage = 'The requested resource was not found';
+        } else if (error.response.data) {
+          // Try to parse error message if it's a Blob
+          if (error.response.data instanceof Blob) {
+            try {
+              const errorText = await error.response.data.text();
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.detail || errorMessage;
+            } catch (e) {
+              console.error('Error parsing error response:', e);
+            }
+          } else if (error.response.data.detail) {
+            errorMessage = error.response.data.detail;
           }
         }
-        
-        // Clean up filename and add extension if needed
-        filename = filename.replace(/[^\w\d.-]/g, '_');
-        if (!filename.includes('.')) {
-          filename += '.pdf'; // Default extension if none provided
-        }
-        
-        // Trigger download
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        
-        // Clean up
-        window.URL.revokeObjectURL(url);
-        link.remove();
-        
-        toast.success('Download started!');
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-    } catch (err) {
-      console.error('Download error:', err);
-      
-      // Handle different types of errors
-      let errorMessage = 'An error occurred while downloading the resource.';
-      
-      if (err.response) {
-        // The request was made and the server responded with a status code
-        if (err.response.status === 401) {
-          errorMessage = 'Please sign in to access this resource.';
-          setShowLoginModal(true);
-        } else if (err.response.status === 403) {
-          errorMessage = 'You do not have permission to access this resource.';
-        } else if (err.response.status === 404) {
-          errorMessage = 'The requested resource was not found.';
-        } else if (err.response.data?.detail) {
-          errorMessage = err.response.data.detail;
-        } else if (err.response.status >= 500) {
-          errorMessage = 'Server error. Please try again later.';
-        }
-      } else if (err.request) {
-        // The request was made but no response was received
-        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
-      } else if (err.message) {
-        // Something happened in setting up the request
-        errorMessage = `Error: ${err.message}`;
-      }
-      
+      console.error('Download failed:', errorMessage);
       setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
       setDownloadingId(null);
+    } finally {
+      // Removed setDownloadingId(null) from here
     }
   };
 
@@ -568,14 +600,25 @@ const Resources = () => {
                     <div className="resource-actions">
                       <button
                         className={`download-btn ${resource.isPremium ? 'premium-btn' : ''}`}
-                        onClick={(e) => handleDownload(e, resource)}
-                        disabled={isLoading || !resource.downloadUrl}
-                        title={!resource.downloadUrl ? 'Download not available' : ''}
+                        onClick={() => handleDownload(resource.id, resource.isPremium)}
+                        disabled={isLoading}
+                        title={`Download ${resource.title}`}
+                        style={{ cursor: isLoading ? 'wait' : 'pointer' }}
                       >
-                        <Download size={16} /> 
-                        {resource.isPremium ? 'Download (Premium)' : 'Download'}
+                        {downloadingId === resource.id ? (
+                          <span>Downloading...</span>
+                        ) : (
+                          <>
+                            <Download size={16} /> 
+                            {resource.isPremium ? 'Download (Premium)' : 'Download'}
+                          </>
+                        )}
                       </button>
-                      <button className="view-btn">
+                      <button 
+                        className="view-btn"
+                        onClick={() => navigate(`/resources/${resource.id}`)}
+                        title={`View details for ${resource.title}`}
+                      >
                         <FileText size={16} /> View Details
                       </button>
                     </div>
