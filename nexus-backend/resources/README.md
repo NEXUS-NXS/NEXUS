@@ -1,19 +1,32 @@
-# Resources App
+## 📚 Resources Module
+This Django app manages educational resources (primarily PDFs) for the NEXUS platform, including upload, storage, metadata extraction, and retrieval functionality. The Resources module provides comprehensive management of educational materials with the following features:
 
-This Django app manages educational resources (primarily PDFs) for the NEXUS platform, including upload, storage, metadata extraction, and retrieval functionality.
-
-## Features
-
-- **File Management**: Upload, store, and serve PDF resources
-- **Metadata Extraction**: Automatically extracts metadata from PDFs including:
-  - Page count
-  - File size
+### Key Features
+- **PDF Management**: Upload, store, and serve PDF resources
+- **Metadata Extraction**: Automatic extraction of PDF metadata including:
+  - Page count and file size
   - Creation/modification dates
   - Author information
   - Keywords and tags
-- **Search & Filter**: Search resources by title, description, or metadata
-- **User Permissions**: Role-based access control for resource management
+- **Rich Preview**: Interactive resource cards with hover effects
+- **Search & Filter**: Find resources by title, description, or metadata
 - **Statistics**: Track views and downloads for each resource
+
+### Frontend Components
+- `ResourceList`: Displays a grid of available resources with search and filter options
+- `ResourceDetails`: Shows detailed view of a resource with metadata and download options
+- `ResourceUpload`: Form for uploading new resources with metadata
+- `ResourceCard`: Reusable component for displaying resource previews
+
+### Backend API
+- **Endpoints**:
+  - `GET /api/resources/`: List all resources (with pagination)
+  - `POST /api/resources/`: Upload new resource
+  - `GET /api/resources/{id}/`: Get resource details
+  - `GET /api/resources/{id}/download/`: Download resource file
+  - `PATCH /api/resources/{id}/`: Update resource metadata
+  - `DELETE /api/resources/{id}/`: Delete resource
+
 
 ## Models
 
@@ -33,14 +46,6 @@ This Django app manages educational resources (primarily PDFs) for the NEXUS pla
 - `created_at`: Creation timestamp
 - `updated_at`: Last update timestamp
 
-## API Endpoints
-
-- `GET /api/resources/`: List all resources
-- `POST /api/resources/`: Upload new resource
-- `GET /api/resources/{id}/`: Get resource details
-- `GET /api/resources/{id}/download/`: Download resource file
-- `PATCH /api/resources/{id}/`: Update resource metadata
-- `DELETE /api/resources/{id}/`: Delete resource
 
 ## Management Commands
 
@@ -48,14 +53,14 @@ This Django app manages educational resources (primarily PDFs) for the NEXUS pla
 Updates metadata for existing PDFs in the database.
 
 ```bash
-python manage.py update_pdfs
+poetry run python manage.py update_pdfs
 ```
 
 ### `load_test_data`
 Loads test PDFs with metadata into the database.
 
 ```bash
-python manage.py load_test_data
+poetry run python manage.py load_test_data
 ```
 
 ## Frontend Integration
@@ -78,22 +83,17 @@ The frontend interacts with the resources API to:
 
 1. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   poetry install
    ```
 
 2. Run migrations:
    ```bash
-   python manage.py migrate
+   poetry run python manage.py makemigrations
+   poetry run python manage.py migrate
    ```
-
-3. Create a superuser (if needed):
+4. Run the development server:(Using Uvicorn)
    ```bash
-   python manage.py createsuperuser
-   ```
-
-4. Run the development server:
-   ```bash
-   python manage.py runserver
+   poetry run uvicorn config.asgi:application   --host 0.0.0.0   --port 8000   --ssl-certfile certs/127.0.0.1.pem   --ssl-keyfile certs/127.0.0.1-key.pem
    ```
 
 ## Environment Variables
