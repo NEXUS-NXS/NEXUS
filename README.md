@@ -1,133 +1,152 @@
-# NEXUS Platform
+# NEXUS Backend
 
-A modern educational platform built with React and Vite, providing an interactive learning experience with features like course management, study groups, and real-time collaboration.
+Django REST framework backend for the NEXUS educational platform, providing APIs for user management, course content, study groups, and real-time chat functionality.
 
 ## 🚀 Features
 
-- **Responsive Design**: Works on desktop and mobile devices
-- **Interactive UI**: Built with modern React components
-- **Course Management**: Browse and manage courses
-- **Study Groups**: Collaborate with peers
-- **Real-time Chat**: Communicate with instructors and classmates
-- **Progress Tracking**: Monitor your learning journey
-- **Resource Sharing**: Share and access learning materials
+- **User Authentication**: JWT and session-based authentication
+- **Course Management**: Create, read, update, and delete courses and lessons
+- **Study Groups**: Collaborative learning spaces with discussion boards
+- **Resources**: File uploads and resource management
+- **Real-time Chat**: WebSocket-based chat functionality
+- **RESTful API**: Well-documented endpoints for frontend integration
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
-- **Framework**: React 18
-- **Build Tool**: Vite
-- **Routing**: React Router v7
-- **UI Components**: Custom components with CSS modules
-- **Charts**: Recharts for data visualization
-- **Icons**: Lucide React
+- **Backend Framework**: Django 5.2
+- **API**: Django REST Framework
+- **Database**: SQLite (development), PostgreSQL (production-ready)
+- **Authentication**: JWT + Session Authentication
+- **Real-time**: Django Channels
+- **CORS**: django-cors-headers
+- **Documentation**: DRF Spectacular
 
-## 🚀 Getting Started
+## 🚀 Setup
 
 ### Prerequisites
 
-- Node.js 16+ and npm/yarn
+- Python 3.9+
+- pip (Python package manager)
 - Git
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/nexus.git
-   cd nexus/nexus-frontend
+   git clone https://github.com/yourusername/nexus-backend.git
+   cd nexus-backend
    ```
 
-2. **Install dependencies**
+2. **Set up a virtual environment**
    ```bash
-   npm install
-   # or
-   yarn
+   # Windows
+   python -m venv venv
+   .\venv\Scripts\activate
+
+   # macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
    ```
 
-3. **Set up environment variables**
-   Create a `.env` file in the project root with the following variables:
-   ```env
-   VITE_API_BASE_URL=http://localhost:8000/api
-   VITE_APP_NAME=NEXUS
-   ```
-
-4. **Start the development server**
+3. **Install dependencies**
    ```bash
-   npm run dev -- --host
-   # or
-   yarn dev --host
+   pip install -r requirements.txt
    ```
-   The app will be available at `http://localhost:5173`
 
-5. **Build for production**
+4. **Configure environment variables**
    ```bash
-   npm run build
-   npm run preview
+   cp .env.example .env
+   ```
+   Update the `.env` file with your configuration.
+
+5. **Run migrations**
+   ```bash
+   python manage.py migrate
+   ```
+
+6. **Create a superuser**
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+7. **Run the development server**
+   ```bash
+   python manage.py runserver
    ```
 
 ## 📂 Project Structure
 
 ```
-nexus-frontend/
-├── public/          # Static files
-├── src/
-│   ├── assets/      # Images, fonts, etc.
-│   ├── components/  # Reusable UI components
-│   ├── context/     # React context providers
-│   ├── hooks/       # Custom React hooks
-│   ├── pages/       # Page components
-│   ├── services/    # API services
-│   ├── styles/      # Global styles
-│   ├── utils/       # Utility functions
-│   ├── App.jsx      # Main App component
-│   └── main.jsx     # Application entry point
-├── .gitignore
-├── package.json
-├── vite.config.js
-└── README.md
+nexus-backend/
+├── config/               # Project configuration
+├── users/                # User authentication and profiles
+├── courses/              # Course management
+├── study_groups/         # Study group functionality
+├── resources/            # Learning resources
+├── chat/                 # Real-time chat
+├── media/                # User-uploaded files
+├── static/               # Static files
+├── .env.example          # Example environment variables
+├── manage.py             # Django management script
+└── requirements.txt      # Project dependencies
 ```
 
-## 🛠 Development
+## 🌐 API Endpoints
 
-### Available Scripts
+### Authentication
+- `POST /api/auth/register/` - User registration
+- `POST /api/auth/login/` - User login
+- `POST /api/auth/logout/` - User logout
+- `GET /api/auth/me/` - Get current user details
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Lint code
+### Users
+- `GET /api/users/` - List all users
+- `GET /api/users/{id}/` - Get user details
+- `PUT /api/users/{id}/` - Update user profile
+- `PATCH /api/users/{id}/` - Partially update user profile
+
+### Courses
+- `GET /api/courses/` - List all courses
+- `POST /api/courses/` - Create a new course
+- `GET /api/courses/{id}/` - Get course details
+- `PUT /api/courses/{id}/` - Update course
+- `DELETE /api/courses/{id}/` - Delete course
+
+## 📝 Development
 
 ### Code Style
-
-- Follow [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)
-- Use functional components with hooks
-- Keep components small and focused
-- Use meaningful component and variable names
-- Add PropTypes for component props
+- Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) guidelines
+- Use type hints for better code documentation
+- Document all public methods and classes with docstrings
 
 ### Git Workflow
-
-1. Create a new branch: `git checkout -b feature/your-feature`
-2. Make your changes and commit: `git commit -m "Add your feature"`
+1. Create a new branch for your feature: `git checkout -b feature/your-feature`
+2. Make your changes and commit them: `git commit -m "Add your feature"`
 3. Push to the branch: `git push origin feature/your-feature`
 4. Create a pull request
 
-## 🌐 API Integration
+### Running Tests
+```bash
+# Run all tests
+python manage.py test
 
-The frontend communicates with the backend REST API. Ensure the backend server is running before starting the frontend.
+# Run tests for a specific app
+python manage.py test users
+
+# Run with coverage
+coverage run manage.py test
+coverage report
+```
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| VITE_API_BASE_URL | Base URL for API requests | http://localhost:8000/api |
-| VITE_APP_NAME | Application name | NEXUS |
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+| DEBUG | Enable debug mode | True |
+| SECRET_KEY | Django secret key | (random) |
+| ALLOWED_HOSTS | Allowed hostnames | ['localhost', '127.0.0.1'] |
+| CORS_ALLOWED_ORIGINS | Allowed CORS origins | ['http://localhost:5173'] |
+| DB_NAME | Database name | db.sqlite3 |
 
 ## 📄 License
 
@@ -135,8 +154,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [React](https://reactjs.org/)
-- [Vite](https://vitejs.dev/)
-- [React Router](https://reactrouter.com/)
-- [Lucide Icons](https://lucide.dev/)
+- Django REST Framework
+- Django Channels
+- DRF Spectacular
 - And all other open-source projects that made this possible.
