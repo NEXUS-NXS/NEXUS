@@ -68,14 +68,18 @@ MIDDLEWARE = [
 
 # CORS settings
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
-CORS_ALLOWED_ORIGINS = ['*']
 
-CSRF_TRUSTED_ORIGINS = ['*']
+CORS_ALLOWED_ORIGINS = [
+    'https://vermillion-cajeta-3f48b9.netlify.app',
+]
 
-CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ['https://vermillion-cajeta-3f48b9.netlify.app']
+
+CORS_ALLOW_CREDENTIALS = False
 
 CORS_EXPOSE_HEADERS = ['Set-Cookie']
 
+CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -121,6 +125,8 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_HTTP_ONLY": False,#prevents javascript access ##################################
     "AUTH_COOKIE_SECURE": True,#use in production with https ################################
     "AUTH_COOKIE_SAME_SITE": 'None',
+    "AUTH_COOKIE_DOMAIN": '.herokuapp.com',  # Important for cross-domain cookies
+
 }
 
 ROOT_URLCONF = 'config.urls'
@@ -227,6 +233,11 @@ CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_HTTPONLY = False  # must be False so frontend JS can access it
 CSRF_COOKIE_SAMESITE = 'None'  # Or 'None' if you're working across domains
 CSRF_COOKIE_SECURE = True  # True in production (when using https)
+CSRF_COOKIE_DOMAIN = '.herokuapp.com'
+CSRF_TRUSTED_ORIGINS = [
+    'https://vermillion-cajeta-3f48b9.netlify.app',
+    'https://nexus-test-api-8bf398f16fc4.herokuapp.com'
+]
 
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'None'
