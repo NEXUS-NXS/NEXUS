@@ -33,7 +33,7 @@ export const UserProvider = ({ children }) => {
         });
 
         console.log("Document cookie:", document.cookie);
-        const csrfToken = getCookie("csrftoken");
+        const csrfToken = response.data.csrf_token;
         if (csrfToken) {
           console.log("Fetched CSRF token:", csrfToken);
           return csrfToken;
