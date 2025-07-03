@@ -7,7 +7,7 @@ import "./Resources.css"
 import axios from 'axios';
 
 // API base URL from environment variables
-const API_BASE_URL = 'https://127.0.0.1:8000'; // Using HTTPS for secure connection
+const API_BASE_URL = 'https://nexus-test-api-8bf398f16fc4.herokuapp.com'; // Using HTTPS for secure connection
 
 // Create a custom axios instance with defaults
 const apiClient = axios.create({

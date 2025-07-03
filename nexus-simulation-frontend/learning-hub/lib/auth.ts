@@ -75,7 +75,7 @@ export async function checkAuthenticationStatus(): Promise<boolean> {
   
   try {
     // Verify token is still valid by making a protected request
-    const response = await fetch('https://127.0.0.1:8000/auth/protected/', {
+    const response = await fetch('https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/protected/', {
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -94,7 +94,7 @@ export async function logout(): Promise<void> {
   try {
     const csrfToken = await fetchCsrfToken();
     if (csrfToken) {
-      await fetch('https://127.0.0.1:8000/auth/logout/', {
+      await fetch('https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/logout/', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -127,7 +127,7 @@ export async function fetchCsrfToken(retries = 3, delay = 1000): Promise<string 
   for (let i = 0; i < retries; i++) {
     try {
       // Trigger Django to set the csrf cookie (same endpoint as main frontend)
-      await fetch('https://127.0.0.1:8000/auth/csrf/', {
+      await fetch('https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/', {
         credentials: 'include',
       });
       

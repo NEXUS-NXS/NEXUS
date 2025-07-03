@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL and credentials
 const apiClient = axios.create({
-  baseURL: 'https://127.0.0.1:8000', // Using HTTPS instead of HTTP
+  baseURL: 'https://nexus-test-api-8bf398f16fc4.herokuapp.com', // Using HTTPS instead of HTTP
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

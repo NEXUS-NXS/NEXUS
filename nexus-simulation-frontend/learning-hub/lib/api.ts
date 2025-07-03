@@ -1,7 +1,7 @@
 // 📦 lib/api.ts - Nexus Simulation API Client
 
 // Base configuration
-const BASE_URL = 'https://127.0.0.1:8000/api/simulations';
+const BASE_URL = 'https://nexus-test-api-8bf398f16fc4.herokuapp.com/api/simulations';
 
 // Types for better type safety
 export interface SimulationModel {
