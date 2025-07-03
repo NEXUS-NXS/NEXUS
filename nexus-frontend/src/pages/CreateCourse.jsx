@@ -10,7 +10,8 @@ import CourseCoverUpload from "./CourseCoverUpload"; // Import the new component
 
 const CreateCourse = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, fetchCsrfToken, refreshToken, getAccessToken } = useUser();
+  const { isAuthenticated, fetchCsrfToken, refreshToken, getAccessToken } =
+    useUser();
   const [courseForm, setCourseForm] = useState({
     title: "",
     description: "",
@@ -59,7 +60,6 @@ const CreateCourse = () => {
     { value: "expert", label: "Expert", color: "#9b2c2c" },
   ];
 
-
   const addLearningObjective = () => {
     setCourseForm((prev) => ({
       ...prev,
@@ -70,7 +70,9 @@ const CreateCourse = () => {
   const removeLearningObjective = (index) => {
     setCourseForm((prev) => ({
       ...prev,
-      learning_objectives: prev.learning_objectives.filter((_, i) => i !== index),
+      learning_objectives: prev.learning_objectives.filter(
+        (_, i) => i !== index
+      ),
     }));
   };
 
@@ -138,87 +140,92 @@ const CreateCourse = () => {
     }));
   };
 
-  const checkUserByEmail = useCallback(async (email) => {
-    if (!email || !email.includes("@")) {
-      setEmailCheckStatus(null);
-      console.log("Email invalid or empty, skipping check:", email);
-      return;
-    }
-
-    setEmailCheckStatus("checking");
-    setError(null);
-    console.log("Checking email:", email);
-
-    try {
-      const accessToken = getAccessToken();
-      console.log("Access token for email check:", accessToken);
-      if (!accessToken) throw new Error("No access token found");
-
-      const response = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile-by-email/by-email/", {
-        params: { email: email.toLowerCase() },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      });
-
-      console.log("Email check response:", response.data);
-      setEmailCheckStatus("found");
-      setCourseForm((prev) => ({
-        ...prev,
-        instructor: {
-          ...prev.instructor,
-          email,
-          bio: response.data.bio || "",
-          experience: response.data.experience || "",
-          profile_image: response.data.profile_image || "",
-          expertise: response.data.expertise?.map((exp) => exp.name) || [""],
-          social_links: response.data.social_links || {
-            linkedin: "",
-            twitter: "",
-            website: "",
-          },
-        },
-      }));
-    } catch (err) {
-      console.error("Email check failed:", err);
-      if (err.response) {
-        console.error("Email check response data:", err.response.data);
-        console.error("Email check response status:", err.response.status);
+  const checkUserByEmail = useCallback(
+    async (email) => {
+      if (!email || !email.includes("@")) {
+        setEmailCheckStatus(null);
+        console.log("Email invalid or empty, skipping check:", email);
+        return;
       }
-      if (err.response?.status === 401) {
-        console.log("Attempting token refresh for email check");
-        const refreshed = await refreshToken();
-        if (refreshed) {
-          console.log("Token refreshed, retrying email check");
-          checkUserByEmail(email);
-        } else {
-          setError("Authentication failed. Please log in again.");
-          setEmailCheckStatus(null);
-        }
-      } else if (err.response?.status === 404) {
-        console.log("Email not found, setting to not-found");
-        setEmailCheckStatus("not-found");
+
+      setEmailCheckStatus("checking");
+      setError(null);
+      console.log("Checking email:", email);
+
+      try {
+        const accessToken = getAccessToken();
+        console.log("Access token for email check:", accessToken);
+        if (!accessToken) throw new Error("No access token found");
+
+        const response = await axios.get(
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile-by-email/by-email/",
+          {
+            params: { email: email.toLowerCase() },
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+
+        console.log("Email check response:", response.data);
+        setEmailCheckStatus("found");
         setCourseForm((prev) => ({
           ...prev,
           instructor: {
             ...prev.instructor,
             email,
-            bio: "",
-            experience: "",
-            profile_image: "",
-            expertise: [""],
-            social_links: { linkedin: "", twitter: "", website: "" },
+            bio: response.data.bio || "",
+            experience: response.data.experience || "",
+            profile_image: response.data.profile_image || "",
+            expertise: response.data.expertise?.map((exp) => exp.name) || [""],
+            social_links: response.data.social_links || {
+              linkedin: "",
+              twitter: "",
+              website: "",
+            },
           },
         }));
-      } else {
-        setError("Failed to verify email. Please try again.");
-        setEmailCheckStatus(null);
+      } catch (err) {
+        console.error("Email check failed:", err);
+        if (err.response) {
+          console.error("Email check response data:", err.response.data);
+          console.error("Email check response status:", err.response.status);
+        }
+        if (err.response?.status === 401) {
+          console.log("Attempting token refresh for email check");
+          const refreshed = await refreshToken();
+          if (refreshed) {
+            console.log("Token refreshed, retrying email check");
+            checkUserByEmail(email);
+          } else {
+            setError("Authentication failed. Please log in again.");
+            setEmailCheckStatus(null);
+          }
+        } else if (err.response?.status === 404) {
+          console.log("Email not found, setting to not-found");
+          setEmailCheckStatus("not-found");
+          setCourseForm((prev) => ({
+            ...prev,
+            instructor: {
+              ...prev.instructor,
+              email,
+              bio: "",
+              experience: "",
+              profile_image: "",
+              expertise: [""],
+              social_links: { linkedin: "", twitter: "", website: "" },
+            },
+          }));
+        } else {
+          setError("Failed to verify email. Please try again.");
+          setEmailCheckStatus(null);
+        }
       }
-    }
-  }, [refreshToken]);
-
+    },
+    [refreshToken]
+  );
 
   const handleEmailChange = (e) => {
     const email = e.target.value;
@@ -242,160 +249,156 @@ const CreateCourse = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  console.log("Submitting course form:", courseForm);
-  if (!isAuthenticated) {
-    setError("Please log in to create a course.");
-    console.error("Not authenticated");
-    return;
-  }
+    console.log("Submitting course form:", courseForm);
+    if (!isAuthenticated) {
+      setError("Please log in to create a course.");
+      console.error("Not authenticated");
+      return;
+    }
 
-  if (!courseForm.title.trim() || !courseForm.description.trim() || !courseForm.instructor.email.trim()) {
-    setError("Please fill in the required fields (Title, Description, and Instructor Email)");
-    console.error("Required fields missing:", {
-      title: courseForm.title,
-      description: courseForm.description,
-      instructorEmail: courseForm.instructor.email,
-    });
-    return;
-  }
+    if (
+      !courseForm.title.trim() ||
+      !courseForm.description.trim() ||
+      !courseForm.instructor.email.trim()
+    ) {
+      setError(
+        "Please fill in the required fields (Title, Description, and Instructor Email)"
+      );
+      console.error("Required fields missing:", {
+        title: courseForm.title,
+        description: courseForm.description,
+        instructorEmail: courseForm.instructor.email,
+      });
+      return;
+    }
 
-  if (emailCheckStatus === "not-found") {
-    setError("Instructor email not found. Please use an existing user email or register the instructor.");
-    console.error("Instructor email not found:", courseForm.instructor.email);
-    return;
-  }
+    // Validate tags
+    const tagsArray = courseForm.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag);
+    if (tagsArray.length === 0) {
+      setError("Please provide at least one valid tag.");
+      console.error("No valid tags provided:", courseForm.tags);
+      return;
+    }
 
-  // Validate tags
-  const tagsArray = courseForm.tags
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag);
-  if (tagsArray.length === 0) {
-    setError("Please provide at least one valid tag.");
-    console.error("No valid tags provided:", courseForm.tags);
-    return;
-  }
+    setIsSubmitting(true);
+    setError(null);
 
-  setIsSubmitting(true);
-  setError(null);
+    try {
+      const accessToken = getAccessToken();
+      console.log("Access token for course creation:", accessToken);
+      if (!accessToken) throw new Error("No access token found");
 
-  try {
-    const accessToken = getAccessToken();
-    console.log("Access token for course creation:", accessToken);
-    if (!accessToken) throw new Error("No access token found");
+      const csrfToken = await fetchCsrfToken();
+      console.log("CSRF token:", csrfToken);
+      if (!csrfToken) throw new Error("No CSRF token found");
 
-    const csrfToken = await fetchCsrfToken();
-    console.log("CSRF token:", csrfToken);
-    if (!csrfToken) throw new Error("No CSRF token found");
-
-    const courseData = {
-      title: courseForm.title,
-      description: courseForm.description,
-      category: courseForm.category || "other",
-      difficulty: courseForm.difficulty || "beginner",
-      estimated_duration: courseForm.estimated_duration || "",
-      status: "draft",
-      instructor: {
-        user: courseForm.instructor.email,
-        bio: courseForm.instructor.bio || "",
-        experience: courseForm.instructor.experience || "",
-        profile_image: courseForm.instructor.profile_image || "",
-        social_links: {
-          linkedin: courseForm.instructor.social_links.linkedin || "",
-          twitter: courseForm.instructor.social_links.twitter || "",
-          website: courseForm.instructor.social_links.website || "",
+      const courseData = {
+        title: courseForm.title,
+        description: courseForm.description,
+        category: courseForm.category || "other",
+        difficulty: courseForm.difficulty || "beginner",
+        estimated_duration: courseForm.estimated_duration || "",
+        status: "draft",
+        instructor: {
+          email: courseForm.instructor.email,
+          bio: courseForm.instructor.bio || "",
+          experience: courseForm.instructor.experience || "",
+          profile_image: courseForm.instructor.profile_image || "",
+          social_links: {
+            linkedin: courseForm.instructor.social_links.linkedin || "",
+            twitter: courseForm.instructor.social_links.twitter || "",
+            website: courseForm.instructor.social_links.website || "",
+          },
+          expertise: courseForm.instructor.expertise
+            .filter((exp) => exp.trim())
+            .map((exp) => ({ name: exp })), // Fixed: Ensure expertise is an array of objects
         },
-        expertise: courseForm.instructor.expertise
-          .filter((exp) => exp.trim())
-          .map((exp) => ({ name: exp })),
-      },
-      tags: tagsArray.map((tag) => ({ name: tag })),
-      learning_objectives: courseForm.learning_objectives
-        .filter((obj) => obj.trim())
-        .map((obj) => ({ text: obj })),
-      prerequisites: courseForm.prerequisites
-        .filter((pre) => pre.trim())
-        .map((pre) => ({ text: pre })),
-    };
+        tags: tagsArray.map((tag) => ({ name: tag })), // Fixed: Ensure tags are objects
+        learning_objectives: courseForm.learning_objectives
+          .filter((obj) => obj.trim())
+          .map((obj) => ({ text: obj })),
+        prerequisites: courseForm.prerequisites
+          .filter((pre) => pre.trim())
+          .map((pre) => ({ text: pre })),
+      };
 
-    console.log("Course data payload:", courseData);
+      console.log("Course data payload:", courseData);
 
-    const response = await axios.post(
-      "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/",
-      courseData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
-
-    console.log("Course creation response:", response.data);
-
-
-    setCourseId(response.data.id); // Store course ID
-    setShowCoverUpload(true); // Open the upload popup
-
-
-  } catch (err) {
-    console.error("Course creation failed:", err);
-    if (err.response) {
-      console.error("Response data:", err.response.data);
-      console.error("Response status:", err.response.status);
-      // Log specific tag errors
-      if (err.response.data.tags) {
-        const tagErrors = err.response.data.tags;
-        if (Array.isArray(tagErrors)) {
-          setError(`Tag error: ${tagErrors.join(', ')}`);
-        } else if (typeof tagErrors === 'object') {
-          const messages = Object.values(tagErrors).flat();
-          setError(`Tag errors: ${messages.join(', ')}`);
-        } else {
-          setError("Invalid tag data. Please check your tags and try again.");
+      const response = await axios.post(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/",
+        courseData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
         }
-      } else if (err.response.data.detail) {
-        setError(err.response.data.detail);
-      } else {
-        setError("Failed to create course. Please check the form and try again.");
-      }
-    }
-    if (err.response?.status === 401) {
-      console.log("Attempting token refresh for course creation");
-      const refreshed = await refreshToken();
-      if (refreshed) {
-        console.log("Token refreshed, retrying course creation");
-        return handleSubmit(e);
-      } else {
-        setError("Authentication failed. Please log in again.");
-        console.error("Token refresh failed");
-      }
-    } else {
-      const errorMessage =
-        err.response?.data?.detail ||
-        err.response?.data?.non_field_errors?.join(" ") ||
-        err.response?.data?.tags?.[0]?.name?.join(" ") || // Handle tag-specific errors
-        Object.values(err.response?.data || {})
-          .flat()
-          .join(" ") ||
-        "Failed to create course. Please check the form and try again.";
-      setError(errorMessage);
-      console.error("Error details:", err.response?.data || err.message);
-    }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      );
 
+      console.log("Course creation response:", response.data);
 
-const handleCloseCoverUpload = () => {
+      setCourseId(response.data.id); // Store course ID
+      setShowCoverUpload(true); // Open the upload popup
+    } catch (err) {
+      console.error("Course creation failed:", err);
+      if (err.response) {
+        console.error("Response data:", err.response.data);
+        console.error("Response status:", err.response.status);
+        if (err.response.data.tags) {
+          const tagErrors = err.response.data.tags;
+          if (Array.isArray(tagErrors)) {
+            setError(`Tag error: ${tagErrors.join(", ")}`);
+          } else if (typeof tagErrors === "object") {
+            const messages = Object.values(tagErrors).flat();
+            setError(`Tag errors: ${messages.join(", ")}`);
+          } else {
+            setError("Invalid tag data. Please check your tags and try again.");
+          }
+        } else if (err.response.data.detail) {
+          setError(err.response.data.detail);
+        } else {
+          setError(
+            "Failed to create course. Please check the form and try again."
+          );
+        }
+      }
+      if (err.response?.status === 401) {
+        console.log("Attempting token refresh for course creation");
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          console.log("Token refreshed, retrying course creation");
+          return handleSubmit(e);
+        } else {
+          setError("Authentication failed. Please log in again.");
+          console.error("Token refresh failed");
+        }
+      } else {
+        const errorMessage =
+          err.response?.data?.detail ||
+          err.response?.data?.non_field_errors?.join(" ") ||
+          err.response?.data?.tags?.[0]?.name?.join(" ") ||
+          Object.values(err.response?.data || {})
+            .flat()
+            .join(" ") ||
+          "Failed to create course. Please check the form and try again.";
+        setError(errorMessage);
+        console.error("Error details:", err.response?.data || err.message);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseCoverUpload = () => {
     setShowCoverUpload(false);
     navigate(`/course/${courseId}/content-manager`); // Navigate after upload or cancel
-
   };
 
   useEffect(() => {
@@ -425,7 +428,9 @@ const handleCloseCoverUpload = () => {
                 type="text"
                 id="title"
                 value={courseForm.title || ""}
-                onChange={(e) => setCourseForm((prev) => ({ ...prev, title: e.target.value }))}
+                onChange={(e) =>
+                  setCourseForm((prev) => ({ ...prev, title: e.target.value }))
+                }
                 placeholder="Enter course title"
                 required
               />
@@ -436,7 +441,12 @@ const handleCloseCoverUpload = () => {
               <textarea
                 id="description"
                 value={courseForm.description || ""}
-                onChange={(e) => setCourseForm((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setCourseForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Describe what students will learn in this course"
                 rows={4}
                 required
@@ -449,12 +459,19 @@ const handleCloseCoverUpload = () => {
                 <select
                   id="category"
                   value={courseForm.category || ""}
-                  onChange={(e) => setCourseForm((prev) => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) =>
+                    setCourseForm((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
+                  }
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
                     <option key={category} value={category}>
-                      {category.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                      {category
+                        .replace("-", " ")
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
                     </option>
                   ))}
                 </select>
@@ -465,7 +482,12 @@ const handleCloseCoverUpload = () => {
                 <select
                   id="difficulty"
                   value={courseForm.difficulty || "beginner"}
-                  onChange={(e) => setCourseForm((prev) => ({ ...prev, difficulty: e.target.value }))}
+                  onChange={(e) =>
+                    setCourseForm((prev) => ({
+                      ...prev,
+                      difficulty: e.target.value,
+                    }))
+                  }
                 >
                   {difficulties.map((diff) => (
                     <option key={diff.value} value={diff.value}>
@@ -481,7 +503,12 @@ const handleCloseCoverUpload = () => {
                   type="text"
                   id="duration"
                   value={courseForm.estimated_duration || ""}
-                  onChange={(e) => setCourseForm((prev) => ({ ...prev, estimated_duration: e.target.value }))}
+                  onChange={(e) =>
+                    setCourseForm((prev) => ({
+                      ...prev,
+                      estimated_duration: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., 4 weeks, 20 hours"
                 />
               </div>
@@ -495,25 +522,37 @@ const handleCloseCoverUpload = () => {
               <h2>Learning Objectives</h2>
             </div>
 
-            <p className="section-description">What will students be able to do after completing this course?</p>
+            <p className="section-description">
+              What will students be able to do after completing this course?
+            </p>
 
             {courseForm.learning_objectives.map((objective, index) => (
               <div key={index} className="array-input-group">
                 <input
                   type="text"
                   value={objective || ""}
-                  onChange={(e) => updateLearningObjective(index, e.target.value)}
+                  onChange={(e) =>
+                    updateLearningObjective(index, e.target.value)
+                  }
                   placeholder={`Learning objective ${index + 1}`}
                 />
                 {courseForm.learning_objectives.length > 1 && (
-                  <button type="button" className="remove-btn" onClick={() => removeLearningObjective(index)}>
+                  <button
+                    type="button"
+                    className="remove-btn"
+                    onClick={() => removeLearningObjective(index)}
+                  >
                     ×
                   </button>
                 )}
               </div>
             ))}
 
-            <button type="button" className="add-btn" onClick={addLearningObjective}>
+            <button
+              type="button"
+              className="add-btn"
+              onClick={addLearningObjective}
+            >
               <Plus size={16} />
               Add Learning Objective
             </button>
@@ -526,7 +565,9 @@ const handleCloseCoverUpload = () => {
               <h2>Prerequisites</h2>
             </div>
 
-            <p className="section-description">What should students know before taking this course?</p>
+            <p className="section-description">
+              What should students know before taking this course?
+            </p>
 
             {courseForm.prerequisites.map((prerequisite, index) => (
               <div key={index} className="array-input-group">
@@ -537,7 +578,11 @@ const handleCloseCoverUpload = () => {
                   placeholder={`Prerequisite ${index + 1}`}
                 />
                 {courseForm.prerequisites.length > 1 && (
-                  <button type="button" className="remove-btn" onClick={() => removePrerequisite(index)}>
+                  <button
+                    type="button"
+                    className="remove-btn"
+                    onClick={() => removePrerequisite(index)}
+                  >
                     ×
                   </button>
                 )}
@@ -557,7 +602,9 @@ const handleCloseCoverUpload = () => {
               <h2>Instructor Details</h2>
             </div>
 
-            <p className="section-description">Provide information about the course instructor</p>
+            <p className="section-description">
+              Provide information about the course instructor
+            </p>
 
             <div className="form-group">
               <label htmlFor="instructorEmail">Instructor Email *</label>
@@ -570,18 +617,25 @@ const handleCloseCoverUpload = () => {
                 required
                 disabled={emailCheckStatus === "checking"}
               />
-              {emailCheckStatus === "checking" && <div className="checking-email">Checking if user exists...</div>}
-              {emailCheckStatus === "found" && (
-                <div className="email-found">✅ Instructor found! Details auto-populated below.</div>
+              {emailCheckStatus === "checking" && (
+                <div className="checking-email">Checking if user exists...</div>
               )}
-              {emailCheckStatus === "not-found" && courseForm.instructor.email && (
-                <div className="email-not-found">
-                  ℹ️ Instructor not found. Please provide additional instructor details.
+              {emailCheckStatus === "found" && (
+                <div className="email-found">
+                  ✅ Instructor found! Details auto-populated below.
                 </div>
               )}
+              {emailCheckStatus === "not-found" &&
+                courseForm.instructor.email && (
+                  <div className="email-not-found">
+                    ℹ️ Instructor not found. Please provide additional
+                    instructor details.
+                  </div>
+                )}
             </div>
 
-            {(emailCheckStatus === "found" || emailCheckStatus === "not-found") && (
+            {(emailCheckStatus === "found" ||
+              emailCheckStatus === "not-found") && (
               <>
                 <div className="form-row">
                   <div className="form-group">
@@ -592,7 +646,10 @@ const handleCloseCoverUpload = () => {
                       onChange={(e) =>
                         setCourseForm((prev) => ({
                           ...prev,
-                          instructor: { ...prev.instructor, bio: e.target.value },
+                          instructor: {
+                            ...prev.instructor,
+                            bio: e.target.value,
+                          },
                         }))
                       }
                       placeholder="Brief description of the instructor's background"
@@ -608,7 +665,10 @@ const handleCloseCoverUpload = () => {
                       onChange={(e) =>
                         setCourseForm((prev) => ({
                           ...prev,
-                          instructor: { ...prev.instructor, experience: e.target.value },
+                          instructor: {
+                            ...prev.instructor,
+                            experience: e.target.value,
+                          },
                         }))
                       }
                       placeholder="e.g., 5+ years"
@@ -623,7 +683,10 @@ const handleCloseCoverUpload = () => {
                       onChange={(e) =>
                         setCourseForm((prev) => ({
                           ...prev,
-                          instructor: { ...prev.instructor, profile_image: e.target.value },
+                          instructor: {
+                            ...prev.instructor,
+                            profile_image: e.target.value,
+                          },
                         }))
                       }
                       placeholder="https://example.com/profile-image.jpg"
@@ -633,7 +696,9 @@ const handleCloseCoverUpload = () => {
 
                 <div className="form-group">
                   <label>Areas of Expertise</label>
-                  <p className="section-description">What are the instructor's main areas of expertise?</p>
+                  <p className="section-description">
+                    What are the instructor's main areas of expertise?
+                  </p>
 
                   {courseForm.instructor.expertise.map((expertise, index) => (
                     <div key={index} className="array-input-group">
@@ -644,14 +709,22 @@ const handleCloseCoverUpload = () => {
                         placeholder={`Area of expertise ${index + 1}`}
                       />
                       {courseForm.instructor.expertise.length > 1 && (
-                        <button type="button" className="remove-btn" onClick={() => removeExpertise(index)}>
+                        <button
+                          type="button"
+                          className="remove-btn"
+                          onClick={() => removeExpertise(index)}
+                        >
                           ×
                         </button>
                       )}
                     </div>
                   ))}
 
-                  <button type="button" className="add-btn" onClick={addExpertise}>
+                  <button
+                    type="button"
+                    className="add-btn"
+                    onClick={addExpertise}
+                  >
                     <Plus size={16} />
                     Add Expertise Area
                   </button>
@@ -665,13 +738,18 @@ const handleCloseCoverUpload = () => {
                       <input
                         type="url"
                         id="linkedin"
-                        value={courseForm.instructor.social_links.linkedin || ""}
+                        value={
+                          courseForm.instructor.social_links.linkedin || ""
+                        }
                         onChange={(e) =>
                           setCourseForm((prev) => ({
                             ...prev,
                             instructor: {
                               ...prev.instructor,
-                              social_links: { ...prev.instructor.social_links, linkedin: e.target.value },
+                              social_links: {
+                                ...prev.instructor.social_links,
+                                linkedin: e.target.value,
+                              },
                             },
                           }))
                         }
@@ -689,7 +767,10 @@ const handleCloseCoverUpload = () => {
                             ...prev,
                             instructor: {
                               ...prev.instructor,
-                              social_links: { ...prev.instructor.social_links, twitter: e.target.value },
+                              social_links: {
+                                ...prev.instructor.social_links,
+                                twitter: e.target.value,
+                              },
                             },
                           }))
                         }
@@ -707,7 +788,10 @@ const handleCloseCoverUpload = () => {
                             ...prev,
                             instructor: {
                               ...prev.instructor,
-                              social_links: { ...prev.instructor.social_links, website: e.target.value },
+                              social_links: {
+                                ...prev.instructor.social_links,
+                                website: e.target.value,
+                              },
                             },
                           }))
                         }
@@ -728,25 +812,36 @@ const handleCloseCoverUpload = () => {
                 type="text"
                 id="tags"
                 value={courseForm.tags || ""}
-                onChange={(e) => setCourseForm((prev) => ({ ...prev, tags: e.target.value }))}
+                onChange={(e) =>
+                  setCourseForm((prev) => ({ ...prev, tags: e.target.value }))
+                }
                 placeholder="Enter tags separated by commas (e.g., python, data analysis, statistics)"
                 required
               />
-              <small>Separate tags with commas to help students find your course</small>
+              <small>
+                Separate tags with commas to help students find your course
+              </small>
             </div>
           </div>
 
           {/* Submit Button */}
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={() => navigate("/dashboard")}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => navigate("/dashboard")}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting || emailCheckStatus === "checking"}>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting || emailCheckStatus === "checking"}
+            >
               {isSubmitting ? "Creating Course..." : "Create Course"}
             </button>
           </div>
         </form>
-
       </div>
 
       {showCoverUpload && (

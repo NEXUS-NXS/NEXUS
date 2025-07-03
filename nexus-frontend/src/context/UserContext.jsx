@@ -28,9 +28,12 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         console.log(`Fetching CSRF token (attempt ${i + 1})...`);
-        await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/", {
-          withCredentials: true,
-        });
+        await axios.get(
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/",
+          {
+            withCredentials: true,
+          }
+        );
 
         console.log("Document cookie:", document.cookie);
         const csrfToken = response.data.csrf_token;
@@ -58,12 +61,15 @@ export const UserProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       console.log("Checking authentication...");
-      await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/protected/", {
-        headers: {
-          Authorization: `Bearer ${getAccessToken()}`,
-        },
-        withCredentials: true,
-      });
+      await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/protected/",
+        {
+          headers: {
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          withCredentials: true,
+        }
+      );
       console.log("Authentication check successful");
       setIsAuthenticated(true);
     } catch (error) {
@@ -83,13 +89,17 @@ export const UserProvider = ({ children }) => {
     try {
       console.log("Fetching chat user ID...");
       const accessToken = getAccessToken();
-      if (!accessToken) throw new Error("No access token for chat user ID fetch");
-      const response = await axios.get("https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/api/me/", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        withCredentials: true,
-      });
+      if (!accessToken)
+        throw new Error("No access token for chat user ID fetch");
+      const response = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/api/me/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        }
+      );
       const chatUserId = response.data.id;
       console.log("Fetched chat user ID:", chatUserId);
 
@@ -142,12 +152,18 @@ export const UserProvider = ({ children }) => {
         );
         console.log("Profile response:", profileResponse.data);
         console.log("Results array:", profileResponse.data.results);
-        if (profileResponse.data.results && profileResponse.data.results.length > 0) {
+        if (
+          profileResponse.data.results &&
+          profileResponse.data.results.length > 0
+        ) {
           profileId = profileResponse.data.results[0].id;
           profilePhoto = profileResponse.data.results[0].profile_photo || null;
           console.log("Extracted profileId:", profileId);
         } else {
-          console.warn("No profile data found in response:", profileResponse.data);
+          console.warn(
+            "No profile data found in response:",
+            profileResponse.data
+          );
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -193,7 +209,14 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const register = async (fullName, email, password, confirmPassword, gender, education) => {
+  const register = async (
+    fullName,
+    email,
+    password,
+    confirmPassword,
+    gender,
+    education
+  ) => {
     try {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
@@ -217,7 +240,8 @@ export const UserProvider = ({ children }) => {
       console.log("Register response:", response.data);
 
       const { user: userData, access } = response.data;
-      if (!userData || !access) throw new Error("Incomplete registration response");
+      if (!userData || !access)
+        throw new Error("Incomplete registration response");
 
       let profileId = null;
       let profilePhoto = null;
@@ -234,12 +258,18 @@ export const UserProvider = ({ children }) => {
         );
         console.log("Profile response:", profileResponse.data);
         console.log("Results array:", profileResponse.data.results);
-        if (profileResponse.data.results && profileResponse.data.results.length > 0) {
+        if (
+          profileResponse.data.results &&
+          profileResponse.data.results.length > 0
+        ) {
           profileId = profileResponse.data.results[0].id;
           profilePhoto = profileResponse.data.results[0].profile_photo || null;
           console.log("Extracted profileId:", profileId);
         } else {
-          console.warn("No profile data found in response:", profileResponse.data);
+          console.warn(
+            "No profile data found in response:",
+            profileResponse.data
+          );
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);

@@ -1,32 +1,33 @@
 import { Link } from "react-router-dom"
 import "./TrendingCourses.css"
 
+
 const TrendingCourses = () => {
   const trendingCourses = [
     {
       id: 1,
-      title: "Stuff to do with Actuarial Science",
-      description: "Learn how to do math like a zombie and code like never before.",
+      title: "AI in Actuarial Science",
+      description: "June 2025) – overview of AI applications in risk prediction.",
       type: "course",
-      path: "/course/actuarial-science-basics",
+      path: "https://numberanalytics.com",
       theme: "dark",
     },
     {
       id: 2,
-      title: "Certified Actuarial Whatever (CAW)",
-      description: "Advance your career with the world's most sought-after Actuarial Whatever certification program.",
-      modules: 43,
-      lessons: 2,
-      type: "certification",
-      path: "/course/certified-actuarial-whatever",
+      title: "Environmental risk modeling",
+      description: "Actuaries increasingly lead in environmental risk modeling, ESG-adjusted pricing, and climate scenario analysisAdvance your career with the world's most sought-after Actuarial Whatever certification program.",
+      modules: 7,
+      lessons: 7,
+      type: "ESG-adjusted pricing",
+      path: "https://axios.com",
       theme: "primary",
     },
     {
       id: 3,
-      title: "Stuff to do with Actuarial Science",
-      description: "Learn how to do math like a zombie and code like never before.",
-      type: "course",
-      path: "/course/actuarial-science-advanced",
+      title: "Enterprise Risk Management (ERM)",
+      description: "A distinct credential focusing on Enterprise Risk Management (ERM), globally recognized and backed by the SOA and IFoA ",
+      type: "certification",
+      path: "https://www.soa.org/globalassets/assets/files/newsroom/news-erm-cera-fact-sheet.pdf",
       theme: "dark",
     },
   ]

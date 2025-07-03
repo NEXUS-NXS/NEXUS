@@ -1,137 +1,79 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState } from "react";
+import axios from "axios";
+import { useUser } from "./UserContext";
 
-const CourseContext = createContext(undefined)
+const CourseContext = createContext(undefined);
 
 export const CourseProvider = ({ children }) => {
-  const [courses, setCourses] = useState([])
+  const [courses, setCourses] = useState([]);
+  const { getAccessToken, fetchCsrfToken, refreshToken } = useUser();
 
   const fetchInProgressCourses = async () => {
-    // In a real app, this would make an API call
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    try {
+      const accessToken = getAccessToken();
+      const csrfToken = await fetchCsrfToken();
 
-    const mockCourses = [
-      {
-        id: "python-basics",
-        title: "Python Programming Basics",
-        category: "python",
-        level: "beginner",
-        status: "in-progress",
-        progress: 51,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: "python-intermediate",
-        title: "Python Programming Basics",
-        category: "python",
-        level: "intermediate",
-        status: "in-progress",
-        progress: 80,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: "python-advanced",
-        title: "Python Programming Basics",
-        category: "python",
-        level: "advanced",
-        status: "in-progress",
-        progress: 10,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ]
+      if (!accessToken || !csrfToken) {
+        throw new Error("Missing access token or CSRF token");
+      }
 
-    setCourses(mockCourses)
-    return mockCourses
-  }
+      const response = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrolled-courses/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
 
-  const fetchAllCourses = async () => {
-    // In a real app, this would make an API call
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
+      console.log("Enrolled courses response:", response.data);
+      const coursesData = response.data.results || response.data;
+      const mappedCourses = coursesData.map((course) => ({
+        id: course.id, // UUID
+        title: course.title,
+        slug: course.slug,
+        image: course.cover_picture || "/placeholder.svg?height=120&width=200",
+        enrollments: course.enrolled_students
+          ? course.enrolled_students >= 1000
+            ? `${(course.enrolled_students / 1000).toFixed(1)}K`
+            : course.enrolled_students
+          : "0",
+        progress: parseFloat(course.progress || 0).toFixed(1),
+        category: course.category || "Course",
+        next_lesson_id: course.next_lesson_id || "first",
+      }));
 
-    const mockCourses = [
-      {
-        id: "python-basics",
-        title: "Python Programming Basics",
-        category: "python",
-        level: "beginner",
-        status: "in-progress",
-        progress: 51,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: "python-intermediate",
-        title: "Python Programming Basics",
-        category: "python",
-        level: "intermediate",
-        status: "in-progress",
-        progress: 80,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: "python-advanced",
-        title: "Python Programming Basics",
-        category: "python",
-        level: "advanced",
-        status: "in-progress",
-        progress: 10,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: "r-basics",
-        title: "R Programming Fundamentals",
-        category: "r",
-        level: "beginner",
-        status: "not-started",
-        progress: 0,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: "excel-advanced",
-        title: "Advanced Excel for Actuaries",
-        category: "excel",
-        level: "intermediate",
-        status: "completed",
-        progress: 100,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ]
-
-    setCourses(mockCourses)
-    return mockCourses
-  }
-
-  const fetchCourseById = async (id) => {
-    // In a real app, this would make an API call
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    // Mock course details
-    return {
-      id: id,
-      title: "Python Programming Basics",
-      description: "Learn the fundamentals of Python programming, from basic syntax to advanced concepts.",
-      level: "Beginner",
-      duration: "10 hours",
-      instructor: "Dr. Alex Johnson",
-      progress: 51,
-      // Additional details would be here
+      setCourses(mappedCourses);
+      return mappedCourses;
+    } catch (error) {
+      console.error("Failed to fetch enrolled courses:", error);
+      if (error.response?.status === 401) {
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          return await fetchInProgressCourses();
+        } else {
+          throw new Error("Authentication failed. Please log in again.");
+        }
+      }
+      throw error;
     }
-  }
+  };
 
   return (
-    <CourseContext.Provider value={{ courses, fetchInProgressCourses, fetchAllCourses, fetchCourseById }}>
+    <CourseContext.Provider value={{ courses, fetchInProgressCourses }}>
       {children}
     </CourseContext.Provider>
-  )
-}
+  );
+};
 
 export const useCourses = () => {
-  const context = useContext(CourseContext)
+  const context = useContext(CourseContext);
   if (context === undefined) {
-    throw new Error("useCourses must be used within a CourseProvider")
+    throw new Error("useCourses must be used within a CourseProvider");
   }
-  return context
-}
+  return context;
+};

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import (CategoryListView, ExamFocusListView, TagListCreateView,
+from .views import (CategoryListCreateView, ExamFocusListCreateView, TagListCreateView,
                      ChatUserSearchView, StudyGroupListCreateView,
                      StudyGroupDetailView, JoinRequestCreateView,JoinRequestManageView,
                      GroupMembershipManageView, MessageListCreateView, MessageDeleteView,
@@ -8,8 +8,8 @@ from .views import (CategoryListView, ExamFocusListView, TagListCreateView,
                      )
 
 urlpatterns = [
-    path('categories/', CategoryListView.as_view(), name='category-list'),#tested
-    path('exam-focus/', ExamFocusListView.as_view(), name='exam-focus-list'),#tested
+    path('categories/', CategoryListCreateView.as_view(), name='category-list'),#tested
+    path('exam-focus/', ExamFocusListCreateView.as_view(), name='exam-focus-list'),#tested
     path('tags/', TagListCreateView.as_view(), name='tag-list-create'),
     path('users/search/', ChatUserSearchView.as_view(), name='user-search'),#tested
 
