@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,9 +20,10 @@ import {
   BarChart3,
   FileText,
   Settings,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
-import { simulationModels } from "@/lib/simulation-models"
+import { getModel, SimulationModel } from "@/lib/api"
 import { SimulationProgress } from "@/components/simulation-progress"
 import { CollaborationPanel } from "@/components/collaboration-panel"
 import { ResultsVisualization } from "@/components/results-visualization"
@@ -45,8 +47,79 @@ interface SimulationState {
   endTime?: Date
 }
 
-export default function SimulationPage({ params }: SimulationPageProps) {
-  const model = simulationModels.find((m) => m.id === params.modelId)
+export default function SimulationPage() {
+  const params = useParams()
+  const modelId = params.modelId as string
+  const [model, setModel] = useState<SimulationModel | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [simulation, setSimulation] = useState<SimulationState>({
+    status: "idle",
+    progress: 0,
+    currentStep: "",
+    results: null,
+    errors: [],
+    warnings: [],
+  })
+
+  useEffect(() => {
+    const loadModel = async () => {
+      try {
+        setLoading(true)
+        const data = await getModel(modelId)
+        setModel(data)
+      } catch (error) {
+        console.error("Failed to load model:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (modelId) {
+      loadModel()
+    }
+  }, [modelId])
+
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      'actuarial': 'bg-blue-500',
+      'financial': 'bg-emerald-500',
+      'climate': 'bg-green-500',
+      'health': 'bg-purple-500',
+      'insurance': 'bg-orange-500',
+      'ml': 'bg-pink-500',
+      'machine learning': 'bg-pink-500',
+    }
+    return colors[category.toLowerCase()] || 'bg-gray-500'
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!model) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900">Model not found</h1>
+            <p className="mt-2 text-gray-500">The requested model could not be found.</p>
+            <Link href="/models">
+              <Button className="mt-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Models
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const [simulation, setSimulation] = useState<SimulationState>({
     status: "idle",
@@ -223,19 +296,22 @@ export default function SimulationPage({ params }: SimulationPageProps) {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center space-x-3 mb-2">
-                <h1 className="text-3xl font-bold">{model.title}</h1>
-                <Badge className={`${model.categoryColor} text-white`}>{model.category}</Badge>
+                <h1 className="text-3xl font-bold">{model.name}</h1>
+                <Badge className={`${getCategoryColor(model.category)} text-white`}>{model.category}</Badge>
                 <Badge variant="outline">{model.language}</Badge>
               </div>
-              <p className="text-gray-600">{model.description}</p>
+              <p className="text-gray-600">{model.description || 'No description available'}</p>
               <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                 <div className="flex items-center">
                   <Clock className="mr-1 h-4 w-4" />
-                  <span>Est. runtime: {model.runtime}</span>
+                  <span>Est. runtime: ~2 min</span>
                 </div>
                 <div className="flex items-center">
                   <Users className="mr-1 h-4 w-4" />
-                  <span>{collaborators.length} collaborators</span>
+                  <span>By {model.owner}</span>
+                </div>
+                <div className="flex items-center">
+                  <span>Created: {new Date(model.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
@@ -269,8 +345,8 @@ export default function SimulationPage({ params }: SimulationPageProps) {
                 Share
               </Button>
             </div>
-          </div>
-        </div>
+        {/* Collaboration Bar */}
+        {/* <CollaborationPanel collaborators={collaborators} /> */}
 
         {/* Collaboration Bar */}
         <CollaborationPanel collaborators={collaborators} />
