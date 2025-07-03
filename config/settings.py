@@ -70,10 +70,10 @@ MIDDLEWARE = [
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 CORS_ALLOWED_ORIGINS = [
-    'https://the-nexus.co', 'https://bejewelled-sprinkles-043ffa.netlify.app'
+    'https://the-nexus.co', 'https://bejewelled-sprinkles-043ffa.netlify.app', 'https://prismatic-yeot-a9b9f2.netlify.app'
 ]
 
-CSRF_TRUSTED_ORIGINS = ['https://the-nexus.co', 'https://chimerical-cucurucho-627a02.netlify.app', 'https://bejewelled-sprinkles-043ffa.netlify.app']
+CSRF_TRUSTED_ORIGINS = ['https://the-nexus.co', 'https://chimerical-cucurucho-627a02.netlify.app', 'https://bejewelled-sprinkles-043ffa.netlify.app', 'https://prismatic-yeot-a9b9f2.netlify.app']
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -236,7 +236,7 @@ CSRF_COOKIE_SECURE = True  # True in production (when using https)
 CSRF_COOKIE_DOMAIN = '.herokuapp.com'
 CSRF_TRUSTED_ORIGINS = [
     'https://the-nexus.co',
-    'https://nexus-test-api-8bf398f16fc4.herokuapp.com', 'https://chimerical-cucurucho-627a02.netlify.app', 'https://bejewelled-sprinkles-043ffa.netlify.app'
+    'https://nexus-test-api-8bf398f16fc4.herokuapp.com', 'https://chimerical-cucurucho-627a02.netlify.app', 'https://bejewelled-sprinkles-043ffa.netlify.app', 'https://prismatic-yeot-a9b9f2.netlify.app'
     
 ]
 
