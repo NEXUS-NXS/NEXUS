@@ -28,21 +28,20 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         console.log(`Fetching CSRF token (attempt ${i + 1})...`);
-        await axios.get(
+        const response = await axios.get(
           "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/",
           {
             withCredentials: true,
           }
         );
-
-        console.log("Document cookie:", document.cookie);
+  
         const csrfToken = response.data.csrf_token;
         if (csrfToken) {
-          console.log("Fetched CSRF token:", csrfToken);
+          console.log("Fetched CSRF token from response:", csrfToken);
           return csrfToken;
         }
-
-        throw new Error("CSRF cookie not set");
+  
+        throw new Error("CSRF token not found in response");
       } catch (error) {
         console.error(`CSRF fetch attempt ${i + 1} failed:`, error);
         if (error.response) {
