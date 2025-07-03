@@ -71,52 +71,64 @@ const CourseContentManager = () => {
     const fetchCourseContent = async () => {
       try {
         const accessToken = getAccessToken();
-        const response = await axios.get(`https://127.0.0.1:8000/courses/api/courses/${courseId}/`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
 
         const courseData = response.data;
         // Fetch modules for the course
-        const modulesResponse = await axios.get(`https://127.0.0.1:8000/courses/api/modules/?course_id=${courseId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          withCredentials: true,
-        });
+        const modulesResponse = await axios.get(
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/modules/?course_id=${courseId}`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            withCredentials: true,
+          }
+        );
 
         console.log("Modules response data:", modulesResponse.data);
         // Extract results from paginated response, default to empty array if not present
-        const modulesData = Array.isArray(modulesResponse.data.results) ? modulesResponse.data.results : [];
+        const modulesData = Array.isArray(modulesResponse.data.results)
+          ? modulesResponse.data.results
+          : [];
 
         const modules = await Promise.all(
           modulesData.map(async (module) => {
             // Fetch lessons for each module
-            const lessonsResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/?module_id=${module.id}`, {
-              headers: { Authorization: `Bearer ${accessToken}` },
-              withCredentials: true,
-            });
+            const lessonsResponse = await axios.get(
+              `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/?module_id=${module.id}`,
+              {
+                headers: { Authorization: `Bearer ${accessToken}` },
+                withCredentials: true,
+              }
+            );
 
             const lessons = await Promise.all(
-              (Array.isArray(lessonsResponse.data.results) ? lessonsResponse.data.results : lessonsResponse.data).map(
-                async (lesson) => {
-                  const learningObjectives = lesson.learning_objectives || []; // Correct variable name
-                  const keypoints = (lesson.keypoints || []).map((kp) => ({
-                    ...kp,
-                    bullets: kp.bullets || [],
-                  }));
-                  const code_examples = lesson.code_examples || [];
-                  const questions = lesson.questions || [];
-                  return {
-                    ...lesson,
-                    learningObjectives, // Use correct variable name
-                    keypoints,
-                    code_examples,
-                    questions,
-                  };
-                }
-              )
+              (Array.isArray(lessonsResponse.data.results)
+                ? lessonsResponse.data.results
+                : lessonsResponse.data
+              ).map(async (lesson) => {
+                const learningObjectives = lesson.learning_objectives || []; // Correct variable name
+                const keypoints = (lesson.keypoints || []).map((kp) => ({
+                  ...kp,
+                  bullets: kp.bullets || [],
+                }));
+                const code_examples = lesson.code_examples || [];
+                const questions = lesson.questions || [];
+                return {
+                  ...lesson,
+                  learningObjectives, // Use correct variable name
+                  keypoints,
+                  code_examples,
+                  questions,
+                };
+              })
             );
 
             return { ...module, lessons };
@@ -138,7 +150,10 @@ const CourseContentManager = () => {
             navigate("/login");
           }
         } else {
-          setError("Failed to fetch course content: " + (err.response?.data?.detail || err.message));
+          setError(
+            "Failed to fetch course content: " +
+              (err.response?.data?.detail || err.message)
+          );
         }
       }
     };
@@ -146,20 +161,16 @@ const CourseContentManager = () => {
     fetchCourseContent();
   }, [courseId, isAuthenticated, navigate, refreshToken]);
 
-  
-  
-
-
-
   // publish the course
   const handlePublishCourse = async () => {
-    if (!window.confirm("Are you sure you want to publish this course?")) return;
+    if (!window.confirm("Are you sure you want to publish this course?"))
+      return;
 
     try {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       await axios.post(
-        `https://127.0.0.1:8000/courses/api/courses/${courseId}/publish/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/publish/`,
         {},
         {
           headers: {
@@ -184,13 +195,14 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to publish course: " + err.message);
+        setError(
+          err.response?.data?.detail ||
+            "Failed to publish course: " + err.message
+        );
       }
     }
   };
 
-  
-  
   // Module Management Functions
   const handleAddModule = async () => {
     if (!moduleForm.title.trim()) {
@@ -213,7 +225,7 @@ const CourseContentManager = () => {
       }
 
       const response = await axios.post(
-        "https://127.0.0.1:8000/courses/api/modules/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/modules/",
         {
           course: courseId,
           title: moduleForm.title,
@@ -251,7 +263,9 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to add module: " + err.message);
+        setError(
+          err.response?.data?.detail || "Failed to add module: " + err.message
+        );
       }
     }
   };
@@ -266,7 +280,7 @@ const CourseContentManager = () => {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       await axios.patch(
-        `https://127.0.0.1:8000/courses/api/modules/${moduleId}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/modules/${moduleId}/`,
         updatedData,
         {
           headers: {
@@ -298,7 +312,9 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to edit module: " + err.message);
+        setError(
+          err.response?.data?.detail || "Failed to edit module: " + err.message
+        );
       }
     }
   };
@@ -309,13 +325,16 @@ const CourseContentManager = () => {
     try {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
-      await axios.delete(`https://127.0.0.1:8000/courses/api/modules/${moduleId}/`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "X-CSRFToken": csrfToken,
-        },
-        withCredentials: true,
-      });
+      await axios.delete(
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/modules/${moduleId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
 
       setCourseContent((prev) => ({
         ...prev,
@@ -334,7 +353,10 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to delete module: " + err.message);
+        setError(
+          err.response?.data?.detail ||
+            "Failed to delete module: " + err.message
+        );
       }
     }
   };
@@ -362,7 +384,8 @@ const CourseContentManager = () => {
         type: lessonForm.type,
         duration: lessonForm.duration || "", // Use empty string if not provided
         description: lessonForm.description || "",
-        video_url: lessonForm.type === "video" ? lessonForm.video_url || "" : "",
+        video_url:
+          lessonForm.type === "video" ? lessonForm.video_url || "" : "",
         overview: lessonForm.overview || "",
         summary: lessonForm.summary || "",
         learning_objectives: lessonForm.learning_objectives
@@ -380,23 +403,33 @@ const CourseContentManager = () => {
         code_examples: lessonForm.code_examples
           .filter((ce) => ce.title.trim() && ce.code.trim())
           .map((ce) => ({ title: ce.title, code: ce.code })),
-        questions: lessonForm.type === "quiz"
-          ? lessonForm.questions
-              .filter((q) => q.question.trim() && q.options.filter((opt) => opt.trim()).length >= 2)
-              .map((q) => ({
-                question: q.question,
-                options: q.options.filter((opt) => opt.trim()),
-                correct_option: Math.min(parseInt(q.correct_option, 10), q.options.filter((opt) => opt.trim()).length - 1),
-                explanation: q.explanation || "",
-              }))
-          : [],
-        order: courseContent.modules.find((m) => m.id === moduleId)?.lessons.length || 0,
+        questions:
+          lessonForm.type === "quiz"
+            ? lessonForm.questions
+                .filter(
+                  (q) =>
+                    q.question.trim() &&
+                    q.options.filter((opt) => opt.trim()).length >= 2
+                )
+                .map((q) => ({
+                  question: q.question,
+                  options: q.options.filter((opt) => opt.trim()),
+                  correct_option: Math.min(
+                    parseInt(q.correct_option, 10),
+                    q.options.filter((opt) => opt.trim()).length - 1
+                  ),
+                  explanation: q.explanation || "",
+                }))
+            : [],
+        order:
+          courseContent.modules.find((m) => m.id === moduleId)?.lessons
+            .length || 0,
       };
 
       console.log("Lesson payload:", JSON.stringify(lessonData, null, 2));
 
       const response = await axios.post(
-        "https://127.0.0.1:8000/courses/api/lessons/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/",
         lessonData,
         {
           headers: {
@@ -454,7 +487,8 @@ const CourseContentManager = () => {
         }
       } else {
         setError(
-          JSON.stringify(err.response?.data, null, 2) || "Failed to add lesson: " + err.message
+          JSON.stringify(err.response?.data, null, 2) ||
+            "Failed to add lesson: " + err.message
         );
       }
     }
@@ -498,7 +532,7 @@ const CourseContentManager = () => {
       };
 
       await axios.patch(
-        `https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/${lessonId}/`,
         lessonData,
         {
           headers: {
@@ -556,7 +590,9 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to edit lesson: " + err.message);
+        setError(
+          err.response?.data?.detail || "Failed to edit lesson: " + err.message
+        );
       }
     }
   };
@@ -567,13 +603,16 @@ const CourseContentManager = () => {
     try {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
-      await axios.delete(`https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "X-CSRFToken": csrfToken,
-        },
-        withCredentials: true,
-      });
+      await axios.delete(
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/${lessonId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
 
       setCourseContent((prev) => ({
         ...prev,
@@ -581,7 +620,9 @@ const CourseContentManager = () => {
           module.id === moduleId
             ? {
                 ...module,
-                lessons: module.lessons.filter((lesson) => lesson.id !== lessonId),
+                lessons: module.lessons.filter(
+                  (lesson) => lesson.id !== lessonId
+                ),
               }
             : module
         ),
@@ -598,7 +639,10 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to delete lesson: " + err.message);
+        setError(
+          err.response?.data?.detail ||
+            "Failed to delete lesson: " + err.message
+        );
       }
     }
   };
@@ -614,17 +658,16 @@ const CourseContentManager = () => {
   const removeLearningObjective = (index) => {
     setLessonForm((prev) => ({
       ...prev,
-      learning_objectives: prev.learning_objectives.filter((_, i) => i !== index),
+      learning_objectives: prev.learning_objectives.filter(
+        (_, i) => i !== index
+      ),
     }));
   };
 
   const addKeyPoint = () => {
     setLessonForm((prev) => ({
       ...prev,
-      keypoints: [
-        ...prev.keypoints,
-        { title: "", content: "", bullets: [""] },
-      ],
+      keypoints: [...prev.keypoints, { title: "", content: "", bullets: [""] }],
     }));
   };
 
@@ -639,7 +682,9 @@ const CourseContentManager = () => {
     setLessonForm((prev) => ({
       ...prev,
       keypoints: prev.keypoints.map((point, i) =>
-        i === keyPointIndex ? { ...point, bullets: [...point.bullets, ""] } : point
+        i === keyPointIndex
+          ? { ...point, bullets: [...point.bullets, ""] }
+          : point
       ),
     }));
   };
@@ -649,7 +694,10 @@ const CourseContentManager = () => {
       ...prev,
       keypoints: prev.keypoints.map((point, i) =>
         i === keyPointIndex
-          ? { ...point, bullets: point.bullets.filter((_, j) => j !== bulletIndex) }
+          ? {
+              ...point,
+              bullets: point.bullets.filter((_, j) => j !== bulletIndex),
+            }
           : point
       ),
     }));
@@ -679,7 +727,9 @@ const CourseContentManager = () => {
 
   const toggleModuleExpansion = (moduleId) => {
     setExpandedModules((prev) =>
-      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
     );
   };
 
@@ -688,7 +738,7 @@ const CourseContentManager = () => {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       await axios.patch(
-        `https://127.0.0.1:8000/courses/api/courses/${courseId}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/`,
         {
           title: courseContent.title,
           description: courseContent.description,
@@ -715,7 +765,9 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to save course: " + err.message);
+        setError(
+          err.response?.data?.detail || "Failed to save course: " + err.message
+        );
       }
     }
   };
@@ -723,10 +775,13 @@ const CourseContentManager = () => {
   const handlePreviewCourse = async () => {
     try {
       const accessToken = getAccessToken();
-      await axios.get(`https://127.0.0.1:8000/courses/api/courses/${courseId}/preview/`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        withCredentials: true,
-      });
+      await axios.get(
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/preview/`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }
+      );
       navigate(`/course/${courseId}/preview`);
       setError(null);
     } catch (err) {
@@ -740,7 +795,10 @@ const CourseContentManager = () => {
           navigate("/login");
         }
       } else {
-        setError(err.response?.data?.detail || "Failed to preview course: " + err.message);
+        setError(
+          err.response?.data?.detail ||
+            "Failed to preview course: " + err.message
+        );
       }
     }
   };
@@ -776,7 +834,6 @@ const CourseContentManager = () => {
             Publish Course
           </button>
         </div>
-        
       </div>
 
       <div className="manager-tabs">
@@ -801,7 +858,10 @@ const CourseContentManager = () => {
           <div className="modules-section">
             <div className="section-header">
               <h2>Course Modules</h2>
-              <button className="add-btn" onClick={() => setShowAddModule(true)}>
+              <button
+                className="add-btn"
+                onClick={() => setShowAddModule(true)}
+              >
                 <Plus size={18} />
                 Add Module
               </button>
@@ -817,7 +877,9 @@ const CourseContentManager = () => {
                     <input
                       type="text"
                       value={moduleForm.title}
-                      onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })}
+                      onChange={(e) =>
+                        setModuleForm({ ...moduleForm, title: e.target.value })
+                      }
                       placeholder="Enter module title"
                     />
                   </div>
@@ -825,13 +887,21 @@ const CourseContentManager = () => {
                     <label>Description</label>
                     <textarea
                       value={moduleForm.description}
-                      onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setModuleForm({
+                          ...moduleForm,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="Enter module description"
                       rows={3}
                     />
                   </div>
                   <div className="form-actions">
-                    <button className="btn-secondary" onClick={() => setShowAddModule(false)}>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setShowAddModule(false)}
+                    >
                       Cancel
                     </button>
                     <button className="btn-primary" onClick={handleAddModule}>
@@ -852,7 +922,9 @@ const CourseContentManager = () => {
                     <input
                       type="text"
                       value={moduleForm.title}
-                      onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })}
+                      onChange={(e) =>
+                        setModuleForm({ ...moduleForm, title: e.target.value })
+                      }
                       placeholder="Enter module title"
                     />
                   </div>
@@ -860,13 +932,21 @@ const CourseContentManager = () => {
                     <label>Description</label>
                     <textarea
                       value={moduleForm.description}
-                      onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setModuleForm({
+                          ...moduleForm,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="Enter module description"
                       rows={3}
                     />
                   </div>
                   <div className="form-actions">
-                    <button className="btn-secondary" onClick={() => setEditingModule(null)}>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setEditingModule(null)}
+                    >
                       Cancel
                     </button>
                     <button
@@ -905,7 +985,9 @@ const CourseContentManager = () => {
                       <div className="module-info">
                         <h3>{module.title}</h3>
                         <p>{module.description}</p>
-                        <span className="lesson-count">{module.lessons.length} lessons</span>
+                        <span className="lesson-count">
+                          {module.lessons.length} lessons
+                        </span>
                       </div>
                       <div className="module-actions">
                         <button
@@ -957,7 +1039,10 @@ const CourseContentManager = () => {
                                       type="text"
                                       value={lessonForm.title}
                                       onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, title: e.target.value })
+                                        setLessonForm({
+                                          ...lessonForm,
+                                          title: e.target.value,
+                                        })
                                       }
                                       placeholder="Enter lesson title"
                                     />
@@ -967,11 +1052,18 @@ const CourseContentManager = () => {
                                     <select
                                       value={lessonForm.type}
                                       onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, type: e.target.value })
+                                        setLessonForm({
+                                          ...lessonForm,
+                                          type: e.target.value,
+                                        })
                                       }
                                     >
-                                      <option value="video">Video Lesson</option>
-                                      <option value="quiz">Assessment/Quiz</option>
+                                      <option value="video">
+                                        Video Lesson
+                                      </option>
+                                      <option value="quiz">
+                                        Assessment/Quiz
+                                      </option>
                                     </select>
                                   </div>
                                   <div className="form-group">
@@ -980,7 +1072,10 @@ const CourseContentManager = () => {
                                       type="text"
                                       value={lessonForm.duration}
                                       onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, duration: e.target.value })
+                                        setLessonForm({
+                                          ...lessonForm,
+                                          duration: e.target.value,
+                                        })
                                       }
                                       placeholder="e.g., 15:30"
                                     />
@@ -1007,7 +1102,10 @@ const CourseContentManager = () => {
                                       type="text"
                                       value={lessonForm.video_url}
                                       onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, video_url: e.target.value })
+                                        setLessonForm({
+                                          ...lessonForm,
+                                          video_url: e.target.value,
+                                        })
                                       }
                                       placeholder="Enter video URL or upload path"
                                     />
@@ -1037,32 +1135,41 @@ const CourseContentManager = () => {
                                   {/* Learning Objectives */}
                                   <div className="form-group">
                                     <label>Learning Objectives</label>
-                                    {lessonForm.learning_objectives.map((objective, index) => (
-                                      <div key={index} className="objective-input">
-                                        <input
-                                          type="text"
-                                          value={objective}
-                                          onChange={(e) => {
-                                            const newObjectives = [
-                                              ...lessonForm.learning_objectives,
-                                            ];
-                                            newObjectives[index] = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              learning_objectives: newObjectives,
-                                            });
-                                          }}
-                                          placeholder="Enter learning objective"
-                                        />
-                                        <button
-                                          type="button"
-                                          className="remove-btn"
-                                          onClick={() => removeLearningObjective(index)}
+                                    {lessonForm.learning_objectives.map(
+                                      (objective, index) => (
+                                        <div
+                                          key={index}
+                                          className="objective-input"
                                         >
-                                          <X size={16} />
-                                        </button>
-                                      </div>
-                                    ))}
+                                          <input
+                                            type="text"
+                                            value={objective}
+                                            onChange={(e) => {
+                                              const newObjectives = [
+                                                ...lessonForm.learning_objectives,
+                                              ];
+                                              newObjectives[index] =
+                                                e.target.value;
+                                              setLessonForm({
+                                                ...lessonForm,
+                                                learning_objectives:
+                                                  newObjectives,
+                                              });
+                                            }}
+                                            placeholder="Enter learning objective"
+                                          />
+                                          <button
+                                            type="button"
+                                            className="remove-btn"
+                                            onClick={() =>
+                                              removeLearningObjective(index)
+                                            }
+                                          >
+                                            <X size={16} />
+                                          </button>
+                                        </div>
+                                      )
+                                    )}
                                     <button
                                       type="button"
                                       className="add-item-btn"
@@ -1076,81 +1183,110 @@ const CourseContentManager = () => {
                                   {/* Key Points */}
                                   <div className="form-group">
                                     <label>Key Points</label>
-                                    {lessonForm.keypoints.map((point, pointIndex) => (
-                                      <div key={pointIndex} className="key-point-section">
-                                        <div className="key-point-header">
-                                          <input
-                                            type="text"
-                                            value={point.title}
+                                    {lessonForm.keypoints.map(
+                                      (point, pointIndex) => (
+                                        <div
+                                          key={pointIndex}
+                                          className="key-point-section"
+                                        >
+                                          <div className="key-point-header">
+                                            <input
+                                              type="text"
+                                              value={point.title}
+                                              onChange={(e) => {
+                                                const newPoints = [
+                                                  ...lessonForm.keypoints,
+                                                ];
+                                                newPoints[pointIndex].title =
+                                                  e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  keypoints: newPoints,
+                                                });
+                                              }}
+                                              placeholder="Key point title"
+                                            />
+                                            <button
+                                              type="button"
+                                              className="remove-btn"
+                                              onClick={() =>
+                                                removeKeyPoint(pointIndex)
+                                              }
+                                            >
+                                              <X size={16} />
+                                            </button>
+                                          </div>
+                                          <textarea
+                                            value={point.content}
                                             onChange={(e) => {
-                                              const newPoints = [...lessonForm.keypoints];
-                                              newPoints[pointIndex].title = e.target.value;
+                                              const newPoints = [
+                                                ...lessonForm.keypoints,
+                                              ];
+                                              newPoints[pointIndex].content =
+                                                e.target.value;
                                               setLessonForm({
                                                 ...lessonForm,
                                                 keypoints: newPoints,
                                               });
                                             }}
-                                            placeholder="Key point title"
+                                            placeholder="Key point content"
+                                            rows={2}
                                           />
-                                          <button
-                                            type="button"
-                                            className="remove-btn"
-                                            onClick={() => removeKeyPoint(pointIndex)}
-                                          >
-                                            <X size={16} />
-                                          </button>
+                                          <div className="bullets-section">
+                                            <label>Bullet Points</label>
+                                            {point.bullets.map(
+                                              (bullet, bulletIndex) => (
+                                                <div
+                                                  key={bulletIndex}
+                                                  className="bullet-input"
+                                                >
+                                                  <input
+                                                    type="text"
+                                                    value={bullet}
+                                                    onChange={(e) => {
+                                                      const newPoints = [
+                                                        ...lessonForm.keypoints,
+                                                      ];
+                                                      newPoints[
+                                                        pointIndex
+                                                      ].bullets[bulletIndex] =
+                                                        e.target.value;
+                                                      setLessonForm({
+                                                        ...lessonForm,
+                                                        keypoints: newPoints,
+                                                      });
+                                                    }}
+                                                    placeholder="Enter bullet point"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    className="remove-btn"
+                                                    onClick={() =>
+                                                      removeBulletPoint(
+                                                        pointIndex,
+                                                        bulletIndex
+                                                      )
+                                                    }
+                                                  >
+                                                    <X size={16} />
+                                                  </button>
+                                                </div>
+                                              )
+                                            )}
+                                            <button
+                                              type="button"
+                                              className="add-item-btn small"
+                                              onClick={() =>
+                                                addBulletPoint(pointIndex)
+                                              }
+                                            >
+                                              <Plus size={14} />
+                                              Add Bullet
+                                            </button>
+                                          </div>
                                         </div>
-                                        <textarea
-                                          value={point.content}
-                                          onChange={(e) => {
-                                            const newPoints = [...lessonForm.keypoints];
-                                            newPoints[pointIndex].content = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              keypoints: newPoints,
-                                            });
-                                          }}
-                                          placeholder="Key point content"
-                                          rows={2}
-                                        />
-                                        <div className="bullets-section">
-                                          <label>Bullet Points</label>
-                                          {point.bullets.map((bullet, bulletIndex) => (
-                                            <div key={bulletIndex} className="bullet-input">
-                                              <input
-                                                type="text"
-                                                value={bullet}
-                                                onChange={(e) => {
-                                                  const newPoints = [...lessonForm.keypoints];
-                                                  newPoints[pointIndex].bullets[bulletIndex] =
-                                                    e.target.value;
-                                                  setLessonForm({
-                                                    ...lessonForm,
-                                                    keypoints: newPoints,
-                                                  });
-                                                }}
-                                                placeholder="Enter bullet point"
-                                              />
-                                              <button
-                                                type="button"
-                                                className="remove-btn"
-                                                onClick={() => removeBulletPoint(pointIndex, bulletIndex)}
-                                              >
-                                                <X size={16} />
-                                              </button>
-                                            </div>
-                                          ))}
-                                          <button
-                                            type="button"
-                                            className="add-item-btn small"
-                                            onClick={() => addBulletPoint(pointIndex)}
-                                          >
-                                            <Plus size={14} />
-                                            Add Bullet
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    )}
                                     <button
                                       type="button"
                                       className="add-item-btn"
@@ -1164,37 +1300,48 @@ const CourseContentManager = () => {
                                   {/* Code Example */}
                                   <div className="form-group">
                                     <label>Code Example (Optional)</label>
-                                    {lessonForm.code_examples.map((ce, index) => (
-                                      <div key={index} className="code-example-section">
-                                        <input
-                                          type="text"
-                                          value={ce.title}
-                                          onChange={(e) => {
-                                            const newCodeExamples = [...lessonForm.code_examples];
-                                            newCodeExamples[index].title = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              code_examples: newCodeExamples,
-                                            });
-                                          }}
-                                          placeholder="Code example title"
-                                        />
-                                        <textarea
-                                          value={ce.code}
-                                          onChange={(e) => {
-                                            const newCodeExamples = [...lessonForm.code_examples];
-                                            newCodeExamples[index].code = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              code_examples: newCodeExamples,
-                                            });
-                                          }}
-                                          placeholder="Enter code example"
-                                          rows={6}
-                                          className="code-textarea"
-                                        />
-                                      </div>
-                                    ))}
+                                    {lessonForm.code_examples.map(
+                                      (ce, index) => (
+                                        <div
+                                          key={index}
+                                          className="code-example-section"
+                                        >
+                                          <input
+                                            type="text"
+                                            value={ce.title}
+                                            onChange={(e) => {
+                                              const newCodeExamples = [
+                                                ...lessonForm.code_examples,
+                                              ];
+                                              newCodeExamples[index].title =
+                                                e.target.value;
+                                              setLessonForm({
+                                                ...lessonForm,
+                                                code_examples: newCodeExamples,
+                                              });
+                                            }}
+                                            placeholder="Code example title"
+                                          />
+                                          <textarea
+                                            value={ce.code}
+                                            onChange={(e) => {
+                                              const newCodeExamples = [
+                                                ...lessonForm.code_examples,
+                                              ];
+                                              newCodeExamples[index].code =
+                                                e.target.value;
+                                              setLessonForm({
+                                                ...lessonForm,
+                                                code_examples: newCodeExamples,
+                                              });
+                                            }}
+                                            placeholder="Enter code example"
+                                            rows={6}
+                                            className="code-textarea"
+                                          />
+                                        </div>
+                                      )
+                                    )}
                                   </div>
 
                                   {/* Summary */}
@@ -1219,77 +1366,126 @@ const CourseContentManager = () => {
                               {lessonForm.type === "quiz" && (
                                 <div className="form-section">
                                   <h5>Assessment Questions</h5>
-                                  {lessonForm.questions.map((question, questionIndex) => (
-                                    <div key={questionIndex} className="question-section">
-                                      <div className="question-header">
-                                        <h6>Question {questionIndex + 1}</h6>
-                                        <button
-                                          type="button"
-                                          className="remove-btn"
-                                          onClick={() => removeQuestion(questionIndex)}
-                                        >
-                                          <X size={16} />
-                                        </button>
+                                  {lessonForm.questions.map(
+                                    (question, questionIndex) => (
+                                      <div
+                                        key={questionIndex}
+                                        className="question-section"
+                                      >
+                                        <div className="question-header">
+                                          <h6>Question {questionIndex + 1}</h6>
+                                          <button
+                                            type="button"
+                                            className="remove-btn"
+                                            onClick={() =>
+                                              removeQuestion(questionIndex)
+                                            }
+                                          >
+                                            <X size={16} />
+                                          </button>
+                                        </div>
+                                        <div className="form-group">
+                                          <label>Question Text</label>
+                                          <textarea
+                                            value={question.question}
+                                            onChange={(e) => {
+                                              const newQuestions = [
+                                                ...lessonForm.questions,
+                                              ];
+                                              newQuestions[
+                                                questionIndex
+                                              ].question = e.target.value;
+                                              setLessonForm({
+                                                ...lessonForm,
+                                                questions: newQuestions,
+                                              });
+                                            }}
+                                            placeholder="Enter question text"
+                                            rows={2}
+                                          />
+                                        </div>
+                                        <div className="form-group">
+                                          <label>Answer Options</label>
+                                          {question.options.map(
+                                            (option, optionIndex) => (
+                                              <div
+                                                key={optionIndex}
+                                                className="option-input"
+                                              >
+                                                <input
+                                                  type="radio"
+                                                  name={`correct-${questionIndex}`}
+                                                  checked={
+                                                    question.correct_option ===
+                                                    optionIndex
+                                                  }
+                                                  onChange={() => {
+                                                    const newQuestions = [
+                                                      ...lessonForm.questions,
+                                                    ];
+                                                    newQuestions[
+                                                      questionIndex
+                                                    ].correct_option =
+                                                      optionIndex;
+                                                    setLessonForm({
+                                                      ...lessonForm,
+                                                      questions: newQuestions,
+                                                    });
+                                                  }}
+                                                />
+                                                <input
+                                                  type="text"
+                                                  value={option}
+                                                  onChange={(e) => {
+                                                    const newQuestions = [
+                                                      ...lessonForm.questions,
+                                                    ];
+                                                    newQuestions[
+                                                      questionIndex
+                                                    ].options[optionIndex] =
+                                                      e.target.value;
+                                                    setLessonForm({
+                                                      ...lessonForm,
+                                                      questions: newQuestions,
+                                                    });
+                                                  }}
+                                                  placeholder={`Option ${
+                                                    optionIndex + 1
+                                                  }`}
+                                                />
+                                                <span className="correct-indicator">
+                                                  {question.correct_option ===
+                                                  optionIndex
+                                                    ? "✓ Correct"
+                                                    : ""}
+                                                </span>
+                                              </div>
+                                            )
+                                          )}
+                                        </div>
+                                        <div className="form-group">
+                                          <label>Explanation (Optional)</label>
+                                          <textarea
+                                            value={question.explanation}
+                                            onChange={(e) => {
+                                              const newQuestions = [
+                                                ...lessonForm.questions,
+                                              ];
+                                              newQuestions[
+                                                questionIndex
+                                              ].explanation = e.target.value;
+                                              setLessonForm({
+                                                ...lessonForm,
+                                                questions: newQuestions,
+                                              });
+                                            }}
+                                            placeholder="Explain why this is the correct answer"
+                                            rows={2}
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="form-group">
-                                        <label>Question Text</label>
-                                        <textarea
-                                          value={question.question}
-                                          onChange={(e) => {
-                                            const newQuestions = [...lessonForm.questions];
-                                            newQuestions[questionIndex].question = e.target.value;
-                                            setLessonForm({ ...lessonForm, questions: newQuestions });
-                                          }}
-                                          placeholder="Enter question text"
-                                          rows={2}
-                                        />
-                                      </div>
-                                      <div className="form-group">
-                                        <label>Answer Options</label>
-                                        {question.options.map((option, optionIndex) => (
-                                          <div key={optionIndex} className="option-input">
-                                            <input
-                                              type="radio"
-                                              name={`correct-${questionIndex}`}
-                                              checked={question.correct_option === optionIndex}
-                                              onChange={() => {
-                                                const newQuestions = [...lessonForm.questions];
-                                                newQuestions[questionIndex].correct_option = optionIndex;
-                                                setLessonForm({ ...lessonForm, questions: newQuestions });
-                                              }}
-                                            />
-                                            <input
-                                              type="text"
-                                              value={option}
-                                              onChange={(e) => {
-                                                const newQuestions = [...lessonForm.questions];
-                                                newQuestions[questionIndex].options[optionIndex] =
-                                                  e.target.value;
-                                                setLessonForm({ ...lessonForm, questions: newQuestions });
-                                              }}
-                                              placeholder={`Option ${optionIndex + 1}`}
-                                            />
-                                            <span className="correct-indicator">
-                                              {question.correct_option === optionIndex ? "✓ Correct" : ""}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      <div className="form-group">
-                                        <label>Explanation (Optional)</label>
-                                        <textarea
-                                          value={question.explanation}
-                                          onChange={(e) => {
-                                            const newQuestions = [...lessonForm.questions];
-                                            newQuestions[questionIndex].explanation = e.target.value;
-                                            setLessonForm({ ...lessonForm, questions: newQuestions });
-                                          }}
-                                          placeholder="Explain why this is the correct answer"
-                                          rows={2}
-                                        />
-                                      </div>
-                                    </div>
-                                  ))}
+                                    )
+                                  )}
                                   <button
                                     type="button"
                                     className="add-item-btn"
@@ -1320,388 +1516,517 @@ const CourseContentManager = () => {
                         )}
 
                         {/* Edit Lesson Form */}
-                        {editingLesson && module.lessons.find((l) => l.id === editingLesson) && (
-                          <div className="lesson-form-container">
-                            <div className="lesson-form">
-                              <h4>Edit Lesson</h4>
-                              <div className="form-section">
-                                <h5>Basic Information</h5>
-                                <div className="form-row">
-                                  <div className="form-group">
-                                    <label>Lesson Title</label>
-                                    <input
-                                      type="text"
-                                      value={lessonForm.title}
-                                      onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, title: e.target.value })
-                                      }
-                                      placeholder="Enter lesson title"
-                                    />
-                                  </div>
-                                  <div className="form-group">
-                                    <label>Type</label>
-                                    <select
-                                      value={lessonForm.type}
-                                      onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, type: e.target.value })
-                                      }
-                                    >
-                                      <option value="video">Video Lesson</option>
-                                      <option value="quiz">Assessment/Quiz</option>
-                                    </select>
-                                  </div>
-                                  <div className="form-group">
-                                    <label>Duration</label>
-                                    <input
-                                      type="text"
-                                      value={lessonForm.duration}
-                                      onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, duration: e.target.value })
-                                      }
-                                      placeholder="e.g., 15:30"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="form-group">
-                                  <label>Description</label>
-                                  <textarea
-                                    value={lessonForm.description}
-                                    onChange={(e) =>
-                                      setLessonForm({
-                                        ...lessonForm,
-                                        description: e.target.value,
-                                      })
-                                    }
-                                    placeholder="Enter lesson description"
-                                    rows={2}
-                                  />
-                                </div>
-                                {lessonForm.type === "video" && (
-                                  <div className="form-group">
-                                    <label>Video URL</label>
-                                    <input
-                                      type="text"
-                                      value={lessonForm.video_url}
-                                      onChange={(e) =>
-                                        setLessonForm({ ...lessonForm, video_url: e.target.value })
-                                      }
-                                      placeholder="Enter video URL or upload path"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-
-                              {lessonForm.type === "video" && (
+                        {editingLesson &&
+                          module.lessons.find(
+                            (l) => l.id === editingLesson
+                          ) && (
+                            <div className="lesson-form-container">
+                              <div className="lesson-form">
+                                <h4>Edit Lesson</h4>
                                 <div className="form-section">
-                                  <h5>Lesson Content</h5>
+                                  <h5>Basic Information</h5>
+                                  <div className="form-row">
+                                    <div className="form-group">
+                                      <label>Lesson Title</label>
+                                      <input
+                                        type="text"
+                                        value={lessonForm.title}
+                                        onChange={(e) =>
+                                          setLessonForm({
+                                            ...lessonForm,
+                                            title: e.target.value,
+                                          })
+                                        }
+                                        placeholder="Enter lesson title"
+                                      />
+                                    </div>
+                                    <div className="form-group">
+                                      <label>Type</label>
+                                      <select
+                                        value={lessonForm.type}
+                                        onChange={(e) =>
+                                          setLessonForm({
+                                            ...lessonForm,
+                                            type: e.target.value,
+                                          })
+                                        }
+                                      >
+                                        <option value="video">
+                                          Video Lesson
+                                        </option>
+                                        <option value="quiz">
+                                          Assessment/Quiz
+                                        </option>
+                                      </select>
+                                    </div>
+                                    <div className="form-group">
+                                      <label>Duration</label>
+                                      <input
+                                        type="text"
+                                        value={lessonForm.duration}
+                                        onChange={(e) =>
+                                          setLessonForm({
+                                            ...lessonForm,
+                                            duration: e.target.value,
+                                          })
+                                        }
+                                        placeholder="e.g., 15:30"
+                                      />
+                                    </div>
+                                  </div>
                                   <div className="form-group">
-                                    <label>Overview</label>
+                                    <label>Description</label>
                                     <textarea
-                                      value={lessonForm.overview}
+                                      value={lessonForm.description}
                                       onChange={(e) =>
                                         setLessonForm({
                                           ...lessonForm,
-                                          overview: e.target.value,
+                                          description: e.target.value,
                                         })
                                       }
-                                      placeholder="Enter lesson overview"
-                                      rows={3}
+                                      placeholder="Enter lesson description"
+                                      rows={2}
                                     />
                                   </div>
+                                  {lessonForm.type === "video" && (
+                                    <div className="form-group">
+                                      <label>Video URL</label>
+                                      <input
+                                        type="text"
+                                        value={lessonForm.video_url}
+                                        onChange={(e) =>
+                                          setLessonForm({
+                                            ...lessonForm,
+                                            video_url: e.target.value,
+                                          })
+                                        }
+                                        placeholder="Enter video URL or upload path"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
 
-                                  <div className="form-group">
-                                    <label>Learning Objectives</label>
-                                    {lessonForm.learning_objectives.map((objective, index) => (
-                                      <div key={index} className="objective-input">
-                                        <input
-                                          type="text"
-                                          value={objective}
-                                          onChange={(e) => {
-                                            const newObjectives = [
-                                              ...lessonForm.learning_objectives,
-                                            ];
-                                            newObjectives[index] = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              learning_objectives: newObjectives,
-                                            });
-                                          }}
-                                          placeholder="Enter learning objective"
-                                        />
-                                        <button
-                                          type="button"
-                                          className="remove-btn"
-                                          onClick={() => removeLearningObjective(index)}
-                                        >
-                                          <X size={16} />
-                                        </button>
-                                      </div>
-                                    ))}
-                                    <button
-                                      type="button"
-                                      className="add-item-btn"
-                                      onClick={addLearningObjective}
-                                    >
-                                      <Plus size={16} />
-                                      Add Objective
-                                    </button>
-                                  </div>
+                                {lessonForm.type === "video" && (
+                                  <div className="form-section">
+                                    <h5>Lesson Content</h5>
+                                    <div className="form-group">
+                                      <label>Overview</label>
+                                      <textarea
+                                        value={lessonForm.overview}
+                                        onChange={(e) =>
+                                          setLessonForm({
+                                            ...lessonForm,
+                                            overview: e.target.value,
+                                          })
+                                        }
+                                        placeholder="Enter lesson overview"
+                                        rows={3}
+                                      />
+                                    </div>
 
-                                  <div className="form-group">
-                                    <label>Key Points</label>
-                                    {lessonForm.keypoints.map((point, pointIndex) => (
-                                      <div key={pointIndex} className="key-point-section">
-                                        <div className="key-point-header">
-                                          <input
-                                            type="text"
-                                            value={point.title}
-                                            onChange={(e) => {
-                                              const newPoints = [...lessonForm.keypoints];
-                                              newPoints[pointIndex].title = e.target.value;
-                                              setLessonForm({
-                                                ...lessonForm,
-                                                keypoints: newPoints,
-                                              });
-                                            }}
-                                            placeholder="Key point title"
-                                          />
-                                          <button
-                                            type="button"
-                                            className="remove-btn"
-                                            onClick={() => removeKeyPoint(pointIndex)}
+                                    <div className="form-group">
+                                      <label>Learning Objectives</label>
+                                      {lessonForm.learning_objectives.map(
+                                        (objective, index) => (
+                                          <div
+                                            key={index}
+                                            className="objective-input"
                                           >
-                                            <X size={16} />
-                                          </button>
-                                        </div>
-                                        <textarea
-                                          value={point.content}
-                                          onChange={(e) => {
-                                            const newPoints = [...lessonForm.keypoints];
-                                            newPoints[pointIndex].content = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              keypoints: newPoints,
-                                            });
-                                          }}
-                                          placeholder="Key point content"
-                                          rows={2}
-                                        />
-                                        <div className="bullets-section">
-                                          <label>Bullet Points</label>
-                                          {point.bullets.map((bullet, bulletIndex) => (
-                                            <div key={bulletIndex} className="bullet-input">
+                                            <input
+                                              type="text"
+                                              value={objective}
+                                              onChange={(e) => {
+                                                const newObjectives = [
+                                                  ...lessonForm.learning_objectives,
+                                                ];
+                                                newObjectives[index] =
+                                                  e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  learning_objectives:
+                                                    newObjectives,
+                                                });
+                                              }}
+                                              placeholder="Enter learning objective"
+                                            />
+                                            <button
+                                              type="button"
+                                              className="remove-btn"
+                                              onClick={() =>
+                                                removeLearningObjective(index)
+                                              }
+                                            >
+                                              <X size={16} />
+                                            </button>
+                                          </div>
+                                        )
+                                      )}
+                                      <button
+                                        type="button"
+                                        className="add-item-btn"
+                                        onClick={addLearningObjective}
+                                      >
+                                        <Plus size={16} />
+                                        Add Objective
+                                      </button>
+                                    </div>
+
+                                    <div className="form-group">
+                                      <label>Key Points</label>
+                                      {lessonForm.keypoints.map(
+                                        (point, pointIndex) => (
+                                          <div
+                                            key={pointIndex}
+                                            className="key-point-section"
+                                          >
+                                            <div className="key-point-header">
                                               <input
                                                 type="text"
-                                                value={bullet}
+                                                value={point.title}
                                                 onChange={(e) => {
-                                                  const newPoints = [...lessonForm.keypoints];
-                                                  newPoints[pointIndex].bullets[bulletIndex] =
+                                                  const newPoints = [
+                                                    ...lessonForm.keypoints,
+                                                  ];
+                                                  newPoints[pointIndex].title =
                                                     e.target.value;
                                                   setLessonForm({
                                                     ...lessonForm,
                                                     keypoints: newPoints,
                                                   });
                                                 }}
-                                                placeholder="Enter bullet point"
+                                                placeholder="Key point title"
                                               />
                                               <button
                                                 type="button"
                                                 className="remove-btn"
-                                                onClick={() => removeBulletPoint(pointIndex, bulletIndex)}
+                                                onClick={() =>
+                                                  removeKeyPoint(pointIndex)
+                                                }
                                               >
                                                 <X size={16} />
                                               </button>
                                             </div>
-                                          ))}
-                                          <button
-                                            type="button"
-                                            className="add-item-btn small"
-                                            onClick={() => addBulletPoint(pointIndex)}
+                                            <textarea
+                                              value={point.content}
+                                              onChange={(e) => {
+                                                const newPoints = [
+                                                  ...lessonForm.keypoints,
+                                                ];
+                                                newPoints[pointIndex].content =
+                                                  e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  keypoints: newPoints,
+                                                });
+                                              }}
+                                              placeholder="Key point content"
+                                              rows={2}
+                                            />
+                                            <div className="bullets-section">
+                                              <label>Bullet Points</label>
+                                              {point.bullets.map(
+                                                (bullet, bulletIndex) => (
+                                                  <div
+                                                    key={bulletIndex}
+                                                    className="bullet-input"
+                                                  >
+                                                    <input
+                                                      type="text"
+                                                      value={bullet}
+                                                      onChange={(e) => {
+                                                        const newPoints = [
+                                                          ...lessonForm.keypoints,
+                                                        ];
+                                                        newPoints[
+                                                          pointIndex
+                                                        ].bullets[bulletIndex] =
+                                                          e.target.value;
+                                                        setLessonForm({
+                                                          ...lessonForm,
+                                                          keypoints: newPoints,
+                                                        });
+                                                      }}
+                                                      placeholder="Enter bullet point"
+                                                    />
+                                                    <button
+                                                      type="button"
+                                                      className="remove-btn"
+                                                      onClick={() =>
+                                                        removeBulletPoint(
+                                                          pointIndex,
+                                                          bulletIndex
+                                                        )
+                                                      }
+                                                    >
+                                                      <X size={16} />
+                                                    </button>
+                                                  </div>
+                                                )
+                                              )}
+                                              <button
+                                                type="button"
+                                                className="add-item-btn small"
+                                                onClick={() =>
+                                                  addBulletPoint(pointIndex)
+                                                }
+                                              >
+                                                <Plus size={14} />
+                                                Add Bullet
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )
+                                      )}
+                                      <button
+                                        type="button"
+                                        className="add-item-btn"
+                                        onClick={addKeyPoint}
+                                      >
+                                        <Plus size={16} />
+                                        Add Key Point
+                                      </button>
+                                    </div>
+
+                                    <div className="form-group">
+                                      <label>Code Example (Optional)</label>
+                                      {lessonForm.code_examples.map(
+                                        (ce, index) => (
+                                          <div
+                                            key={index}
+                                            className="code-example-section"
                                           >
-                                            <Plus size={14} />
-                                            Add Bullet
-                                          </button>
+                                            <input
+                                              type="text"
+                                              value={ce.title}
+                                              onChange={(e) => {
+                                                const newCodeExamples = [
+                                                  ...lessonForm.code_examples,
+                                                ];
+                                                newCodeExamples[index].title =
+                                                  e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  code_examples:
+                                                    newCodeExamples,
+                                                });
+                                              }}
+                                              placeholder="Code example title"
+                                            />
+                                            <textarea
+                                              value={ce.code}
+                                              onChange={(e) => {
+                                                const newCodeExamples = [
+                                                  ...lessonForm.code_examples,
+                                                ];
+                                                newCodeExamples[index].code =
+                                                  e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  code_examples:
+                                                    newCodeExamples,
+                                                });
+                                              }}
+                                              placeholder="Enter code example"
+                                              rows={6}
+                                              className="code-textarea"
+                                            />
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+
+                                    <div className="form-group">
+                                      <label>Summary</label>
+                                      <textarea
+                                        value={lessonForm.summary}
+                                        onChange={(e) =>
+                                          setLessonForm({
+                                            ...lessonForm,
+                                            summary: e.target.value,
+                                          })
+                                        }
+                                        placeholder="Enter lesson summary"
+                                        rows={3}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {lessonForm.type === "quiz" && (
+                                  <div className="form-section">
+                                    <h5>Assessment Questions</h5>
+                                    {lessonForm.questions.map(
+                                      (question, questionIndex) => (
+                                        <div
+                                          key={questionIndex}
+                                          className="question-section"
+                                        >
+                                          <div className="question-header">
+                                            <h6>
+                                              Question {questionIndex + 1}
+                                            </h6>
+                                            <button
+                                              type="button"
+                                              className="remove-btn"
+                                              onClick={() =>
+                                                removeQuestion(questionIndex)
+                                              }
+                                            >
+                                              <X size={16} />
+                                            </button>
+                                          </div>
+                                          <div className="form-group">
+                                            <label>Question Text</label>
+                                            <textarea
+                                              value={question.question}
+                                              onChange={(e) => {
+                                                const newQuestions = [
+                                                  ...lessonForm.questions,
+                                                ];
+                                                newQuestions[
+                                                  questionIndex
+                                                ].question = e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  questions: newQuestions,
+                                                });
+                                              }}
+                                              placeholder="Enter question text"
+                                              rows={2}
+                                            />
+                                          </div>
+                                          <div className="form-group">
+                                            <label>Answer Options</label>
+                                            {question.options.map(
+                                              (option, optionIndex) => (
+                                                <div
+                                                  key={optionIndex}
+                                                  className="option-input"
+                                                >
+                                                  <input
+                                                    type="radio"
+                                                    name={`correct-${questionIndex}`}
+                                                    checked={
+                                                      question.correct_option ===
+                                                      optionIndex
+                                                    }
+                                                    onChange={() => {
+                                                      const newQuestions = [
+                                                        ...lessonForm.questions,
+                                                      ];
+                                                      newQuestions[
+                                                        questionIndex
+                                                      ].correct_option =
+                                                        optionIndex;
+                                                      setLessonForm({
+                                                        ...lessonForm,
+                                                        questions: newQuestions,
+                                                      });
+                                                    }}
+                                                  />
+                                                  <input
+                                                    type="text"
+                                                    value={option}
+                                                    onChange={(e) => {
+                                                      const newQuestions = [
+                                                        ...lessonForm.questions,
+                                                      ];
+                                                      newQuestions[
+                                                        questionIndex
+                                                      ].options[optionIndex] =
+                                                        e.target.value;
+                                                      setLessonForm({
+                                                        ...lessonForm,
+                                                        questions: newQuestions,
+                                                      });
+                                                    }}
+                                                    placeholder={`Option ${
+                                                      optionIndex + 1
+                                                    }`}
+                                                  />
+                                                  <span className="correct-indicator">
+                                                    {question.correct_option ===
+                                                    optionIndex
+                                                      ? "✓ Correct"
+                                                      : ""}
+                                                  </span>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                          <div className="form-group">
+                                            <label>
+                                              Explanation (Optional)
+                                            </label>
+                                            <textarea
+                                              value={question.explanation}
+                                              onChange={(e) => {
+                                                const newQuestions = [
+                                                  ...lessonForm.questions,
+                                                ];
+                                                newQuestions[
+                                                  questionIndex
+                                                ].explanation = e.target.value;
+                                                setLessonForm({
+                                                  ...lessonForm,
+                                                  questions: newQuestions,
+                                                });
+                                              }}
+                                              placeholder="Explain why this is the correct answer"
+                                              rows={2}
+                                            />
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    )}
                                     <button
                                       type="button"
                                       className="add-item-btn"
-                                      onClick={addKeyPoint}
+                                      onClick={addQuestion}
                                     >
                                       <Plus size={16} />
-                                      Add Key Point
+                                      Add Question
                                     </button>
                                   </div>
+                                )}
 
-                                  <div className="form-group">
-                                    <label>Code Example (Optional)</label>
-                                    {lessonForm.code_examples.map((ce, index) => (
-                                      <div key={index} className="code-example-section">
-                                        <input
-                                          type="text"
-                                          value={ce.title}
-                                          onChange={(e) => {
-                                            const newCodeExamples = [...lessonForm.code_examples];
-                                            newCodeExamples[index].title = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              code_examples: newCodeExamples,
-                                            });
-                                          }}
-                                          placeholder="Code example title"
-                                        />
-                                        <textarea
-                                          value={ce.code}
-                                          onChange={(e) => {
-                                            const newCodeExamples = [...lessonForm.code_examples];
-                                            newCodeExamples[index].code = e.target.value;
-                                            setLessonForm({
-                                              ...lessonForm,
-                                              code_examples: newCodeExamples,
-                                            });
-                                          }}
-                                          placeholder="Enter code example"
-                                          rows={6}
-                                          className="code-textarea"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  <div className="form-group">
-                                    <label>Summary</label>
-                                    <textarea
-                                      value={lessonForm.summary}
-                                      onChange={(e) =>
-                                        setLessonForm({
-                                          ...lessonForm,
-                                          summary: e.target.value,
-                                        })
-                                      }
-                                      placeholder="Enter lesson summary"
-                                      rows={3}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-
-                              {lessonForm.type === "quiz" && (
-                                <div className="form-section">
-                                  <h5>Assessment Questions</h5>
-                                  {lessonForm.questions.map((question, questionIndex) => (
-                                    <div key={questionIndex} className="question-section">
-                                      <div className="question-header">
-                                        <h6>Question {questionIndex + 1}</h6>
-                                        <button
-                                          type="button"
-                                          className="remove-btn"
-                                          onClick={() => removeQuestion(questionIndex)}
-                                        >
-                                          <X size={16} />
-                                        </button>
-                                      </div>
-                                      <div className="form-group">
-                                        <label>Question Text</label>
-                                        <textarea
-                                          value={question.question}
-                                          onChange={(e) => {
-                                            const newQuestions = [...lessonForm.questions];
-                                            newQuestions[questionIndex].question = e.target.value;
-                                            setLessonForm({ ...lessonForm, questions: newQuestions });
-                                          }}
-                                          placeholder="Enter question text"
-                                          rows={2}
-                                        />
-                                      </div>
-                                      <div className="form-group">
-                                        <label>Answer Options</label>
-                                        {question.options.map((option, optionIndex) => (
-                                          <div key={optionIndex} className="option-input">
-                                            <input
-                                              type="radio"
-                                              name={`correct-${questionIndex}`}
-                                              checked={question.correct_option === optionIndex}
-                                              onChange={() => {
-                                                const newQuestions = [...lessonForm.questions];
-                                                newQuestions[questionIndex].correct_option = optionIndex;
-                                                setLessonForm({ ...lessonForm, questions: newQuestions });
-                                              }}
-                                            />
-                                            <input
-                                              type="text"
-                                              value={option}
-                                              onChange={(e) => {
-                                                const newQuestions = [...lessonForm.questions];
-                                                newQuestions[questionIndex].options[optionIndex] =
-                                                  e.target.value;
-                                                setLessonForm({ ...lessonForm, questions: newQuestions });
-                                              }}
-                                              placeholder={`Option ${optionIndex + 1}`}
-                                            />
-                                            <span className="correct-indicator">
-                                              {question.correct_option === optionIndex ? "✓ Correct" : ""}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      <div className="form-group">
-                                        <label>Explanation (Optional)</label>
-                                        <textarea
-                                          value={question.explanation}
-                                          onChange={(e) => {
-                                            const newQuestions = [...lessonForm.questions];
-                                            newQuestions[questionIndex].explanation = e.target.value;
-                                            setLessonForm({ ...lessonForm, questions: newQuestions });
-                                          }}
-                                          placeholder="Explain why this is the correct answer"
-                                          rows={2}
-                                        />
-                                      </div>
-                                    </div>
-                                  ))}
+                                <div className="form-actions">
                                   <button
-                                    type="button"
-                                    className="add-item-btn"
-                                    onClick={addQuestion}
+                                    className="btn-secondary"
+                                    onClick={() => setEditingLesson(null)}
                                   >
-                                    <Plus size={16} />
-                                    Add Question
+                                    Cancel
+                                  </button>
+                                  <button
+                                    className="btn-primary"
+                                    onClick={() =>
+                                      handleEditLesson(
+                                        module.id,
+                                        editingLesson,
+                                        {
+                                          title: lessonForm.title,
+                                          type: lessonForm.type,
+                                          duration: lessonForm.duration,
+                                          description: lessonForm.description,
+                                          video_url: lessonForm.video_url,
+                                          overview: lessonForm.overview,
+                                          summary: lessonForm.summary,
+                                          learning_objectives:
+                                            lessonForm.learning_objectives,
+                                          keypoints: lessonForm.keypoints,
+                                          code_examples:
+                                            lessonForm.code_examples,
+                                          questions: lessonForm.questions,
+                                        }
+                                      )
+                                    }
+                                  >
+                                    Save Lesson
                                   </button>
                                 </div>
-                              )}
-
-                              <div className="form-actions">
-                                <button
-                                  className="btn-secondary"
-                                  onClick={() => setEditingLesson(null)}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  className="btn-primary"
-                                  onClick={() =>
-                                    handleEditLesson(module.id, editingLesson, {
-                                      title: lessonForm.title,
-                                      type: lessonForm.type,
-                                      duration: lessonForm.duration,
-                                      description: lessonForm.description,
-                                      video_url: lessonForm.video_url,
-                                      overview: lessonForm.overview,
-                                      summary: lessonForm.summary,
-                                      learning_objectives: lessonForm.learning_objectives,
-                                      keypoints: lessonForm.keypoints,
-                                      code_examples: lessonForm.code_examples,
-                                      questions: lessonForm.questions,
-                                    })
-                                  }
-                                >
-                                  Save Lesson
-                                </button>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* Lessons List */}
                         <div className="lessons-list">
@@ -1718,8 +2043,12 @@ const CourseContentManager = () => {
                                 <h5>{lesson.title}</h5>
                                 <p>{lesson.description}</p>
                                 <div className="lesson-meta">
-                                  <span className="lesson-type">{lesson.type}</span>
-                                  <span className="lesson-duration">{lesson.duration}</span>
+                                  <span className="lesson-type">
+                                    {lesson.type}
+                                  </span>
+                                  <span className="lesson-duration">
+                                    {lesson.duration}
+                                  </span>
                                 </div>
                               </div>
                               <div className="lesson-actions">
@@ -1735,13 +2064,26 @@ const CourseContentManager = () => {
                                       video_url: lesson.video_url || "",
                                       overview: lesson.overview || "",
                                       summary: lesson.summary || "",
-                                      learning_objectives: lesson.learning_objectives.map((obj) => obj.text) || [""],
+                                      learning_objectives:
+                                        lesson.learning_objectives.map(
+                                          (obj) => obj.text
+                                        ) || [""],
                                       keypoints: lesson.keypoints.map((kp) => ({
                                         title: kp.title,
                                         content: kp.content,
-                                        bullets: kp.bullets.map((b) => b.text) || [""],
-                                      })) || [{ title: "", content: "", bullets: [""] }],
-                                      code_examples: lesson.code_examples || [{ title: "", code: "" }],
+                                        bullets: kp.bullets.map(
+                                          (b) => b.text
+                                        ) || [""],
+                                      })) || [
+                                        {
+                                          title: "",
+                                          content: "",
+                                          bullets: [""],
+                                        },
+                                      ],
+                                      code_examples: lesson.code_examples || [
+                                        { title: "", code: "" },
+                                      ],
                                       questions: lesson.questions || [
                                         {
                                           question: "",
@@ -1758,14 +2100,18 @@ const CourseContentManager = () => {
                                 <button
                                   className="action-icon"
                                   onClick={() =>
-                                    navigate(`/course/${courseId}/lesson/${lesson.id}`)
+                                    navigate(
+                                      `/course/${courseId}/lesson/${lesson.id}`
+                                    )
                                   }
                                 >
                                   <Eye size={14} />
                                 </button>
                                 <button
                                   className="action-icon delete"
-                                  onClick={() => handleDeleteLesson(module.id, lesson.id)}
+                                  onClick={() =>
+                                    handleDeleteLesson(module.id, lesson.id)
+                                  }
                                 >
                                   <Trash2 size={14} />
                                 </button>
@@ -1792,7 +2138,10 @@ const CourseContentManager = () => {
                   type="text"
                   value={courseContent.title}
                   onChange={(e) =>
-                    setCourseContent({ ...courseContent, title: e.target.value })
+                    setCourseContent({
+                      ...courseContent,
+                      title: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -1801,7 +2150,10 @@ const CourseContentManager = () => {
                 <textarea
                   value={courseContent.description}
                   onChange={(e) =>
-                    setCourseContent({ ...courseContent, description: e.target.value })
+                    setCourseContent({
+                      ...courseContent,
+                      description: e.target.value,
+                    })
                   }
                   rows={4}
                 />

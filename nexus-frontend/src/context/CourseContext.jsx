@@ -19,13 +19,16 @@ export const CourseProvider = ({ children }) => {
         throw new Error("Missing access token or CSRF token");
       }
 
-      const response = await axios.get("https://127.0.0.1:8000/courses/api/enrolled-courses/", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "X-CSRFToken": csrfToken,
-        },
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrolled-courses/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
 
       console.log("Enrolled courses response:", response.data);
       const coursesData = response.data.results || response.data;

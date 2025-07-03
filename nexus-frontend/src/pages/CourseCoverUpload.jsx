@@ -4,7 +4,12 @@ import axios from "axios";
 import { X } from "lucide-react";
 import "./CourseCoverUpload.css"; // Create this CSS file for styling
 
-const CourseCoverUpload = ({ courseId, onClose, accessToken, fetchCsrfToken }) => {
+const CourseCoverUpload = ({
+  courseId,
+  onClose,
+  accessToken,
+  fetchCsrfToken,
+}) => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -39,7 +44,7 @@ const CourseCoverUpload = ({ courseId, onClose, accessToken, fetchCsrfToken }) =
       formData.append("cover_picture", file);
 
       const response = await axios.patch(
-        `https://127.0.0.1:8000/courses/api/courses/${courseId}/upload-cover/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/upload-cover/`,
         formData,
         {
           headers: {
@@ -92,14 +97,27 @@ const CourseCoverUpload = ({ courseId, onClose, accessToken, fetchCsrfToken }) =
           </div>
           {preview && (
             <div className="image-preview">
-              <img src={preview} alt="Cover preview" style={{ maxWidth: "300px", maxHeight: "200px" }} />
+              <img
+                src={preview}
+                alt="Cover preview"
+                style={{ maxWidth: "300px", maxHeight: "200px" }}
+              />
             </div>
           )}
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={isUploading}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={onClose}
+              disabled={isUploading}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isUploading || !file}>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isUploading || !file}
+            >
               {isUploading ? "Uploading..." : "Upload Image"}
             </button>
           </div>

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
+import { useState, useRef } from "react";
 import {
   User,
   Camera,
@@ -36,10 +36,10 @@ import {
   Check,
   Lock,
   Sparkles,
-} from "lucide-react"
-import { useUser } from "../context/UserContext"
+} from "lucide-react";
+import { useUser } from "../context/UserContext";
 import axios from "axios";
-import "./Profile.css"
+import "./Profile.css";
 
 const Profile = () => {
   const { user, logout, setUser } = useUser();
@@ -51,7 +51,8 @@ const Profile = () => {
     name: user?.full_name || "Alexandra Chen", // Use full_name from user
     email: user?.email || "alexandra.chen@email.com", // Use email from user
     created_at: user?.created_at || "2023-01-01", // Use created_at from user
-    profile_photo: user?.profile_photo || "/placeholder.svg?height=140&width=140", // Use profile_photo from user
+    profile_photo:
+      user?.profile_photo || "/placeholder.svg?height=140&width=140", // Use profile_photo from user
     phone: "+1 (555) 987-6543", // Dummy data
     location: "San Francisco, CA", // Dummy data
     bio: "Passionate actuarial science student with a focus on risk analytics and financial modeling. Currently preparing for SOA Fellowship exams while working on innovative insurance technology solutions.", // Dummy data
@@ -63,7 +64,6 @@ const Profile = () => {
     website: "alexandrachen.dev", // Dummy data
   });
 
-
   const fileInputRef = useRef(null);
 
   const getCookie = (name) => {
@@ -73,90 +73,93 @@ const Profile = () => {
     return null;
   };
 
- const handleImageUpload = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  const formData = new FormData();
-  formData.append("profile_photo", file);
+    const formData = new FormData();
+    formData.append("profile_photo", file);
 
-  try {
-    const csrfToken = getCookie("csrftoken");
-    const accessToken = localStorage.getItem("access_token");
+    try {
+      const csrfToken = getCookie("csrftoken");
+      const accessToken = localStorage.getItem("access_token");
 
-    if (!accessToken) {
-      throw new Error("No access token found. Please log in again.");
-    }
+      if (!accessToken) {
+        throw new Error("No access token found. Please log in again.");
+      }
 
-    let profileId = user?.profile_id;
+      let profileId = user?.profile_id;
 
-    if (!profileId) {
-      console.warn("Profile ID missing, fetching from /me/");
-      const profileResponse = await axios.get(
-        "https://127.0.0.1:8000/auth/api/profile/me/",
+      if (!profileId) {
+        console.warn("Profile ID missing, fetching from /me/");
+        const profileResponse = await axios.get(
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/",
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            withCredentials: true,
+          }
+        );
+        console.log("Profile response from /me/:", profileResponse.data);
+
+        profileId = profileResponse.data.id; // Correctly extract ID from response
+        if (!profileId) {
+          console.error(
+            "No profile ID found in /me/ response:",
+            profileResponse.data
+          );
+          throw new Error("No profile ID found in /me/ response");
+        }
+
+        setUser((prev) => {
+          const updatedUser = { ...prev, profile_id: profileId };
+          localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
+          return updatedUser;
+        });
+      }
+
+      const response = await axios.patch(
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/${profileId}/`,
+        formData,
         {
           headers: {
+            "X-CSRFToken": csrfToken,
             Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "multipart/form-data",
           },
           withCredentials: true,
         }
       );
-      console.log("Profile response from /me/:", profileResponse.data);
 
-      profileId = profileResponse.data.id; // Correctly extract ID from response
-      if (!profileId) {
-        console.error("No profile ID found in /me/ response:", profileResponse.data);
-        throw new Error("No profile ID found in /me/ response");
-      }
+      const updatedProfilePhoto = response.data.profile_photo;
 
       setUser((prev) => {
-        const updatedUser = { ...prev, profile_id: profileId };
+        const updatedUser = { ...prev, profile_photo: updatedProfilePhoto };
         localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
         return updatedUser;
       });
-    }
 
-    const response = await axios.patch(
-      `https://127.0.0.1:8000/auth/api/profile/${profileId}/`,
-      formData,
-      {
-        headers: {
-          "X-CSRFToken": csrfToken,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
+      setProfileData((prev) => ({
+        ...prev,
+        profile_photo: updatedProfilePhoto,
+      }));
+
+      console.log("✅ Profile photo uploaded:", updatedProfilePhoto);
+    } catch (error) {
+      console.error("❌ Profile photo upload failed:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+      } else {
+        console.error("Error message:", error.message);
       }
-    );
-
-    const updatedProfilePhoto = response.data.profile_photo;
-
-    setUser((prev) => {
-      const updatedUser = { ...prev, profile_photo: updatedProfilePhoto };
-      localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
-      return updatedUser;
-    });
-
-    setProfileData((prev) => ({
-      ...prev,
-      profile_photo: updatedProfilePhoto,
-    }));
-
-    console.log("✅ Profile photo uploaded:", updatedProfilePhoto);
-  } catch (error) {
-    console.error("❌ Profile photo upload failed:", error);
-    if (error.response) {
-      console.error("Response data:", error.response.data);
-      console.error("Response status:", error.response.status);
-    } else {
-      console.error("Error message:", error.message);
     }
-  }
-};
+  };
   const handleSave = () => {
-    setIsEditing(false)
-    console.log("Profile saved:", profileData)
-  }
+    setIsEditing(false);
+    console.log("Profile saved:", profileData);
+  };
 
   const achievements = [
     {
@@ -213,23 +216,77 @@ const Profile = () => {
       description: "Master Monte Carlo simulations",
       rarity: "legendary",
     },
-  ]
+  ];
 
   const learningStats = [
-    { label: "Courses Completed", value: "24", icon: BookOpen, color: "#6366f1", trend: "+3 this month" },
-    { label: "Study Hours", value: "342", icon: Clock, color: "#10b981", trend: "+28 this week" },
-    { label: "Certificates Earned", value: "8", icon: Award, color: "#f59e0b", trend: "+2 this month" },
-    { label: "Current Streak", value: "28 days", icon: Flame, color: "#ef4444", trend: "Personal best!" },
-  ]
+    {
+      label: "Courses Completed",
+      value: "24",
+      icon: BookOpen,
+      color: "#6366f1",
+      trend: "+3 this month",
+    },
+    {
+      label: "Study Hours",
+      value: "342",
+      icon: Clock,
+      color: "#10b981",
+      trend: "+28 this week",
+    },
+    {
+      label: "Certificates Earned",
+      value: "8",
+      icon: Award,
+      color: "#f59e0b",
+      trend: "+2 this month",
+    },
+    {
+      label: "Current Streak",
+      value: "28 days",
+      icon: Flame,
+      color: "#ef4444",
+      trend: "Personal best!",
+    },
+  ];
 
   const skillsData = [
-    { name: "Probability Theory", level: 95, category: "Core", color: "#6366f1" },
-    { name: "Financial Mathematics", level: 88, category: "Core", color: "#8b5cf6" },
-    { name: "Life Contingencies", level: 82, category: "Advanced", color: "#06b6d4" },
-    { name: "Risk Management", level: 76, category: "Advanced", color: "#10b981" },
-    { name: "Statistical Modeling", level: 90, category: "Core", color: "#f59e0b" },
-    { name: "Insurance Analytics", level: 70, category: "Specialized", color: "#ef4444" },
-  ]
+    {
+      name: "Probability Theory",
+      level: 95,
+      category: "Core",
+      color: "#6366f1",
+    },
+    {
+      name: "Financial Mathematics",
+      level: 88,
+      category: "Core",
+      color: "#8b5cf6",
+    },
+    {
+      name: "Life Contingencies",
+      level: 82,
+      category: "Advanced",
+      color: "#06b6d4",
+    },
+    {
+      name: "Risk Management",
+      level: 76,
+      category: "Advanced",
+      color: "#10b981",
+    },
+    {
+      name: "Statistical Modeling",
+      level: 90,
+      category: "Core",
+      color: "#f59e0b",
+    },
+    {
+      name: "Insurance Analytics",
+      level: 70,
+      category: "Specialized",
+      color: "#ef4444",
+    },
+  ];
 
   const recentActivity = [
     {
@@ -260,7 +317,7 @@ const Profile = () => {
       points: "+100 XP",
       icon: Users,
     },
-  ]
+  ];
 
   const tabs = [
     { id: "overview", label: "Overview", icon: User },
@@ -268,7 +325,7 @@ const Profile = () => {
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "settings", label: "Settings", icon: Settings },
     { id: "security", label: "Security", icon: Shield },
-  ]
+  ];
 
   return (
     <div className="modern-profile-page">
@@ -343,10 +400,13 @@ const Profile = () => {
                   <Calendar size={14} />
                   <span>
                     Joined{" "}
-                    {new Date(profileData.created_at).toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {new Date(profileData.created_at).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "long",
+                        year: "numeric",
+                      }
+                    )}
                   </span>
                 </div>
               </div>
@@ -416,7 +476,10 @@ const Profile = () => {
                 <div className="card-header">
                   <h3>About Me</h3>
                   {!isEditing && (
-                    <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                    <button
+                      className="edit-btn"
+                      onClick={() => setIsEditing(true)}
+                    >
                       <Edit3 size={16} />
                     </button>
                   )}
@@ -427,7 +490,10 @@ const Profile = () => {
                       <textarea
                         value={profileData.bio}
                         onChange={(e) =>
-                          setProfileData({ ...profileData, bio: e.target.value })
+                          setProfileData({
+                            ...profileData,
+                            bio: e.target.value,
+                          })
                         }
                         placeholder="Tell us about yourself..."
                         rows={4}
@@ -453,7 +519,9 @@ const Profile = () => {
                       </div>
                       <div className="contact-details">
                         <span className="contact-label">Email</span>
-                        <span className="contact-value">{profileData.email}</span>
+                        <span className="contact-value">
+                          {profileData.email}
+                        </span>
                       </div>
                     </div>
 
@@ -468,12 +536,17 @@ const Profile = () => {
                             type="tel"
                             value={profileData.phone}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, phone: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                phone: e.target.value,
+                              })
                             }
                             className="modern-input"
                           />
                         ) : (
-                          <span className="contact-value">{profileData.phone}</span>
+                          <span className="contact-value">
+                            {profileData.phone}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -489,7 +562,10 @@ const Profile = () => {
                             type="url"
                             value={profileData.website}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, website: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                website: e.target.value,
+                              })
                             }
                             className="modern-input"
                           />
@@ -526,7 +602,10 @@ const Profile = () => {
                             type="text"
                             value={profileData.university}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, university: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                university: e.target.value,
+                              })
                             }
                             className="modern-input"
                           />
@@ -540,7 +619,10 @@ const Profile = () => {
                             type="text"
                             value={profileData.major}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, major: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                major: e.target.value,
+                              })
                             }
                             className="modern-input"
                           />
@@ -590,7 +672,9 @@ const Profile = () => {
                         <div className="activity-content">
                           <div className="activity-main">
                             <p className="activity-title">{activity.title}</p>
-                            <span className="activity-points">{activity.points}</span>
+                            <span className="activity-points">
+                              {activity.points}
+                            </span>
                           </div>
                           <span className="activity-time">{activity.time}</span>
                         </div>
@@ -603,7 +687,10 @@ const Profile = () => {
 
             {isEditing && (
               <div className="edit-actions">
-                <button className="action-btn primary large" onClick={handleSave}>
+                <button
+                  className="action-btn primary large"
+                  onClick={handleSave}
+                >
                   <Save size={16} />
                   Save Changes
                 </button>
@@ -618,7 +705,7 @@ const Profile = () => {
             )}
           </div>
         )}
-  {/* ########################################################### */}
+        {/* ########################################################### */}
         {activeTab === "learning" && (
           <div className="learning-section">
             <div className="content-grid">
@@ -660,7 +747,9 @@ const Profile = () => {
                       <div key={index} className="skill-item-modern">
                         <div className="skill-header">
                           <span className="skill-name">{skill.name}</span>
-                          <span className="skill-category">{skill.category}</span>
+                          <span className="skill-category">
+                            {skill.category}
+                          </span>
                         </div>
                         <div className="skill-progress">
                           <div className="skill-bar-container">
@@ -672,7 +761,9 @@ const Profile = () => {
                               }}
                             ></div>
                           </div>
-                          <span className="skill-percentage">{skill.level}%</span>
+                          <span className="skill-percentage">
+                            {skill.level}%
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -707,7 +798,10 @@ const Profile = () => {
                         <h4>SOA Exam FM</h4>
                         <p>Financial Mathematics</p>
                         <div className="exam-progress-bar">
-                          <div className="progress-fill" style={{ width: "85%" }}></div>
+                          <div
+                            className="progress-fill"
+                            style={{ width: "85%" }}
+                          ></div>
                         </div>
                       </div>
                       <div className="exam-badge progress">85% Ready</div>
@@ -740,7 +834,9 @@ const Profile = () => {
               </div>
               <div className="achievement-summary">
                 <div className="summary-stat">
-                  <span className="stat-number">{achievements.filter((a) => a.earned).length}</span>
+                  <span className="stat-number">
+                    {achievements.filter((a) => a.earned).length}
+                  </span>
                   <span className="stat-label">Earned</span>
                 </div>
                 <div className="summary-stat">
@@ -754,7 +850,9 @@ const Profile = () => {
               {achievements.map((achievement) => (
                 <div
                   key={achievement.id}
-                  className={`achievement-card-modern ${achievement.earned ? "earned" : "locked"} ${achievement.rarity}`}
+                  className={`achievement-card-modern ${
+                    achievement.earned ? "earned" : "locked"
+                  } ${achievement.rarity}`}
                 >
                   <div className="achievement-glow"></div>
                   <div className="achievement-header">
@@ -762,7 +860,9 @@ const Profile = () => {
                       <achievement.icon size={24} />
                     </div>
                     <div className="achievement-rarity">
-                      {achievement.rarity === "legendary" && <Crown size={12} />}
+                      {achievement.rarity === "legendary" && (
+                        <Crown size={12} />
+                      )}
                       {achievement.rarity === "epic" && <Star size={12} />}
                       {achievement.rarity === "rare" && <Sparkles size={12} />}
                       <span>{achievement.rarity}</span>
@@ -781,7 +881,10 @@ const Profile = () => {
                     ) : (
                       <div className="achievement-progress">
                         <div className="progress-bar-mini">
-                          <div className="progress-fill" style={{ width: `${achievement.progress}%` }}></div>
+                          <div
+                            className="progress-fill"
+                            style={{ width: `${achievement.progress}%` }}
+                          ></div>
                         </div>
                         <span>{achievement.progress}% complete</span>
                       </div>
@@ -946,22 +1049,36 @@ const Profile = () => {
                           className="password-toggle"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
                         </button>
                       </div>
                     </div>
 
                     <div className="form-group">
                       <label>New Password</label>
-                      <input type="password" placeholder="Enter new password" className="modern-input" />
+                      <input
+                        type="password"
+                        placeholder="Enter new password"
+                        className="modern-input"
+                      />
                     </div>
 
                     <div className="form-group">
                       <label>Confirm Password</label>
-                      <input type="password" placeholder="Confirm new password" className="modern-input" />
+                      <input
+                        type="password"
+                        placeholder="Confirm new password"
+                        className="modern-input"
+                      />
                     </div>
 
-                    <button className="action-btn primary">Update Password</button>
+                    <button className="action-btn primary">
+                      Update Password
+                    </button>
                   </div>
                 </div>
               </div>
@@ -978,7 +1095,9 @@ const Profile = () => {
                     <div className="feature-content">
                       <h4>Secure Your Account</h4>
                       <p>Add an extra layer of security with 2FA</p>
-                      <button className="action-btn secondary">Enable 2FA</button>
+                      <button className="action-btn secondary">
+                        Enable 2FA
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -993,7 +1112,9 @@ const Profile = () => {
                     <div className="danger-item">
                       <div className="danger-info">
                         <h4>Sign Out All Devices</h4>
-                        <p>This will sign you out of all devices except this one</p>
+                        <p>
+                          This will sign you out of all devices except this one
+                        </p>
                       </div>
                       <button className="action-btn danger" onClick={logout}>
                         Sign Out All
@@ -1005,7 +1126,9 @@ const Profile = () => {
                         <h4>Delete Account</h4>
                         <p>Permanently delete your account and all data</p>
                       </div>
-                      <button className="action-btn danger">Delete Account</button>
+                      <button className="action-btn danger">
+                        Delete Account
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1015,7 +1138,7 @@ const Profile = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Profile
+export default Profile;

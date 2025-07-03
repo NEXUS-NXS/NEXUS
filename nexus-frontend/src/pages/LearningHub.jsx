@@ -1,8 +1,17 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Search, Filter, Star, Users, Clock, BookOpen, Play, Award, TrendingUp } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Star,
+  Users,
+  Clock,
+  BookOpen,
+  Play,
+  Award,
+  TrendingUp,
+} from "lucide-react";
 import "./LearningHub.css";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
@@ -58,37 +67,42 @@ const LearningHub = () => {
         }
 
         // Fetch enrolled courses
-        const enrolledResponse = await axios.get("https://127.0.0.1:8000/courses/api/enrolled-courses/", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        });
+        const enrolledResponse = await axios.get(
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrolled-courses/",
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          }
+        );
 
-        const enrichedCourses = (enrolledResponse.data.results || []).map((course) => {
-          console.log(`Enrolled Course ${course.id} Data:`, {
-            progress: course.progress,
-            completed_lessons: course.completed_lessons,
-            total_lessons: course.total_lessons,
-            next_lesson_id: course.next_lesson_id,
-            next_lesson: course.next_lesson,
-          });
-          return {
-            ...course,
-            progress: parseFloat(course.progress || 0).toFixed(1),
-            completed_lessons: course.completed_lessons || 0,
-            total_lessons: course.total_lessons || 0,
-            next_lesson_id: course.next_lesson_id || null,
-            next_lesson: course.next_lesson || "First Lesson",
-          };
-        });
+        const enrichedCourses = (enrolledResponse.data.results || []).map(
+          (course) => {
+            console.log(`Enrolled Course ${course.id} Data:`, {
+              progress: course.progress,
+              completed_lessons: course.completed_lessons,
+              total_lessons: course.total_lessons,
+              next_lesson_id: course.next_lesson_id,
+              next_lesson: course.next_lesson,
+            });
+            return {
+              ...course,
+              progress: parseFloat(course.progress || 0).toFixed(1),
+              completed_lessons: course.completed_lessons || 0,
+              total_lessons: course.total_lessons || 0,
+              next_lesson_id: course.next_lesson_id || null,
+              next_lesson: course.next_lesson || "First Lesson",
+            };
+          }
+        );
 
         setEnrolledCourses(enrichedCourses);
 
         // Fetch available courses
         const availableResponse = await axios.get(
-          "https://127.0.0.1:8000/courses/api/courses/?status=published",
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/?status=published",
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -128,10 +142,15 @@ const LearningHub = () => {
   useEffect(() => {
     const fetchCoverImages = async () => {
       const allCourses = [...enrolledCourses, ...availableCourses];
-      const uniqueCourseIds = [...new Set(allCourses.map(course => course.id))];
+      const uniqueCourseIds = [
+        ...new Set(allCourses.map((course) => course.id)),
+      ];
       if (uniqueCourseIds.length === 0) return;
 
-      console.log("Fetching cover images for course IDs:", uniqueCourseIds.join(","));
+      console.log(
+        "Fetching cover images for course IDs:",
+        uniqueCourseIds.join(",")
+      );
 
       try {
         const accessToken = getAccessToken();
@@ -139,7 +158,7 @@ const LearningHub = () => {
         const coverPicturePromises = uniqueCourseIds.map(async (courseId) => {
           try {
             const coverResponse = await axios.get(
-              `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+              `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/get-cover/`,
               {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
@@ -150,8 +169,14 @@ const LearningHub = () => {
                 timeout: 5000,
               }
             );
-            console.log(`Cover picture for course ${courseId}:`, coverResponse.data.cover_picture);
-            return { id: courseId, cover_picture: coverResponse.data.cover_picture };
+            console.log(
+              `Cover picture for course ${courseId}:`,
+              coverResponse.data.cover_picture
+            );
+            return {
+              id: courseId,
+              cover_picture: coverResponse.data.cover_picture,
+            };
           } catch (err) {
             console.error(`Failed to fetch cover for course ${courseId}:`, {
               status: err.response?.status,
@@ -163,10 +188,13 @@ const LearningHub = () => {
         });
 
         const coverPicturesData = await Promise.all(coverPicturePromises);
-        const coverPicturesMap = coverPicturesData.reduce((acc, { id, cover_picture }) => {
-          acc[id] = cover_picture;
-          return acc;
-        }, {});
+        const coverPicturesMap = coverPicturesData.reduce(
+          (acc, { id, cover_picture }) => {
+            acc[id] = cover_picture;
+            return acc;
+          },
+          {}
+        );
         console.log("Cover pictures map:", coverPicturesMap);
         setCoverPictures(coverPicturesMap);
       } catch (err) {
@@ -182,15 +210,20 @@ const LearningHub = () => {
   }, [enrolledCourses, availableCourses, fetchCsrfToken]);
 
   const filteredCourses = useMemo(() => {
-    const coursesToFilter = activeTab === "enrolled" ? enrolledCourses : availableCourses;
+    const coursesToFilter =
+      activeTab === "enrolled" ? enrolledCourses : availableCourses;
     let filtered = [...coursesToFilter];
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((course) => course.category === selectedCategory);
+      filtered = filtered.filter(
+        (course) => course.category === selectedCategory
+      );
     }
 
     if (selectedLevel !== "all") {
-      filtered = filtered.filter((course) => course.difficulty === selectedLevel);
+      filtered = filtered.filter(
+        (course) => course.difficulty === selectedLevel
+      );
     }
 
     if (searchQuery) {
@@ -204,14 +237,21 @@ const LearningHub = () => {
     }
 
     return filtered;
-  }, [activeTab, selectedCategory, selectedLevel, searchQuery, enrolledCourses, availableCourses]);
+  }, [
+    activeTab,
+    selectedCategory,
+    selectedLevel,
+    searchQuery,
+    enrolledCourses,
+    availableCourses,
+  ]);
 
   const handleEnroll = async (courseId) => {
     try {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       await axios.post(
-        "https://127.0.0.1:8000/courses/api/enrollments/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrollments/",
         { course: courseId },
         {
           headers: {
@@ -223,15 +263,20 @@ const LearningHub = () => {
         }
       );
       // Refresh enrolled courses
-      const enrolledResponse = await axios.get("https://127.0.0.1:8000/courses/api/enrolled-courses/", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "X-CSRFToken": csrfToken,
-        },
-        withCredentials: true,
-      });
+      const enrolledResponse = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/enrolled-courses/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
 
-      const newCourse = enrolledResponse.data.results.find((c) => c.id === courseId);
+      const newCourse = enrolledResponse.data.results.find(
+        (c) => c.id === courseId
+      );
       if (newCourse) {
         const updatedCourse = {
           ...newCourse,
@@ -248,13 +293,16 @@ const LearningHub = () => {
           next_lesson_id: updatedCourse.next_lesson_id,
           next_lesson: updatedCourse.next_lesson,
         });
-        setEnrolledCourses([...enrolledCourses.filter((c) => c.id !== courseId), updatedCourse]);
+        setEnrolledCourses([
+          ...enrolledCourses.filter((c) => c.id !== courseId),
+          updatedCourse,
+        ]);
       }
 
       // Update cover picture for the new enrolled course
       try {
         const coverResponse = await axios.get(
-          `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/get-cover/`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -265,17 +313,23 @@ const LearningHub = () => {
             timeout: 5000,
           }
         );
-        console.log(`Cover picture for enrolled course ${courseId}:`, coverResponse.data.cover_picture);
+        console.log(
+          `Cover picture for enrolled course ${courseId}:`,
+          coverResponse.data.cover_picture
+        );
         setCoverPictures((prev) => ({
           ...prev,
           [courseId]: coverResponse.data.cover_picture,
         }));
       } catch (err) {
-        console.error(`Failed to fetch cover for enrolled course ${courseId}:`, {
-          status: err.response?.status,
-          data: err.response?.data,
-          message: err.message,
-        });
+        console.error(
+          `Failed to fetch cover for enrolled course ${courseId}:`,
+          {
+            status: err.response?.status,
+            data: err.response?.data,
+            message: err.message,
+          }
+        );
       }
 
       alert("Successfully enrolled!");
@@ -296,7 +350,10 @@ const LearningHub = () => {
   };
 
   const handleContinueLearning = (course) => {
-    console.log("Continuing to lesson:", { courseId: course.id, nextLessonId: course.next_lesson_id });
+    console.log("Continuing to lesson:", {
+      courseId: course.id,
+      nextLessonId: course.next_lesson_id,
+    });
     navigate(`/course/${course.id}/lesson/${course.next_lesson_id || "first"}`);
   };
 
@@ -309,7 +366,10 @@ const LearningHub = () => {
           className="thumbnail-image"
           onError={(e) => {
             if (!loggedErrors.current.has(`enrolled-${course.id}`)) {
-              console.log(`Image load failed for enrolled course ${course.id}:`, coverPictures[course.id]);
+              console.log(
+                `Image load failed for enrolled course ${course.id}:`,
+                coverPictures[course.id]
+              );
               loggedErrors.current.add(`enrolled-${course.id}`);
               e.target.src = "/placeholder.svg";
             }
@@ -334,17 +394,24 @@ const LearningHub = () => {
         </div>
         <div className="progress-info">
           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${course.progress}%` }}></div>
+            <div
+              className="progress-fill"
+              style={{ width: `${course.progress}%` }}
+            ></div>
           </div>
           <span className="progress-text">
-            {course.completed_lessons} of {course.total_lessons} lessons completed
+            {course.completed_lessons} of {course.total_lessons} lessons
+            completed
           </span>
         </div>
         <div className="next-lesson">
           <Play size={16} />
           <span>Next: {course.next_lesson}</span>
         </div>
-        <button className="continue-btn" onClick={() => handleContinueLearning(course)}>
+        <button
+          className="continue-btn"
+          onClick={() => handleContinueLearning(course)}
+        >
           Continue Learning
         </button>
       </div>
@@ -361,7 +428,10 @@ const LearningHub = () => {
           className="thumbnail-image"
           onError={(e) => {
             if (!loggedErrors.current.has(`available-${course.id}`)) {
-              console.log(`Image load failed for available course ${course.id}:`, coverPictures[course.id]);
+              console.log(
+                `Image load failed for available course ${course.id}:`,
+                coverPictures[course.id]
+              );
               loggedErrors.current.add(`available-${course.id}`);
               e.target.src = "/placeholder.svg";
             }
@@ -401,11 +471,16 @@ const LearningHub = () => {
         <div className="course-footer">
           <div className="course-info">
             <span className="lessons">{course.total_lessons} lessons</span>
-            <span className={`level level-${course.difficulty}`}>{course.difficulty}</span>
+            <span className={`level level-${course.difficulty}`}>
+              {course.difficulty}
+            </span>
           </div>
           <div className="course-actions">
             <span className="price">{course.price}</span>
-            <button className="enroll-btn" onClick={() => handleEnroll(course.id)}>
+            <button
+              className="enroll-btn"
+              onClick={() => handleEnroll(course.id)}
+            >
               Enroll Now
             </button>
           </div>
@@ -418,7 +493,9 @@ const LearningHub = () => {
     <div className="learning-hub">
       <div className="hub-header">
         <h1>Learning Hub</h1>
-        <p>Advance your actuarial career with cutting-edge technology courses</p>
+        <p>
+          Advance your actuarial career with cutting-edge technology courses
+        </p>
         {error && <p className="error">{error}</p>}
         {loading && <p>Loading courses...</p>}
         <div className="hub-tabs">
@@ -453,7 +530,10 @@ const LearningHub = () => {
         <div className="filter-group">
           <div className="filter-item">
             <Filter size={18} />
-            <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
               {courseCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -464,7 +544,10 @@ const LearningHub = () => {
 
           <div className="filter-item">
             <Award size={18} />
-            <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+            >
               {courseLevels.map((level) => (
                 <option key={level.id} value={level.id}>
                   {level.name}
@@ -483,7 +566,10 @@ const LearningHub = () => {
             ) : (
               <div className="no-courses">
                 <p>No enrolled courses found. Start learning today!</p>
-                <button onClick={() => setActiveTab("available")} className="browse-btn">
+                <button
+                  onClick={() => setActiveTab("available")}
+                  className="browse-btn"
+                >
                   Browse Available Courses
                 </button>
               </div>

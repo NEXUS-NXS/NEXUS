@@ -28,9 +28,12 @@ export const UserProvider = ({ children }) => {
     for (let i = 0; i < retries; i++) {
       try {
         console.log(`Fetching CSRF token (attempt ${i + 1})...`);
-        await axios.get("https://127.0.0.1:8000/auth/csrf/", {
-          withCredentials: true,
-        });
+        await axios.get(
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/csrf/",
+          {
+            withCredentials: true,
+          }
+        );
 
         console.log("Document cookie:", document.cookie);
         const csrfToken = getCookie("csrftoken");
@@ -58,12 +61,15 @@ export const UserProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       console.log("Checking authentication...");
-      await axios.get("https://127.0.0.1:8000/auth/protected/", {
-        headers: {
-          Authorization: `Bearer ${getAccessToken()}`,
-        },
-        withCredentials: true,
-      });
+      await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/protected/",
+        {
+          headers: {
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          withCredentials: true,
+        }
+      );
       console.log("Authentication check successful");
       setIsAuthenticated(true);
     } catch (error) {
@@ -83,13 +89,17 @@ export const UserProvider = ({ children }) => {
     try {
       console.log("Fetching chat user ID...");
       const accessToken = getAccessToken();
-      if (!accessToken) throw new Error("No access token for chat user ID fetch");
-      const response = await axios.get("https://127.0.0.1:8000/chats/api/me/", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        withCredentials: true,
-      });
+      if (!accessToken)
+        throw new Error("No access token for chat user ID fetch");
+      const response = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/api/me/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        }
+      );
       const chatUserId = response.data.id;
       console.log("Fetched chat user ID:", chatUserId);
 
@@ -115,7 +125,7 @@ export const UserProvider = ({ children }) => {
 
       console.log("Logging in with email:", email);
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/token/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/token/",
         { email, password },
         {
           headers: { "X-CSRFToken": csrfToken },
@@ -132,7 +142,7 @@ export const UserProvider = ({ children }) => {
       try {
         console.log("Fetching profile...");
         const profileResponse = await axios.get(
-          "https://127.0.0.1:8000/auth/api/profile/me/", // Use /profile/ for consistency with previous logs
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/", // Use /profile/ for consistency with previous logs
           {
             headers: {
               Authorization: `Bearer ${access}`,
@@ -142,12 +152,18 @@ export const UserProvider = ({ children }) => {
         );
         console.log("Profile response:", profileResponse.data);
         console.log("Results array:", profileResponse.data.results);
-        if (profileResponse.data.results && profileResponse.data.results.length > 0) {
+        if (
+          profileResponse.data.results &&
+          profileResponse.data.results.length > 0
+        ) {
           profileId = profileResponse.data.results[0].id;
           profilePhoto = profileResponse.data.results[0].profile_photo || null;
           console.log("Extracted profileId:", profileId);
         } else {
-          console.warn("No profile data found in response:", profileResponse.data);
+          console.warn(
+            "No profile data found in response:",
+            profileResponse.data
+          );
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -193,14 +209,21 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const register = async (fullName, email, password, confirmPassword, gender, education) => {
+  const register = async (
+    fullName,
+    email,
+    password,
+    confirmPassword,
+    gender,
+    education
+  ) => {
     try {
       const csrfToken = await fetchCsrfToken();
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
 
       console.log("Registering with email:", email);
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/register/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/register/",
         {
           full_name: fullName,
           email,
@@ -217,14 +240,15 @@ export const UserProvider = ({ children }) => {
       console.log("Register response:", response.data);
 
       const { user: userData, access } = response.data;
-      if (!userData || !access) throw new Error("Incomplete registration response");
+      if (!userData || !access)
+        throw new Error("Incomplete registration response");
 
       let profileId = null;
       let profilePhoto = null;
       try {
         console.log("Fetching profile after registration...");
         const profileResponse = await axios.get(
-          "https://127.0.0.1:8000/auth/api/profile/me/", // Use /profile/ for consistency
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/api/profile/me/", // Use /profile/ for consistency
           {
             headers: {
               Authorization: `Bearer ${access}`,
@@ -234,12 +258,18 @@ export const UserProvider = ({ children }) => {
         );
         console.log("Profile response:", profileResponse.data);
         console.log("Results array:", profileResponse.data.results);
-        if (profileResponse.data.results && profileResponse.data.results.length > 0) {
+        if (
+          profileResponse.data.results &&
+          profileResponse.data.results.length > 0
+        ) {
           profileId = profileResponse.data.results[0].id;
           profilePhoto = profileResponse.data.results[0].profile_photo || null;
           console.log("Extracted profileId:", profileId);
         } else {
-          console.warn("No profile data found in response:", profileResponse.data);
+          console.warn(
+            "No profile data found in response:",
+            profileResponse.data
+          );
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -291,7 +321,7 @@ export const UserProvider = ({ children }) => {
       if (csrfToken) {
         console.log("Logging out with CSRF token:", csrfToken);
         await axios.post(
-          "https://127.0.0.1:8000/auth/logout/",
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/logout/",
           {},
           {
             headers: { "X-CSRFToken": csrfToken },
@@ -320,7 +350,7 @@ export const UserProvider = ({ children }) => {
       if (!csrfToken) throw new Error("Failed to fetch CSRF token");
       console.log("Refreshing token with CSRF:", csrfToken);
       const response = await axios.post(
-        "https://127.0.0.1:8000/auth/token/refresh/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/auth/token/refresh/",
         {},
         {
           headers: { "X-CSRFToken": csrfToken },

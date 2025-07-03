@@ -64,17 +64,20 @@ const CourseLibrary = () => {
       setLoading(true);
       const accessToken = getAccessToken();
       console.log("Fetching courses with token:", accessToken);
-      const response = await axios.get("https://127.0.0.1:8000/courses/api/courses/", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-        params: {
-          instructor_courses: true,
-        },
-        timeout: 10000,
-      });
+      const response = await axios.get(
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+          params: {
+            instructor_courses: true,
+          },
+          timeout: 10000,
+        }
+      );
       console.log("Courses response:", response.data);
       const coursesData = response.data.results || response.data;
       setCourses(coursesData);
@@ -83,7 +86,7 @@ const CourseLibrary = () => {
       const coverPicturePromises = coursesData.map(async (course) => {
         try {
           const coverResponse = await axios.get(
-            `https://127.0.0.1:8000/courses/api/courses/${course.id}/get-cover/`,
+            `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${course.id}/get-cover/`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -93,25 +96,40 @@ const CourseLibrary = () => {
               timeout: 5000,
             }
           );
-          console.log(`Cover picture for course ${course.id}:`, coverResponse.data.cover_picture);
-          return { id: course.id, cover_picture: coverResponse.data.cover_picture };
+          console.log(
+            `Cover picture for course ${course.id}:`,
+            coverResponse.data.cover_picture
+          );
+          return {
+            id: course.id,
+            cover_picture: coverResponse.data.cover_picture,
+          };
         } catch (err) {
-          console.error(`Failed to fetch cover for course ${course.id}:`, err.response?.data || err.message);
+          console.error(
+            `Failed to fetch cover for course ${course.id}:`,
+            err.response?.data || err.message
+          );
           return { id: course.id, cover_picture: null };
         }
       });
 
       const coverPicturesData = await Promise.all(coverPicturePromises);
-      const coverPicturesMap = coverPicturesData.reduce((acc, { id, cover_picture }) => {
-        acc[id] = cover_picture;
-        return acc;
-      }, {});
+      const coverPicturesMap = coverPicturesData.reduce(
+        (acc, { id, cover_picture }) => {
+          acc[id] = cover_picture;
+          return acc;
+        },
+        {}
+      );
       console.log("Cover pictures map:", coverPicturesMap);
       setCoverPictures(coverPicturesMap);
 
       setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch courses:", err.response?.data || err.message);
+      console.error(
+        "Failed to fetch courses:",
+        err.response?.data || err.message
+      );
       if (err.code === "ECONNABORTED") {
         setError("Request timed out. Please try again.");
       } else if (err.response?.status === 401) {
@@ -123,7 +141,10 @@ const CourseLibrary = () => {
           navigate("/login");
         }
       } else {
-        setError("Failed to fetch your courses: " + (err.response?.data?.detail || err.message));
+        setError(
+          "Failed to fetch your courses: " +
+            (err.response?.data?.detail || err.message)
+        );
       }
       setLoading(false);
     }
@@ -145,9 +166,14 @@ const CourseLibrary = () => {
         const matchesSearch =
           course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          course.tags.some((tag) => tag.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        const matchesCategory = selectedCategory === "all" || course.category === selectedCategory;
-        const matchesDifficulty = selectedDifficulty === "all" || course.difficulty === selectedDifficulty;
+          course.tags.some((tag) =>
+            tag.name.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        const matchesCategory =
+          selectedCategory === "all" || course.category === selectedCategory;
+        const matchesDifficulty =
+          selectedDifficulty === "all" ||
+          course.difficulty === selectedDifficulty;
 
         return matchesSearch && matchesCategory && matchesDifficulty;
       })
@@ -197,7 +223,9 @@ const CourseLibrary = () => {
         <div className="header-content">
           <div className="header-info">
             <h1 className="library-title">My Courses</h1>
-            <p className="library-subtitle">Manage and organize your created courses</p>
+            <p className="library-subtitle">
+              Manage and organize your created courses
+            </p>
           </div>
           <div className="header-stats">
             <div className="stat-card">
@@ -214,7 +242,12 @@ const CourseLibrary = () => {
                 <Users size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-number">{courses.reduce((sum, course) => sum + course.enrolled_students, 0)}</span>
+                <span className="stat-number">
+                  {courses.reduce(
+                    (sum, course) => sum + course.enrolled_students,
+                    0
+                  )}
+                </span>
                 <span className="stat-label">Total Enrollments</span>
               </div>
             </div>
@@ -223,7 +256,9 @@ const CourseLibrary = () => {
                 <TrendingUp size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-number">{courses.filter((c) => c.status === "published").length}</span>
+                <span className="stat-number">
+                  {courses.filter((c) => c.status === "published").length}
+                </span>
                 <span className="stat-label">Published</span>
               </div>
             </div>
@@ -279,7 +314,11 @@ const CourseLibrary = () => {
 
           <div className="filter-group">
             <label className="filter-label">Sort by</label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="filter-select">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="filter-select"
+            >
               {sortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -289,10 +328,16 @@ const CourseLibrary = () => {
           </div>
 
           <div className="view-toggle">
-            <button className={`view-btn ${viewMode === "grid" ? "active" : ""}`} onClick={() => setViewMode("grid")}>
+            <button
+              className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
+              onClick={() => setViewMode("grid")}
+            >
               <Grid size={18} />
             </button>
-            <button className={`view-btn ${viewMode === "list" ? "active" : ""}`} onClick={() => setViewMode("list")}>
+            <button
+              className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+              onClick={() => setViewMode("list")}
+            >
               <List size={18} />
             </button>
           </div>
@@ -313,8 +358,14 @@ const CourseLibrary = () => {
           <div className="no-courses">
             <BookOpen size={48} className="no-courses-icon" />
             <h3>No courses found</h3>
-            <p>You haven't created any courses yet. Start by creating a new course!</p>
-            <button className="btn-primary" onClick={() => navigate("/create-course")}>
+            <p>
+              You haven't created any courses yet. Start by creating a new
+              course!
+            </p>
+            <button
+              className="btn-primary"
+              onClick={() => navigate("/create-course")}
+            >
               Create New Course
             </button>
           </div>
@@ -327,19 +378,30 @@ const CourseLibrary = () => {
                   alt={course.title}
                   className="thumbnail-image"
                   onError={(e) => {
-                    console.log(`Image load failed for course ${course.id}:`, coverPictures[course.id]);
+                    console.log(
+                      `Image load failed for course ${course.id}:`,
+                      coverPictures[course.id]
+                    );
                     e.target.src = "/placeholder.svg";
                   }}
                 />
                 <div className="course-status">
-                  <span className={`status-badge ${course.status}`}>{course.status}</span>
+                  <span className={`status-badge ${course.status}`}>
+                    {course.status}
+                  </span>
                 </div>
                 <div className="course-overlay">
-                  <button className="overlay-btn primary" onClick={() => handleCourseClick(course.id)}>
+                  <button
+                    className="overlay-btn primary"
+                    onClick={() => handleCourseClick(course.id)}
+                  >
                     <Edit size={16} />
                     Manage
                   </button>
-                  <button className="overlay-btn secondary" onClick={() => handlePreviewCourse(course.id)}>
+                  <button
+                    className="overlay-btn secondary"
+                    onClick={() => handlePreviewCourse(course.id)}
+                  >
                     <Eye size={16} />
                     Preview
                   </button>
@@ -363,7 +425,11 @@ const CourseLibrary = () => {
                     <div className="meta-item">
                       <span
                         className="difficulty-badge"
-                        style={{ backgroundColor: getDifficultyColor(course.difficulty) }}
+                        style={{
+                          backgroundColor: getDifficultyColor(
+                            course.difficulty
+                          ),
+                        }}
                       >
                         {course.difficulty}
                       </span>
@@ -408,11 +474,17 @@ const CourseLibrary = () => {
                   </div>
 
                   <div className="course-actions">
-                    <button className="action-btn secondary" onClick={() => handlePreviewCourse(course.id)}>
+                    <button
+                      className="action-btn secondary"
+                      onClick={() => handlePreviewCourse(course.id)}
+                    >
                       <Play size={14} />
                       Preview
                     </button>
-                    <button className="action-btn primary" onClick={() => handleCourseClick(course.id)}>
+                    <button
+                      className="action-btn primary"
+                      onClick={() => handleCourseClick(course.id)}
+                    >
                       <Edit size={14} />
                       Manage
                     </button>

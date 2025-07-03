@@ -24,7 +24,13 @@ import axios from "axios";
 import { useUser } from "../../context/UserContext";
 import "./GroupSettingsModal.css";
 
-const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser }) => {
+const GroupSettingsModal = ({
+  group,
+  isOpen,
+  onClose,
+  onUpdateGroup,
+  currentUser,
+}) => {
   const { fetchCsrfToken, isAuthenticated } = useUser();
   const [activeTab, setActiveTab] = useState("requests");
   const [groupData, setGroupData] = useState({
@@ -32,7 +38,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     description: group?.description || "",
     isPrivate: group?.status === "PRIVATE" || false,
     maxMembers: group?.max_members || 50,
-    tags: group?.tags?.map(tag => ({ id: tag.id, name: tag.name })) || [],
+    tags: group?.tags?.map((tag) => ({ id: tag.id, name: tag.name })) || [],
     avatar: group?.icon || null,
     category_id: group?.category?.id || 1,
     exam_focus_id: group?.exam_focus?.id || 1,
@@ -72,19 +78,24 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       setError(null);
       try {
         const accessToken = getAccessToken();
-        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+        const headers = accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : {};
 
         // Fetch pending join requests
         const requestsRes = await axios.get(
-          `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
-          { 
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/pending-requests/`,
+          {
             headers,
-            withCredentials: true 
+            withCredentials: true,
           }
         );
-        console.log("Join requests response:", JSON.stringify(requestsRes.data, null, 2));
+        console.log(
+          "Join requests response:",
+          JSON.stringify(requestsRes.data, null, 2)
+        );
         setJoinRequests(
-          requestsRes.data.map(req => ({
+          requestsRes.data.map((req) => ({
             id: req.id,
             user: {
               id: req.user.id,
@@ -99,28 +110,39 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
         // Fetch group members
         const membersRes = await axios.get(
-          `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
-          { 
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/`,
+          {
             headers,
-            withCredentials: true 
+            withCredentials: true,
           }
         );
-        console.log("Members response:", JSON.stringify(membersRes.data, null, 2));
+        console.log(
+          "Members response:",
+          JSON.stringify(membersRes.data, null, 2)
+        );
         setMembers(
-          membersRes.data.map(m => ({
+          membersRes.data.map((m) => ({
             id: m.user.id,
             name: m.user.chat_username || m.user.email || "Unknown User",
             email: m.user.email || "No email provided",
             role: m.role.toLowerCase(),
             avatar: m.user.avatar || "/placeholder.svg",
             status: m.user.is_online ? "online" : "offline",
-            joinDate: m.joined_at ? formatDate(m.joined_at) : new Date().toISOString(),
+            joinDate: m.joined_at
+              ? formatDate(m.joined_at)
+              : new Date().toISOString(),
           }))
         );
       } catch (err) {
-        const errorMsg = err.response?.data?.detail || "Failed to load group data";
+        const errorMsg =
+          err.response?.data?.detail || "Failed to load group data";
         setError(errorMsg);
-        console.error("Error fetching data:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+        console.error(
+          "Error fetching data:",
+          err,
+          "Response:",
+          JSON.stringify(err.response?.data, null, 2)
+        );
       } finally {
         setIsLoading(false);
       }
@@ -149,7 +171,7 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       } catch (err) {
         console.error(`CSRF token fetch attempt ${i + 1} failed:`, err);
         if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
@@ -168,30 +190,36 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       }
       const csrfToken = await getCsrfToken();
       const headers = {
-        "Authorization": `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "X-CSRFToken": csrfToken,
         "Content-Type": "application/json",
       };
-      console.log(`Sending join request action: ${action} for ID ${requestId}`, { headers });
+      console.log(
+        `Sending join request action: ${action} for ID ${requestId}`,
+        { headers }
+      );
       const response = await axios.post(
-        `https://127.0.0.1:8000/chats/join-requests/${requestId}/manage/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/join-requests/${requestId}/manage/`,
         { action },
         {
           headers,
           withCredentials: true,
         }
       );
-      console.log(`Join request ${action} response:`, JSON.stringify(response.data, null, 2));
+      console.log(
+        `Join request ${action} response:`,
+        JSON.stringify(response.data, null, 2)
+      );
       // Refetch both join requests and members
       const requestsRes = await axios.get(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/pending-requests/`,
-        { 
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/pending-requests/`,
+        {
           headers: { Authorization: `Bearer ${accessToken}` },
-          withCredentials: true 
+          withCredentials: true,
         }
       );
       setJoinRequests(
-        requestsRes.data.map(req => ({
+        requestsRes.data.map((req) => ({
           id: req.id,
           user: {
             id: req.user.id,
@@ -204,38 +232,53 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         }))
       );
       const membersRes = await axios.get(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/members/`,
-        { 
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/`,
+        {
           headers: { Authorization: `Bearer ${accessToken}` },
-          withCredentials: true 
+          withCredentials: true,
         }
       );
       setMembers(
-        membersRes.data.map(m => ({
+        membersRes.data.map((m) => ({
           id: m.user.id,
           name: m.user.chat_username || m.user.email || "Unknown User",
           email: m.user.email || "No email provided",
           role: m.role.toLowerCase(),
           avatar: m.user.avatar || "/placeholder.svg",
           status: m.user.is_online ? "online" : "offline",
-          joinDate: m.joined_at ? formatDate(m.joined_at) : new Date().toISOString(),
+          joinDate: m.joined_at
+            ? formatDate(m.joined_at)
+            : new Date().toISOString(),
         }))
       );
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || err.response?.data?.error || `Failed to ${action.toLowerCase()} join request`;
+      const errorMsg =
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        `Failed to ${action.toLowerCase()} join request`;
       setError(errorMsg);
-      console.error(`Error managing join request ${requestId}:`, err, "Response:", JSON.stringify(err.response?.data, null, 2));
+      console.error(
+        `Error managing join request ${requestId}:`,
+        err,
+        "Response:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleApproveRequest = (requestId) => handleManageRequest(requestId, "APPROVE");
-  const handleRejectRequest = (requestId) => handleManageRequest(requestId, "REJECT");
+  const handleApproveRequest = (requestId) =>
+    handleManageRequest(requestId, "APPROVE");
+  const handleRejectRequest = (requestId) =>
+    handleManageRequest(requestId, "REJECT");
 
   // Handle member management (promote, demote, remove)
   const handleManageMember = async (memberId, action) => {
-    if (action === "REMOVE" && !window.confirm("Are you sure you want to remove this member?")) {
+    if (
+      action === "REMOVE" &&
+      !window.confirm("Are you sure you want to remove this member?")
+    ) {
       return;
     }
     try {
@@ -247,13 +290,15 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       }
       const csrfToken = await getCsrfToken();
       const headers = {
-        "Authorization": `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "X-CSRFToken": csrfToken,
         "Content-Type": "application/json",
       };
-      console.log(`Managing member ${memberId} with action ${action}`, { headers });
+      console.log(`Managing member ${memberId} with action ${action}`, {
+        headers,
+      });
       await axios.post(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/members/${memberId}/manage/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/members/${memberId}/manage/`,
         { action },
         {
           headers,
@@ -262,24 +307,34 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       );
       console.log(`Member ${action} successful for ID ${memberId}`);
       if (action === "REMOVE") {
-        setMembers(prev => prev.filter(member => member.id !== memberId));
+        setMembers((prev) => prev.filter((member) => member.id !== memberId));
       } else {
-        setMembers(prev =>
-          prev.map(member =>
-            member.id === memberId ? { ...member, role: action === "PROMOTE" ? "admin" : "member" } : member
+        setMembers((prev) =>
+          prev.map((member) =>
+            member.id === memberId
+              ? { ...member, role: action === "PROMOTE" ? "admin" : "member" }
+              : member
           )
         );
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || `Failed to ${action.toLowerCase()} member`;
+      const errorMsg =
+        err.response?.data?.detail ||
+        `Failed to ${action.toLowerCase()} member`;
       setError(errorMsg);
-      console.error(`Error managing member ${memberId}:`, err, "Response:", JSON.stringify(err.response?.data, null, 2));
+      console.error(
+        `Error managing member ${memberId}:`,
+        err,
+        "Response:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRemoveMember = (memberId) => handleManageMember(memberId, "REMOVE");
+  const handleRemoveMember = (memberId) =>
+    handleManageMember(memberId, "REMOVE");
   const handleChangeRole = (memberId, newRole) => {
     const action = newRole === "admin" ? "PROMOTE" : "DEMOTE";
     handleManageMember(memberId, action);
@@ -302,7 +357,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       formData.append("exam_focus_id", groupData.exam_focus_id);
       formData.append("max_members", groupData.maxMembers);
       formData.append("status", groupData.isPrivate ? "PRIVATE" : "PUBLIC");
-      formData.append("tag_ids", JSON.stringify(groupData.tags.map(tag => tag.id).filter(id => id)));
+      formData.append(
+        "tag_ids",
+        JSON.stringify(groupData.tags.map((tag) => tag.id).filter((id) => id))
+      );
 
       if (fileInputRef.current?.files[0]) {
         formData.append("icon", fileInputRef.current.files[0]);
@@ -314,20 +372,23 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
       }
 
       const headers = {
-        "Authorization": `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "X-CSRFToken": csrfToken,
         "Content-Type": "multipart/form-data",
       };
 
       const response = await axios.put(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/`,
         formData,
         {
           headers,
           withCredentials: true,
         }
       );
-      console.log("Group update response:", JSON.stringify(response.data, null, 2));
+      console.log(
+        "Group update response:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       onUpdateGroup({
         ...groupData,
@@ -341,7 +402,12 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     } catch (err) {
       const errorMsg = err.response?.data?.detail || "Failed to update group";
       setError(errorMsg);
-      console.error("Error updating group:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+      console.error(
+        "Error updating group:",
+        err,
+        "Response:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
     } finally {
       setIsLoading(false);
     }
@@ -349,7 +415,11 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
   // Handle group deletion
   const handleDeleteGroup = async () => {
-    if (!window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this group? This action cannot be undone."
+      )
+    ) {
       return;
     }
     try {
@@ -360,12 +430,12 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         throw new Error("No access token available");
       }
       const csrfToken = await getCsrfToken();
-      const headers = { 
-        "Authorization": `Bearer ${accessToken}`,
-        "X-CSRFToken": csrfToken 
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        "X-CSRFToken": csrfToken,
       };
       await axios.delete(
-        `https://127.0.0.1:8000/chats/groups/${group.id}/`,
+        `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/groups/${group.id}/`,
         {
           headers,
           withCredentials: true,
@@ -377,7 +447,12 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
     } catch (err) {
       const errorMsg = err.response?.data?.detail || "Failed to delete group";
       setError(errorMsg);
-      console.error("Error deleting group:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+      console.error(
+        "Error deleting group:",
+        err,
+        "Response:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
     } finally {
       setIsLoading(false);
     }
@@ -397,7 +472,12 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
   // Handle tags
   const handleAddTag = async () => {
-    if (newTag.trim() && !groupData.tags.some(tag => tag.name.toLowerCase() === newTag.trim().toLowerCase())) {
+    if (
+      newTag.trim() &&
+      !groupData.tags.some(
+        (tag) => tag.name.toLowerCase() === newTag.trim().toLowerCase()
+      )
+    ) {
       try {
         setIsLoading(true);
         setError(null);
@@ -406,12 +486,12 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
           throw new Error("No access token available");
         }
         const csrfToken = await getCsrfToken();
-        const headers = { 
-          "Authorization": `Bearer ${accessToken}`,
-          "X-CSRFToken": csrfToken 
+        const headers = {
+          Authorization: `Bearer ${accessToken}`,
+          "X-CSRFToken": csrfToken,
         };
         const response = await axios.post(
-          `https://127.0.0.1:8000/chats/tags/`,
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/chats/tags/`,
           { name: newTag.trim() },
           {
             headers,
@@ -421,12 +501,20 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
         console.log("Tag created:", JSON.stringify(response.data, null, 2));
         setGroupData({
           ...groupData,
-          tags: [...groupData.tags, { id: response.data.id, name: response.data.name }],
+          tags: [
+            ...groupData.tags,
+            { id: response.data.id, name: response.data.name },
+          ],
         });
         setNewTag("");
       } catch (err) {
         setError(err.response?.data?.detail || "Failed to add tag");
-        console.error("Error adding tag:", err, "Response:", JSON.stringify(err.response?.data, null, 2));
+        console.error(
+          "Error adding tag:",
+          err,
+          "Response:",
+          JSON.stringify(err.response?.data, null, 2)
+        );
       } finally {
         setIsLoading(false);
       }
@@ -491,12 +579,16 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
         <div className="set-modal-tabs">
           <button
-            className={`set-tab-btn ${activeTab === "requests" ? "active" : ""}`}
+            className={`set-tab-btn ${
+              activeTab === "requests" ? "active" : ""
+            }`}
             onClick={() => setActiveTab("requests")}
           >
             <UserPlus size={16} />
             Join Requests
-            {joinRequests.length > 0 && <span className="set-tab-badge">{joinRequests.length}</span>}
+            {joinRequests.length > 0 && (
+              <span className="set-tab-badge">{joinRequests.length}</span>
+            )}
           </button>
           <button
             className={`set-tab-btn ${activeTab === "members" ? "active" : ""}`}
@@ -506,7 +598,9 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
             Members
           </button>
           <button
-            className={`set-tab-btn ${activeTab === "settings" ? "active" : ""}`}
+            className={`set-tab-btn ${
+              activeTab === "settings" ? "active" : ""
+            }`}
             onClick={() => setActiveTab("settings")}
           >
             <Settings size={16} />
@@ -519,14 +613,19 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
             <div className="set-requests-tab">
               <div className="set-tab-header">
                 <h3>Pending Join Requests</h3>
-                <p className="set-tab-description">Review and manage users who want to join your group</p>
+                <p className="set-tab-description">
+                  Review and manage users who want to join your group
+                </p>
               </div>
 
               {joinRequests.length === 0 ? (
                 <div className="set-empty-state">
                   <UserPlus size={48} />
                   <h4>No pending requests</h4>
-                  <p>When users request to join your private group, they'll appear here.</p>
+                  <p>
+                    When users request to join your private group, they'll
+                    appear here.
+                  </p>
                 </div>
               ) : (
                 <div className="set-requests-list">
@@ -534,7 +633,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                     <div key={request.id} className="set-request-item">
                       <div className="set-request-user">
                         <div className="set-user-avatar">
-                          <img src={request.user.avatar} alt={request.user.name} />
+                          <img
+                            src={request.user.avatar}
+                            alt={request.user.name}
+                          />
                         </div>
                         <div className="set-user-info">
                           <h4>{request.user.name}</h4>
@@ -544,7 +646,9 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
 
                       <div className="set-request-message">
                         <p>"{request.message}"</p>
-                        <span className="set-request-date">Requested {formatDate(request.requestDate)}</span>
+                        <span className="set-request-date">
+                          Requested {formatDate(request.requestDate)}
+                        </span>
                       </div>
 
                       <div className="set-request-actions">
@@ -593,7 +697,9 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                     <div className="set-member-user">
                       <div className="set-user-avatar">
                         <img src={member.avatar} alt={member.name} />
-                        <div className={`set-status-indicator ${member.status}`}></div>
+                        <div
+                          className={`set-status-indicator ${member.status}`}
+                        ></div>
                       </div>
                       <div className="set-user-info">
                         <div className="set-user-name">
@@ -611,13 +717,17 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                       <div className="set-member-actions">
                         <select
                           value={member.role}
-                          onChange={(e) => handleChangeRole(member.id, e.target.value)}
+                          onChange={(e) =>
+                            handleChangeRole(member.id, e.target.value)
+                          }
                           className="set-role-select"
                           disabled={isLoading}
                         >
                           <option value="member">Member</option>
                           <option value="admin">Admin</option>
-                          {member.role === "owner" && <option value="owner">Owner</option>}
+                          {member.role === "owner" && (
+                            <option value="owner">Owner</option>
+                          )}
                         </select>
                         <button
                           className="set-remove-btn"
@@ -644,9 +754,15 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                   <label>Group Icon</label>
                   <div className="set-avatar-upload">
                     <div className="set-current-avatar">
-                      <img src={groupData.avatar || "/placeholder.svg"} alt="Group avatar" />
+                      <img
+                        src={groupData.avatar || "/placeholder.svg"}
+                        alt="Group avatar"
+                      />
                     </div>
-                    <button className="set-upload-btn" onClick={() => fileInputRef.current?.click()}>
+                    <button
+                      className="set-upload-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <Camera size={16} />
                       Change Icon
                     </button>
@@ -665,7 +781,9 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                   <input
                     type="text"
                     value={groupData.name}
-                    onChange={(e) => setGroupData({ ...groupData, name: e.target.value })}
+                    onChange={(e) =>
+                      setGroupData({ ...groupData, name: e.target.value })
+                    }
                     placeholder="Enter group name"
                   />
                 </div>
@@ -674,11 +792,18 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                   <label>Description</label>
                   <textarea
                     value={groupData.description}
-                    onChange={(e) => setGroupData({ ...groupData, description: e.target.value })}
+                    onChange={(e) =>
+                      setGroupData({
+                        ...groupData,
+                        description: e.target.value,
+                      })
+                    }
                     placeholder="Describe your group's purpose and goals"
                     rows={4}
                   />
-                  <span className="set-char-count">{groupData.description.length}/500</span>
+                  <span className="set-char-count">
+                    {groupData.description.length}/500
+                  </span>
                 </div>
               </div>
 
@@ -696,10 +821,21 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                       </p>
                     </div>
                     <button
-                      className={`set-toggle-btn ${groupData.isPrivate ? "private" : "public"}`}
-                      onClick={() => setGroupData({ ...groupData, isPrivate: !groupData.isPrivate })}
+                      className={`set-toggle-btn ${
+                        groupData.isPrivate ? "private" : "public"
+                      }`}
+                      onClick={() =>
+                        setGroupData({
+                          ...groupData,
+                          isPrivate: !groupData.isPrivate,
+                        })
+                      }
                     >
-                      {groupData.isPrivate ? <Lock size={16} /> : <Globe size={16} />}
+                      {groupData.isPrivate ? (
+                        <Lock size={16} />
+                      ) : (
+                        <Globe size={16} />
+                      )}
                       {groupData.isPrivate ? "Private" : "Public"}
                     </button>
                   </div>
@@ -710,21 +846,33 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                   <div className="set-member-limit">
                     <button
                       className="set-limit-btn"
-                      onClick={() => setGroupData({ ...groupData, maxMembers: Math.max(5, groupData.maxMembers - 5) })}
+                      onClick={() =>
+                        setGroupData({
+                          ...groupData,
+                          maxMembers: Math.max(5, groupData.maxMembers - 5),
+                        })
+                      }
                     >
                       <Minus size={16} />
                     </button>
-                    <span className="set-limit-value">{groupData.maxMembers}</span>
+                    <span className="set-limit-value">
+                      {groupData.maxMembers}
+                    </span>
                     <button
                       className="set-limit-btn"
                       onClick={() =>
-                        setGroupData({ ...groupData, maxMembers: Math.min(200, groupData.maxMembers + 5) })
+                        setGroupData({
+                          ...groupData,
+                          maxMembers: Math.min(200, groupData.maxMembers + 5),
+                        })
                       }
                     >
                       <Plus size={16} />
                     </button>
                   </div>
-                  <p className="set-limit-note">Current members: {members.length}</p>
+                  <p className="set-limit-note">
+                    Current members: {members.length}
+                  </p>
                 </div>
               </div>
 
@@ -738,7 +886,10 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                       <div key={tag.id} className="set-tag-item">
                         <Hash size={12} />
                         {tag.name}
-                        <button className="set-remove-tag" onClick={() => handleRemoveTag(tag.id)}>
+                        <button
+                          className="set-remove-tag"
+                          onClick={() => handleRemoveTag(tag.id)}
+                        >
                           <X size={12} />
                         </button>
                       </div>
@@ -753,7 +904,11 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                       placeholder="Add a topic tag"
                       onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                     />
-                    <button className="set-add-tag-btn" onClick={handleAddTag} disabled={isLoading}>
+                    <button
+                      className="set-add-tag-btn"
+                      onClick={handleAddTag}
+                      disabled={isLoading}
+                    >
                       <Plus size={16} />
                     </button>
                   </div>
@@ -764,7 +919,11 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
                 <h3>Danger Zone</h3>
                 <div className="set-setting-item">
                   <label>Delete Group</label>
-                  <button className="set-delete-btn" onClick={handleDeleteGroup} disabled={isLoading}>
+                  <button
+                    className="set-delete-btn"
+                    onClick={handleDeleteGroup}
+                    disabled={isLoading}
+                  >
                     <Trash2 size={16} />
                     Delete Group
                   </button>
@@ -772,10 +931,18 @@ const GroupSettingsModal = ({ group, isOpen, onClose, onUpdateGroup, currentUser
               </div>
 
               <div className="set-settings-actions">
-                <button className="set-cancel-btn" onClick={onClose} disabled={isLoading}>
+                <button
+                  className="set-cancel-btn"
+                  onClick={onClose}
+                  disabled={isLoading}
+                >
                   Cancel
                 </button>
-                <button className="set-save-btn" onClick={handleSaveSettings} disabled={isLoading}>
+                <button
+                  className="set-save-btn"
+                  onClick={handleSaveSettings}
+                  disabled={isLoading}
+                >
                   <Save size={16} />
                   Save Changes
                 </button>

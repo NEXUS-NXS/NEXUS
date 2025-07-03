@@ -1,12 +1,28 @@
 "use client";
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Play, Pause, SkipForward, SkipBack, CheckCircle, ChevronDown, ChevronRight,
-  ChevronLeft, Menu, X, BookOpen, PlayCircle, FileText, Clock, Users, Star,
-  Volume2, Maximize, Settings,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Menu,
+  X,
+  BookOpen,
+  PlayCircle,
+  FileText,
+  Clock,
+  Users,
+  Star,
+  Volume2,
+  Maximize,
+  Settings,
 } from "lucide-react";
 import "./CourseLesson.css";
 import { useUser } from "../context/UserContext";
@@ -68,122 +84,138 @@ const CourseLesson = () => {
 
   // Initialize YouTube Player
   // Initialize YouTube Player
-const initYouTubePlayer = useCallback(() => {
-  if (!isYouTubeAPILoaded || activeLesson?.type !== "video" || !activeLesson?.video_url) {
-    return;
-  }
-
-  let videoId;
-  try {
-    videoId = new URL(activeLesson.video_url).searchParams.get("v") || activeLesson.video_url.split("/").pop();
-  } catch (e) {
-    console.error("Invalid YouTube URL:", activeLesson.video_url, e);
-    setError("Invalid YouTube video URL.");
-    return;
-  }
-
-  console.log("Initializing YouTube Player for videoId:", videoId);
-
-  // Clean up previous player safely
-  const cleanupPlayer = () => {
-    const playerContainer = document.getElementById('youtube-player-container');
-    if (playerContainer) {
-      playerContainer.innerHTML = ''; // Clear any existing iframe
+  const initYouTubePlayer = useCallback(() => {
+    if (
+      !isYouTubeAPILoaded ||
+      activeLesson?.type !== "video" ||
+      !activeLesson?.video_url
+    ) {
+      return;
     }
-    if (playerRef.current) {
-      try {
-        if (playerRef.current.getPlayerState) {
-          playerRef.current.stopVideo();
-          playerRef.current.destroy();
-        }
-        if (playerRef.current.interval) {
-          clearInterval(playerRef.current.interval);
-        }
-      } catch (err) {
-        console.error("Error cleaning up YouTube player:", err);
+
+    let videoId;
+    try {
+      videoId =
+        new URL(activeLesson.video_url).searchParams.get("v") ||
+        activeLesson.video_url.split("/").pop();
+    } catch (e) {
+      console.error("Invalid YouTube URL:", activeLesson.video_url, e);
+      setError("Invalid YouTube video URL.");
+      return;
+    }
+
+    console.log("Initializing YouTube Player for videoId:", videoId);
+
+    // Clean up previous player safely
+    const cleanupPlayer = () => {
+      const playerContainer = document.getElementById(
+        "youtube-player-container"
+      );
+      if (playerContainer) {
+        playerContainer.innerHTML = ""; // Clear any existing iframe
       }
-      playerRef.current = null;
-    }
-  };
-
-  cleanupPlayer();
-
-  try {
-    // Create a new container div for the player
-    const playerContainer = document.getElementById('youtube-player-container');
-    if (!playerContainer) return;
-    
-    const playerDiv = document.createElement('div');
-    playerDiv.id = 'youtube-player';
-    playerContainer.appendChild(playerDiv);
-
-    playerRef.current = new window.YT.Player(playerDiv, {
-      height: "100%",
-      width: "100%",
-      videoId,
-      playerVars: {
-        enablejsapi: 1,
-        controls: 1,
-        rel: 0,
-        showinfo: 0,
-        modestbranding: 1,
-      },
-      events: {
-        onReady: (event) => {
-          console.log("YouTube Player Ready:", videoId);
-          setVideoDuration(event.target.getDuration());
-        },
-        onStateChange: (event) => {
-          console.log("YouTube Player State:", event.data);
-          if (event.data === window.YT.PlayerState.PLAYING) {
-            setVideoPlaying(true);
-            const interval = setInterval(() => {
-              try {
-                const currentTime = event.target.getCurrentTime();
-                setVideoCurrentTime(currentTime);
-                setVideoProgress((currentTime / event.target.getDuration()) * 100);
-              } catch (err) {
-                console.error("Error updating video progress:", err);
-                clearInterval(interval);
-              }
-            }, 1000);
-            playerRef.current.interval = interval;
-          } else {
-            setVideoPlaying(false);
-            if (playerRef.current?.interval) {
-              clearInterval(playerRef.current.interval);
-            }
+      if (playerRef.current) {
+        try {
+          if (playerRef.current.getPlayerState) {
+            playerRef.current.stopVideo();
+            playerRef.current.destroy();
           }
-        },
-        onError: (event) => {
-          console.error("YouTube Player Error:", event.data);
-          let errorMessage = "Failed to load YouTube video.";
-          if (event.data === 100) errorMessage = "Video not found.";
-          if (event.data === 101 || event.data === 150) errorMessage = "Video cannot be played (embedding restricted).";
-          setError(errorMessage);
-        },
-      },
-    });
-  } catch (err) {
-    console.error("Error initializing YouTube player:", err);
-    setError("Failed to initialize YouTube player.");
-  }
+          if (playerRef.current.interval) {
+            clearInterval(playerRef.current.interval);
+          }
+        } catch (err) {
+          console.error("Error cleaning up YouTube player:", err);
+        }
+        playerRef.current = null;
+      }
+    };
 
-  return cleanupPlayer;
-}, [activeLesson, isYouTubeAPILoaded]);
+    cleanupPlayer();
 
-useEffect(() => {
-  const cleanup = initYouTubePlayer();
-  return () => {
-    if (cleanup) cleanup();
-  };
-}, [initYouTubePlayer]);
+    try {
+      // Create a new container div for the player
+      const playerContainer = document.getElementById(
+        "youtube-player-container"
+      );
+      if (!playerContainer) return;
+
+      const playerDiv = document.createElement("div");
+      playerDiv.id = "youtube-player";
+      playerContainer.appendChild(playerDiv);
+
+      playerRef.current = new window.YT.Player(playerDiv, {
+        height: "100%",
+        width: "100%",
+        videoId,
+        playerVars: {
+          enablejsapi: 1,
+          controls: 1,
+          rel: 0,
+          showinfo: 0,
+          modestbranding: 1,
+        },
+        events: {
+          onReady: (event) => {
+            console.log("YouTube Player Ready:", videoId);
+            setVideoDuration(event.target.getDuration());
+          },
+          onStateChange: (event) => {
+            console.log("YouTube Player State:", event.data);
+            if (event.data === window.YT.PlayerState.PLAYING) {
+              setVideoPlaying(true);
+              const interval = setInterval(() => {
+                try {
+                  const currentTime = event.target.getCurrentTime();
+                  setVideoCurrentTime(currentTime);
+                  setVideoProgress(
+                    (currentTime / event.target.getDuration()) * 100
+                  );
+                } catch (err) {
+                  console.error("Error updating video progress:", err);
+                  clearInterval(interval);
+                }
+              }, 1000);
+              playerRef.current.interval = interval;
+            } else {
+              setVideoPlaying(false);
+              if (playerRef.current?.interval) {
+                clearInterval(playerRef.current.interval);
+              }
+            }
+          },
+          onError: (event) => {
+            console.error("YouTube Player Error:", event.data);
+            let errorMessage = "Failed to load YouTube video.";
+            if (event.data === 100) errorMessage = "Video not found.";
+            if (event.data === 101 || event.data === 150)
+              errorMessage = "Video cannot be played (embedding restricted).";
+            setError(errorMessage);
+          },
+        },
+      });
+    } catch (err) {
+      console.error("Error initializing YouTube player:", err);
+      setError("Failed to initialize YouTube player.");
+    }
+
+    return cleanupPlayer;
+  }, [activeLesson, isYouTubeAPILoaded]);
+
+  useEffect(() => {
+    const cleanup = initYouTubePlayer();
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [initYouTubePlayer]);
 
   const calculateOverallProgress = () => {
     if (!courseData || !courseData.modules) return 0;
-    const allLessons = courseData.modules.flatMap((module) => module.lessons) || [];
+    const allLessons =
+      courseData.modules.flatMap((module) => module.lessons) || [];
     if (allLessons.length === 0) return 0;
-    const completedLessons = allLessons.filter((lesson) => lesson.is_completed).length;
+    const completedLessons = allLessons.filter(
+      (lesson) => lesson.is_completed
+    ).length;
     return ((completedLessons / allLessons.length) * 100).toFixed(1);
   };
 
@@ -199,47 +231,67 @@ useEffect(() => {
           return;
         }
 
-        const courseResponse = await axios.get(`https://127.0.0.1:8000/courses/api/courses/${courseId}/`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        });
+        const courseResponse = await axios.get(
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          }
+        );
 
-        const modulesResponse = await axios.get(`https://127.0.0.1:8000/courses/api/modules/?course_id=${courseId}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        });
+        const modulesResponse = await axios.get(
+          `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/modules/?course_id=${courseId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          }
+        );
 
-        const modulesData = Array.isArray(modulesResponse.data.results) ? modulesResponse.data.results : modulesResponse.data;
+        const modulesData = Array.isArray(modulesResponse.data.results)
+          ? modulesResponse.data.results
+          : modulesResponse.data;
 
         const modulesWithLessons = await Promise.all(
           modulesData.map(async (module) => {
-            const lessonsResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/?module_id=${module.id}`, {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "X-CSRFToken": csrfToken,
-              },
-              withCredentials: true,
-            });
+            const lessonsResponse = await axios.get(
+              `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/?module_id=${module.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "X-CSRFToken": csrfToken,
+                },
+                withCredentials: true,
+              }
+            );
 
-            const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson__module=${module.id}`, {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "X-CSRFToken": csrfToken,
-              },
-              withCredentials: true,
-            });
+            const progressResponse = await axios.get(
+              `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/progress/?lesson__module=${module.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "X-CSRFToken": csrfToken,
+                },
+                withCredentials: true,
+              }
+            );
 
-            const lessonsData = Array.isArray(lessonsResponse.data.results) ? lessonsResponse.data.results : lessonsResponse.data;
-            const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results : progressResponse.data;
+            const lessonsData = Array.isArray(lessonsResponse.data.results)
+              ? lessonsResponse.data.results
+              : lessonsResponse.data;
+            const progressData = Array.isArray(progressResponse.data.results)
+              ? progressResponse.data.results
+              : progressResponse.data;
 
             const lessons = lessonsData.map((lesson) => {
-              const progress = progressData.find((p) => p.lesson.toString() === lesson.id.toString());
+              const progress = progressData.find(
+                (p) => p.lesson.toString() === lesson.id.toString()
+              );
               return {
                 ...lesson,
                 id: lesson.id.toString(),
@@ -257,7 +309,7 @@ useEffect(() => {
             return {
               ...module,
               id: module.id.toString(), // Ensure ID is string
-              lessons
+              lessons,
             };
           })
         );
@@ -272,7 +324,9 @@ useEffect(() => {
         setIsInstructorPreview(isPreview);
 
         let lessonData;
-        const allLessons = modulesWithLessons.flatMap((module) => module.lessons);
+        const allLessons = modulesWithLessons.flatMap(
+          (module) => module.lessons
+        );
 
         if (isPreview) {
           if (allLessons.length === 0) {
@@ -282,30 +336,43 @@ useEffect(() => {
           }
           lessonData = allLessons[0];
           console.log("Preview Lesson:", lessonData);
-          navigate(`/course/${courseId}/lesson/${lessonData.id}`, { replace: true });
+          navigate(`/course/${courseId}/lesson/${lessonData.id}`, {
+            replace: true,
+          });
         } else {
-          lessonData = allLessons.find((lesson) => lesson.id === parseInt(lessonId));
+          lessonData = allLessons.find(
+            (lesson) => lesson.id === parseInt(lessonId)
+          );
           if (!lessonData) {
             try {
-              const lessonResponse = await axios.get(`https://127.0.0.1:8000/courses/api/lessons/${lessonId}/`, {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  "X-CSRFToken": csrfToken,
-                },
-                withCredentials: true,
-              });
-              const progressResponse = await axios.get(`https://127.0.0.1:8000/courses/api/progress/?lesson=${lessonId}`, {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  "X-CSRFToken": csrfToken,
-                },
-                withCredentials: true,
-              });
-              const progressData = Array.isArray(progressResponse.data.results) ? progressResponse.data.results[0] : progressResponse.data;
+              const lessonResponse = await axios.get(
+                `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/lessons/${lessonId}/`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "X-CSRFToken": csrfToken,
+                  },
+                  withCredentials: true,
+                }
+              );
+              const progressResponse = await axios.get(
+                `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/progress/?lesson=${lessonId}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "X-CSRFToken": csrfToken,
+                  },
+                  withCredentials: true,
+                }
+              );
+              const progressData = Array.isArray(progressResponse.data.results)
+                ? progressResponse.data.results[0]
+                : progressResponse.data;
               lessonData = {
                 ...lessonResponse.data,
                 is_completed: progressData ? progressData.is_completed : false,
-                learningObjectives: lessonResponse.data.learning_objectives || [],
+                learningObjectives:
+                  lessonResponse.data.learning_objectives || [],
                 keypoints: (lessonResponse.data.keypoints || []).map((kp) => ({
                   ...kp,
                   bullets: kp.bullets || [],
@@ -313,10 +380,14 @@ useEffect(() => {
                 code_examples: lessonResponse.data.code_examples || [],
                 questions: lessonResponse.data.questions || [],
               };
-              const lessonModule = modulesWithLessons.find((m) => m.id === lessonData.module);
+              const lessonModule = modulesWithLessons.find(
+                (m) => m.id === lessonData.module
+              );
               if (lessonModule) {
                 // Check if lesson already exists in module
-                const existingLessonIndex = lessonModule.lessons.findIndex(l => l.id.toString() === lessonData.id.toString());
+                const existingLessonIndex = lessonModule.lessons.findIndex(
+                  (l) => l.id.toString() === lessonData.id.toString()
+                );
                 if (existingLessonIndex >= 0) {
                   // Update existing lesson
                   lessonModule.lessons[existingLessonIndex] = lessonData;
@@ -325,12 +396,18 @@ useEffect(() => {
                   lessonModule.lessons = [...lessonModule.lessons, lessonData];
                 }
                 setCourseData({ ...course, modules: [...modulesWithLessons] });
-    
               } else {
-                console.warn("Lesson module not found in courseData:", lessonData.module);
+                console.warn(
+                  "Lesson module not found in courseData:",
+                  lessonData.module
+                );
               }
             } catch (err) {
-              console.error("Lesson fetch error:", err.response?.status, err.response?.data);
+              console.error(
+                "Lesson fetch error:",
+                err.response?.status,
+                err.response?.data
+              );
               setError("Lesson not found.");
               navigate(`/course/${courseId}`);
               return;
@@ -340,7 +417,12 @@ useEffect(() => {
 
         if (lessonData) {
           setActiveLesson(lessonData);
-          console.log("Active Lesson Set:", lessonData, "Video URL:", lessonData.video_url);
+          console.log(
+            "Active Lesson Set:",
+            lessonData,
+            "Video URL:",
+            lessonData.video_url
+          );
         } else {
           setError("Lesson not found.");
           navigate(`/course/${courseId}`);
@@ -360,7 +442,9 @@ useEffect(() => {
           setError("Lesson or course not found.");
           navigate(`/course/${courseId}`);
         } else {
-          setError(err.response?.data?.detail || "Failed to fetch course data.");
+          setError(
+            err.response?.data?.detail || "Failed to fetch course data."
+          );
         }
       } finally {
         setLoading(false);
@@ -372,119 +456,142 @@ useEffect(() => {
 
   const toggleModuleExpansion = (moduleId) => {
     setExpandedModules((prev) =>
-      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
     );
   };
 
   const selectLesson = async (lesson) => {
-  console.log("Selecting lesson:", { id: lesson.id, title: lesson.title });
-  
-  // Reset player state
-  setVideoPlaying(false);
-  setVideoCurrentTime(0);
-  setVideoProgress(0);
-  setQuizAnswers({});
-  
-  // Clear the player container
-  const playerContainer = document.getElementById('youtube-player-container');
-  if (playerContainer) {
-    playerContainer.innerHTML = '';
-  }
-  
-  // Set the new active lesson
-  setActiveLesson(lesson);
-  
-  // Navigate immediately
-  navigate(`/course/${courseId}/lesson/${lesson.id}`);
-};
-const navigateToPreviousLesson = () => {
-  if (!courseData || !activeLesson) {
-    console.error("Cannot navigate: courseData or activeLesson is missing", { courseData, activeLesson });
-    setError("Course data not loaded. Please try again.");
-    return;
-  }
-  
-  const allLessons = courseData.modules.flatMap((module) => module.lessons) || [];
-  console.log("All Lessons:", allLessons.map(l => ({ id: l.id, title: l.title })));
-  
-  // Convert both IDs to strings for comparison
-  const currentIndex = allLessons.findIndex((l) => l.id.toString() === activeLesson.id.toString());
-  
-  if (currentIndex === -1) {
-    console.error("Current lesson not found in courseData", { 
-      activeLessonId: activeLesson.id, 
-      allLessonIds: allLessons.map(l => l.id) 
-    });
-    setError("Current lesson not found.");
-    return;
-  }
-  
-  if (currentIndex > 0) {
-    console.log("Navigating to previous lesson:", allLessons[currentIndex - 1]);
-    selectLesson(allLessons[currentIndex - 1]);
-  }
-};
+    console.log("Selecting lesson:", { id: lesson.id, title: lesson.title });
 
-const navigateToNextLesson = () => {
-  if (!courseData || !activeLesson) {
-    console.error("Cannot navigate: courseData or activeLesson is missing", { courseData, activeLesson });
-    setError("Course data not loaded. Please try again.");
-    return;
-  }
-  
-  const allLessons = courseData.modules.flatMap((module) => module.lessons) || [];
-  console.log("All Lessons:", allLessons.map(l => ({ id: l.id, title: l.title })));
-  
-  // Convert both IDs to strings for comparison
-  const currentIndex = allLessons.findIndex((l) => l.id.toString() === activeLesson.id.toString());
-  
-  if (currentIndex === -1) {
-    console.error("Current lesson not found in courseData", { 
-      activeLessonId: activeLesson.id, 
-      allLessonIds: allLessons.map(l => l.id) 
-    });
-    setError("Current lesson not found.");
-    return;
-  }
-  
-  if (currentIndex < allLessons.length - 1) {
-    console.log("Navigating to next lesson:", allLessons[currentIndex + 1]);
-    selectLesson(allLessons[currentIndex + 1]);
-  }
-};
+    // Reset player state
+    setVideoPlaying(false);
+    setVideoCurrentTime(0);
+    setVideoProgress(0);
+    setQuizAnswers({});
+
+    // Clear the player container
+    const playerContainer = document.getElementById("youtube-player-container");
+    if (playerContainer) {
+      playerContainer.innerHTML = "";
+    }
+
+    // Set the new active lesson
+    setActiveLesson(lesson);
+
+    // Navigate immediately
+    navigate(`/course/${courseId}/lesson/${lesson.id}`);
+  };
+  const navigateToPreviousLesson = () => {
+    if (!courseData || !activeLesson) {
+      console.error("Cannot navigate: courseData or activeLesson is missing", {
+        courseData,
+        activeLesson,
+      });
+      setError("Course data not loaded. Please try again.");
+      return;
+    }
+
+    const allLessons =
+      courseData.modules.flatMap((module) => module.lessons) || [];
+    console.log(
+      "All Lessons:",
+      allLessons.map((l) => ({ id: l.id, title: l.title }))
+    );
+
+    // Convert both IDs to strings for comparison
+    const currentIndex = allLessons.findIndex(
+      (l) => l.id.toString() === activeLesson.id.toString()
+    );
+
+    if (currentIndex === -1) {
+      console.error("Current lesson not found in courseData", {
+        activeLessonId: activeLesson.id,
+        allLessonIds: allLessons.map((l) => l.id),
+      });
+      setError("Current lesson not found.");
+      return;
+    }
+
+    if (currentIndex > 0) {
+      console.log(
+        "Navigating to previous lesson:",
+        allLessons[currentIndex - 1]
+      );
+      selectLesson(allLessons[currentIndex - 1]);
+    }
+  };
+
+  const navigateToNextLesson = () => {
+    if (!courseData || !activeLesson) {
+      console.error("Cannot navigate: courseData or activeLesson is missing", {
+        courseData,
+        activeLesson,
+      });
+      setError("Course data not loaded. Please try again.");
+      return;
+    }
+
+    const allLessons =
+      courseData.modules.flatMap((module) => module.lessons) || [];
+    console.log(
+      "All Lessons:",
+      allLessons.map((l) => ({ id: l.id, title: l.title }))
+    );
+
+    // Convert both IDs to strings for comparison
+    const currentIndex = allLessons.findIndex(
+      (l) => l.id.toString() === activeLesson.id.toString()
+    );
+
+    if (currentIndex === -1) {
+      console.error("Current lesson not found in courseData", {
+        activeLessonId: activeLesson.id,
+        allLessonIds: allLessons.map((l) => l.id),
+      });
+      setError("Current lesson not found.");
+      return;
+    }
+
+    if (currentIndex < allLessons.length - 1) {
+      console.log("Navigating to next lesson:", allLessons[currentIndex + 1]);
+      selectLesson(allLessons[currentIndex + 1]);
+    }
+  };
 
   const markLessonComplete = async () => {
     if (isInstructorPreview) {
       alert("Lesson previewed successfully!");
       return;
     }
-    
+
     try {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
-      
+
       // Optimistic UI update
       const updatedLesson = { ...activeLesson, is_completed: true };
       setActiveLesson(updatedLesson);
-      
-      setCourseData(prev => {
-        const updatedModules = prev.modules.map(module => {
-          if (module.lessons.some(l => l.id === activeLesson.id)) {
+
+      setCourseData((prev) => {
+        const updatedModules = prev.modules.map((module) => {
+          if (module.lessons.some((l) => l.id === activeLesson.id)) {
             return {
               ...module,
-              lessons: module.lessons.map(l => 
+              lessons: module.lessons.map((l) =>
                 l.id === activeLesson.id ? updatedLesson : l
-              )
+              ),
             };
           }
           return module;
         });
-        
+
         return { ...prev, modules: updatedModules };
       });
 
       await axios.post(
-        "https://127.0.0.1:8000/courses/api/progress/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/progress/",
         {
           lesson: activeLesson.id,
           is_completed: true,
@@ -505,29 +612,35 @@ const navigateToNextLesson = () => {
     } catch (err) {
       // Revert optimistic update if error occurs
       setActiveLesson({ ...activeLesson, is_completed: false });
-      setCourseData(prev => {
-        const revertedModules = prev.modules.map(module => {
-          if (module.lessons.some(l => l.id === activeLesson.id)) {
+      setCourseData((prev) => {
+        const revertedModules = prev.modules.map((module) => {
+          if (module.lessons.some((l) => l.id === activeLesson.id)) {
             return {
               ...module,
-              lessons: module.lessons.map(l => 
+              lessons: module.lessons.map((l) =>
                 l.id === activeLesson.id ? { ...l, is_completed: false } : l
-              )
+              ),
             };
           }
           return module;
         });
-        
+
         return { ...prev, modules: revertedModules };
       });
 
-      console.error("Mark complete error:", err.response?.status, err.response?.data);
+      console.error(
+        "Mark complete error:",
+        err.response?.status,
+        err.response?.data
+      );
       if (err.response?.status === 401) {
         const refreshed = await refreshToken();
         if (refreshed) markLessonComplete();
         else setError("Authentication failed. Please log in again.");
       } else {
-        setError(err.response?.data?.detail || "Failed to mark lesson complete.");
+        setError(
+          err.response?.data?.detail || "Failed to mark lesson complete."
+        );
       }
     }
   };
@@ -546,7 +659,7 @@ const navigateToNextLesson = () => {
       const accessToken = getAccessToken();
       const csrfToken = await fetchCsrfToken();
       const response = await axios.post(
-        "https://127.0.0.1:8000/courses/api/quiz-submissions/",
+        "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/quiz-submissions/",
         {
           lesson: activeLesson.id,
           answers: quizAnswers,
@@ -563,7 +676,11 @@ const navigateToNextLesson = () => {
       alert(`Quiz submitted successfully! Score: ${response.data.score}%`);
       markLessonComplete();
     } catch (err) {
-      console.error("Quiz submission error:", err.response?.status, err.response?.data);
+      console.error(
+        "Quiz submission error:",
+        err.response?.status,
+        err.response?.data
+      );
       if (err.response?.status === 401) {
         const refreshed = await refreshToken();
         if (refreshed) submitQuiz();
@@ -594,31 +711,31 @@ const navigateToNextLesson = () => {
     }
   };
 
-
-
   useEffect(() => {
-  return () => {
-    // Clean up on unmount
-    const playerContainer = document.getElementById('youtube-player-container');
-    if (playerContainer) {
-      playerContainer.innerHTML = '';
-    }
-    if (playerRef.current) {
-      try {
-        if (playerRef.current.getPlayerState) {
-          playerRef.current.stopVideo();
-          playerRef.current.destroy();
-        }
-        if (playerRef.current.interval) {
-          clearInterval(playerRef.current.interval);
-        }
-      } catch (err) {
-        console.error("Error during cleanup:", err);
+    return () => {
+      // Clean up on unmount
+      const playerContainer = document.getElementById(
+        "youtube-player-container"
+      );
+      if (playerContainer) {
+        playerContainer.innerHTML = "";
       }
-      playerRef.current = null;
-    }
-  };
-}, []);
+      if (playerRef.current) {
+        try {
+          if (playerRef.current.getPlayerState) {
+            playerRef.current.stopVideo();
+            playerRef.current.destroy();
+          }
+          if (playerRef.current.interval) {
+            clearInterval(playerRef.current.interval);
+          }
+        } catch (err) {
+          console.error("Error during cleanup:", err);
+        }
+        playerRef.current = null;
+      }
+    };
+  }, []);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -645,13 +762,23 @@ const navigateToNextLesson = () => {
 
   return (
     <div className="lesson-page-container">
-      <div className={`lesson-navigation-sidebar ${navigationOpen ? "expanded" : "collapsed"}`}>
+      <div
+        className={`lesson-navigation-sidebar ${
+          navigationOpen ? "expanded" : "collapsed"
+        }`}
+      >
         <div className="navigation-header">
-          <button className="back-to-hub-btn" onClick={() => navigate("/learninghub")}>
+          <button
+            className="back-to-hub-btn"
+            onClick={() => navigate("/learninghub")}
+          >
             <ChevronLeft size={18} />
             <span>Learning Hub</span>
           </button>
-          <button className="navigation-toggle-btn" onClick={() => setNavigationOpen(!navigationOpen)}>
+          <button
+            className="navigation-toggle-btn"
+            onClick={() => setNavigationOpen(!navigationOpen)}
+          >
             {navigationOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
@@ -661,7 +788,9 @@ const navigateToNextLesson = () => {
             <div className="course-overview-section">
               <h2 className="course-main-title">{courseData.title}</h2>
               <div className="course-instructor-info">
-                <span className="instructor-name">by {courseData.instructor.user}</span>
+                <span className="instructor-name">
+                  by {courseData.instructor.user}
+                </span>
               </div>
 
               <div className="course-statistics">
@@ -682,10 +811,15 @@ const navigateToNextLesson = () => {
               <div className="overall-progress-section">
                 <div className="progress-info">
                   <span className="progress-label">Course Progress</span>
-                  <span className="progress-percentage">{calculateOverallProgress()}%</span>
+                  <span className="progress-percentage">
+                    {calculateOverallProgress()}%
+                  </span>
                 </div>
                 <div className="progress-bar-container">
-                  <div className="progress-bar-fill" style={{ width: `${calculateOverallProgress()}%` }}></div>
+                  <div
+                    className="progress-bar-fill"
+                    style={{ width: `${calculateOverallProgress()}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -693,14 +827,25 @@ const navigateToNextLesson = () => {
             <div className="modules-navigation-section">
               {courseData.modules.map((module) => (
                 <div key={module.id} className="module-navigation-item">
-                  <button className="module-header-btn" onClick={() => toggleModuleExpansion(module.id)}>
+                  <button
+                    className="module-header-btn"
+                    onClick={() => toggleModuleExpansion(module.id)}
+                  >
                     <div className="module-title-section">
-                      {expandedModules.includes(module.id) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      {expandedModules.includes(module.id) ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
+                      )}
                       <span className="module-title-text">{module.title}</span>
                     </div>
                     <div className="module-progress-indicator">
-                      <span className="module-progress-text">{module.progress.toFixed(2)}%</span>
-                      {module.is_completed && <CheckCircle size={16} className="completed-icon" />}
+                      <span className="module-progress-text">
+                        {module.progress.toFixed(2)}%
+                      </span>
+                      {module.is_completed && (
+                        <CheckCircle size={16} className="completed-icon" />
+                      )}
                     </div>
                   </button>
 
@@ -724,8 +869,12 @@ const navigateToNextLesson = () => {
                             )}
                           </div>
                           <div className="lesson-details">
-                            <span className="lesson-title-text">{lesson.title}</span>
-                            <span className="lesson-duration-text">{lesson.duration}</span>
+                            <span className="lesson-title-text">
+                              {lesson.title}
+                            </span>
+                            <span className="lesson-duration-text">
+                              {lesson.duration}
+                            </span>
                           </div>
                         </button>
                       ))}
@@ -742,7 +891,11 @@ const navigateToNextLesson = () => {
         <div className="lesson-header-section">
           <div className="lesson-breadcrumb">
             <span className="breadcrumb-item">
-              {courseData.modules.find((m) => m.lessons.some((l) => l.id === activeLesson.id))?.title}
+              {
+                courseData.modules.find((m) =>
+                  m.lessons.some((l) => l.id === activeLesson.id)
+                )?.title
+              }
             </span>
             <ChevronRight size={14} />
             <span className="breadcrumb-current">{activeLesson.title}</span>
@@ -751,11 +904,17 @@ const navigateToNextLesson = () => {
           <h1 className="lesson-main-title">{activeLesson.title}</h1>
 
           <div className="lesson-navigation-controls">
-            <button className="lesson-nav-btn previous" onClick={navigateToPreviousLesson}>
+            <button
+              className="lesson-nav-btn previous"
+              onClick={navigateToPreviousLesson}
+            >
               <SkipBack size={18} />
               <span>Previous</span>
             </button>
-            <button className="lesson-nav-btn next" onClick={navigateToNextLesson}>
+            <button
+              className="lesson-nav-btn next"
+              onClick={navigateToNextLesson}
+            >
               <span>Next</span>
               <SkipForward size={18} />
             </button>
@@ -766,13 +925,16 @@ const navigateToNextLesson = () => {
           <div className="video-learning-section">
             <div className="video-player-container">
               <div className="video-player-wrapper">
-                <div id="youtube-player-container" className="youtube-iframe-container">
+                <div
+                  id="youtube-player-container"
+                  className="youtube-iframe-container"
+                >
                   {activeLesson.video_url && isYouTubeAPILoaded ? (
-                    <div style={{ height: '100%', width: '100%' }}></div>
+                    <div style={{ height: "100%", width: "100%" }}></div>
                   ) : (
                     <p className="error">
-                      {activeLesson.video_url 
-                        ? "Loading YouTube player..." 
+                      {activeLesson.video_url
+                        ? "Loading YouTube player..."
                         : "Invalid YouTube video URL"}
                     </p>
                   )}
@@ -788,10 +950,14 @@ const navigateToNextLesson = () => {
 
                   <div className="video-progress-container">
                     <div className="video-progress-bar">
-                      <div className="video-progress-fill" style={{ width: `${videoProgress}%` }}></div>
+                      <div
+                        className="video-progress-fill"
+                        style={{ width: `${videoProgress}%` }}
+                      ></div>
                     </div>
                     <span className="video-time-display">
-                      {formatTime(videoCurrentTime)} / {formatTime(videoDuration)}
+                      {formatTime(videoCurrentTime)} /{" "}
+                      {formatTime(videoDuration)}
                     </span>
                   </div>
 
@@ -828,11 +994,13 @@ const navigateToNextLesson = () => {
                   <div className="notes-section">
                     <h3 className="notes-section-title">Learning Objectives</h3>
                     <ul className="notes-objectives-list">
-                      {activeLesson.learning_objectives.map((objective, index) => (
-                        <li key={index} className="notes-objective-item">
-                          {objective.text}
-                        </li>
-                      ))}
+                      {activeLesson.learning_objectives.map(
+                        (objective, index) => (
+                          <li key={index} className="notes-objective-item">
+                            {objective.text}
+                          </li>
+                        )
+                      )}
                     </ul>
                   </div>
                 )}
@@ -847,7 +1015,10 @@ const navigateToNextLesson = () => {
                         {point.bullets?.length > 0 && (
                           <ul className="notes-bullet-list">
                             {point.bullets.map((bullet, bulletIndex) => (
-                              <li key={bulletIndex} className="notes-bullet-item">
+                              <li
+                                key={bulletIndex}
+                                className="notes-bullet-item"
+                              >
                                 {bullet.text}
                               </li>
                             ))}
@@ -876,7 +1047,9 @@ const navigateToNextLesson = () => {
                   <div className="notes-section">
                     <h3 className="notes-section-title">Summary</h3>
                     <div className="notes-summary-box">
-                      <p className="notes-summary-text">{activeLesson.summary}</p>
+                      <p className="notes-summary-text">
+                        {activeLesson.summary}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -888,7 +1061,10 @@ const navigateToNextLesson = () => {
             <div className="quiz-container">
               <div className="quiz-header">
                 <h2 className="quiz-title">Assessment: {activeLesson.title}</h2>
-                <p className="quiz-description">Test your understanding of the concepts covered in this module.</p>
+                <p className="quiz-description">
+                  Test your understanding of the concepts covered in this
+                  module.
+                </p>
               </div>
 
               <div className="quiz-questions-container">
@@ -906,7 +1082,9 @@ const navigateToNextLesson = () => {
                             value={optionIndex}
                             className="option-input"
                             checked={quizAnswers[question.id] === optionIndex}
-                            onChange={() => handleQuizAnswer(question.id, optionIndex)}
+                            onChange={() =>
+                              handleQuizAnswer(question.id, optionIndex)
+                            }
                           />
                           <span className="option-text">{option}</span>
                         </label>
@@ -920,7 +1098,10 @@ const navigateToNextLesson = () => {
                 <button
                   className="submit-quiz-button"
                   onClick={submitQuiz}
-                  disabled={Object.keys(quizAnswers).length !== activeLesson.questions.length}
+                  disabled={
+                    Object.keys(quizAnswers).length !==
+                    activeLesson.questions.length
+                  }
                 >
                   Submit Quiz
                 </button>
@@ -936,7 +1117,11 @@ const navigateToNextLesson = () => {
             disabled={activeLesson.is_completed}
           >
             <CheckCircle size={18} />
-            <span>{activeLesson.is_completed ? "Lesson Completed" : "Mark as Complete"}</span>
+            <span>
+              {activeLesson.is_completed
+                ? "Lesson Completed"
+                : "Mark as Complete"}
+            </span>
           </button>
         </div>
       </div>

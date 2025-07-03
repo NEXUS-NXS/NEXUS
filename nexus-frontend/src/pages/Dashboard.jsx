@@ -49,14 +49,17 @@ const Dashboard = () => {
           throw new Error("Missing access token or CSRF token");
         }
 
-        const response = await axios.get("https://127.0.0.1:8000/courses/api/courses/", {
-          params: { status: "published" },
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          "https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/",
+          {
+            params: { status: "published" },
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          }
+        );
 
         console.log("Featured courses response:", response.data);
         const courses = response.data.results || response.data;
@@ -90,10 +93,15 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchCoverImages = async () => {
       const allCourses = [...inProgressCourses, ...featuredCourses];
-      const uniqueCourseIds = [...new Set(allCourses.map((course) => course.id))];
+      const uniqueCourseIds = [
+        ...new Set(allCourses.map((course) => course.id)),
+      ];
       if (uniqueCourseIds.length === 0) return;
 
-      console.log("Fetching cover images for course IDs:", uniqueCourseIds.join(","));
+      console.log(
+        "Fetching cover images for course IDs:",
+        uniqueCourseIds.join(",")
+      );
 
       try {
         const accessToken = getAccessToken();
@@ -101,7 +109,7 @@ const Dashboard = () => {
         const coverPicturePromises = uniqueCourseIds.map(async (courseId) => {
           try {
             const coverResponse = await axios.get(
-              `https://127.0.0.1:8000/courses/api/courses/${courseId}/get-cover/`,
+              `https://nexus-test-api-8bf398f16fc4.herokuapp.com/courses/api/courses/${courseId}/get-cover/`,
               {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
@@ -112,23 +120,37 @@ const Dashboard = () => {
                 timeout: 5000,
               }
             );
-            console.log(`Cover picture for course ${courseId}:`, coverResponse.data.cover_picture);
-            return { id: courseId, cover_picture: coverResponse.data.cover_picture || "/placeholder.svg?height=120&width=200" };
+            console.log(
+              `Cover picture for course ${courseId}:`,
+              coverResponse.data.cover_picture
+            );
+            return {
+              id: courseId,
+              cover_picture:
+                coverResponse.data.cover_picture ||
+                "/placeholder.svg?height=120&width=200",
+            };
           } catch (err) {
             console.error(`Failed to fetch cover for course ${courseId}:`, {
               status: err.response?.status,
               data: err.response?.data,
               message: err.message,
             });
-            return { id: courseId, cover_picture: "/placeholder.svg?height=120&width=200" };
+            return {
+              id: courseId,
+              cover_picture: "/placeholder.svg?height=120&width=200",
+            };
           }
         });
 
         const coverPicturesData = await Promise.all(coverPicturePromises);
-        const coverPicturesMap = coverPicturesData.reduce((acc, { id, cover_picture }) => {
-          acc[id] = cover_picture;
-          return acc;
-        }, {});
+        const coverPicturesMap = coverPicturesData.reduce(
+          (acc, { id, cover_picture }) => {
+            acc[id] = cover_picture;
+            return acc;
+          },
+          {}
+        );
         console.log("Cover pictures map:", coverPicturesMap);
         setCoverPictures(coverPicturesMap);
       } catch (err) {
@@ -145,7 +167,10 @@ const Dashboard = () => {
 
   // Handle Continue Learning navigation
   const handleContinueLearning = (course) => {
-    console.log("Continuing to lesson:", { courseId: course.id, nextLessonId: course.next_lesson_id });
+    console.log("Continuing to lesson:", {
+      courseId: course.id,
+      nextLessonId: course.next_lesson_id,
+    });
     navigate(`/course/${course.id}/lesson/${course.next_lesson_id}`);
   };
 
@@ -168,16 +193,43 @@ const Dashboard = () => {
                 <div className="stats-grid">
                   <div className="stat-item">
                     <div className="stat-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
                         <path
                           d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
                           stroke="currentColor"
                           strokeWidth="2"
                         />
-                        <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" />
-                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" />
-                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" />
-                        <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2" />
+                        <polyline
+                          points="14,2 14,8 20,8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <line
+                          x1="16"
+                          y1="13"
+                          x2="8"
+                          y2="13"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <line
+                          x1="16"
+                          y1="17"
+                          x2="8"
+                          y2="17"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <polyline
+                          points="10,9 9,9 8,9"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
                       </svg>
                     </div>
                     <div className="stat-details">
@@ -188,16 +240,43 @@ const Dashboard = () => {
 
                   <div className="stat-item">
                     <div className="stat-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
                         <path
                           d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
                           stroke="currentColor"
                           strokeWidth="2"
                         />
-                        <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" />
-                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" />
-                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" />
-                        <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2" />
+                        <polyline
+                          points="14,2 14,8 20,8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <line
+                          x1="16"
+                          y1="13"
+                          x2="8"
+                          y2="13"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <line
+                          x1="16"
+                          y1="17"
+                          x2="8"
+                          y2="17"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <polyline
+                          points="10,9 9,9 8,9"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
                       </svg>
                     </div>
                     <div className="stat-details">
@@ -208,8 +287,17 @@ const Dashboard = () => {
 
                   <div className="stat-item">
                     <div className="stat-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" strokeWidth="2" />
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <polyline
+                          points="22 12 18 12 15 21 9 3 6 12 2 12"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
                       </svg>
                     </div>
                     <div className="stat-details">
@@ -235,10 +323,12 @@ const Dashboard = () => {
           featuredCourses.map((course) => (
             <div key={course.id} className="featured-course">
               <div className="featured-course-content">
-                
                 <h2>{course.title}</h2>
                 <p>{course.description}</p>
-                <Link to={`/course/${course.slug}`} className="start-learning-btn">
+                <Link
+                  to={`/course/${course.slug}`}
+                  className="start-learning-btn"
+                >
                   Start learning
                 </Link>
               </div>
@@ -258,11 +348,19 @@ const Dashboard = () => {
               <div key={course.id} className="enhanced-course-card-dbd">
                 <div className="course-image-dbd">
                   <img
-                    src={coverPictures[course.id] || "/placeholder.svg?height=120&width=200"}
+                    src={
+                      coverPictures[course.id] ||
+                      "/placeholder.svg?height=120&width=200"
+                    }
                     alt={course.title}
                     onError={(e) => {
-                      if (!loggedErrors.current.has(`inprogress-${course.id}`)) {
-                        console.log(`Image load failed for in-progress course ${course.id}:`, coverPictures[course.id]);
+                      if (
+                        !loggedErrors.current.has(`inprogress-${course.id}`)
+                      ) {
+                        console.log(
+                          `Image load failed for in-progress course ${course.id}:`,
+                          coverPictures[course.id]
+                        );
                         loggedErrors.current.add(`inprogress-${course.id}`);
                         e.target.src = "/placeholder.svg?height=120&width=200";
                       }
@@ -270,10 +368,28 @@ const Dashboard = () => {
                   />
                   <div className="enrollments-badge-dbd">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" />
-                      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" />
+                      <path
+                        d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <circle
+                        cx="9"
+                        cy="7"
+                        r="4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M22 21v-2a4 4 0 0 0-3-3.87"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M16 3.13a4 4 0 0 1 0 7.75"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
                     </svg>
                     {course.enrollments} enrollments
                   </div>
@@ -283,9 +399,14 @@ const Dashboard = () => {
                   <h4 className="course-title-dbd">{course.title}</h4>
                   <div className="progress-section-dbd">
                     <div className="progress-bar-dbd">
-                      <div className="progress-fill-dbd" style={{ width: `${course.progress}%` }}></div>
+                      <div
+                        className="progress-fill-dbd"
+                        style={{ width: `${course.progress}%` }}
+                      ></div>
                     </div>
-                    <span className="progress-text-dbd">{course.progress}% completed</span>
+                    <span className="progress-text-dbd">
+                      {course.progress}% completed
+                    </span>
                   </div>
                   <button
                     className="continue-course-btn-dbd"
