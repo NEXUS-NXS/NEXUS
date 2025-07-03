@@ -70,7 +70,7 @@ MIDDLEWARE = [
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 CORS_ALLOWED_ORIGINS = [
-    'https://the-nexus.co'
+    'https://the-nexus.co', 'https://bejewelled-sprinkles-043ffa.netlify.app'
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://the-nexus.co', 'https://chimerical-cucurucho-627a02.netlify.app', 'https://bejewelled-sprinkles-043ffa.netlify.app']
