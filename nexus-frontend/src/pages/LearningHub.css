@@ -158,6 +158,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 350px;
 }
 
 .enrolled-course-card:hover {

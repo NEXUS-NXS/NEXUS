@@ -16,19 +16,78 @@ class ExpertiseSerializer(serializers.ModelSerializer):
 
 class InstructorSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    email = serializers.EmailField(write_only=True, required=True)  # Add email field for input
     expertise = ExpertiseSerializer(many=True, required=False)
 
     class Meta:
         model = Instructor
-        fields = ['id', 'user', 'bio', 'experience', 'profile_image', 'expertise', 'social_links']
+        fields = ['id', 'user', 'email', 'bio', 'experience', 'profile_image', 'expertise', 'social_links']
+        extra_kwargs = {
+            'email': {'write_only': True}  # Ensure email is not included in output
+        }
 
     def create(self, validated_data):
+        email = validated_data.pop('email')
         expertise_data = validated_data.pop('expertise', [])
-        instructor = Instructor.objects.create(**validated_data)
-        for exp_data in expertise_data:
-            expertise, _ = Expertise.objects.get_or_create(name=exp_data['name'])
-            instructor.expertise.add(expertise)
+        
+        # Find or create user based on email
+        try:
+            user = User.objects.get(email=email.lower())
+        except User.DoesNotExist:
+            username = email.lower()
+            password = User.objects.make_random_password()
+            user = User.objects.create_user(
+                username=username,
+                email=email.lower(),
+                password=password
+            )
+
+        # Create or update instructor
+        instructor, created = Instructor.objects.get_or_create(user=user)
+        for attr, value in validated_data.items():
+            setattr(instructor, attr, value)
+        instructor.save()
+
+        # Handle expertise
+        if expertise_data:
+            expertise_objs = []
+            for exp_data in expertise_data:
+                expertise, _ = Expertise.objects.get_or_create(name=exp_data['name'])
+                expertise_objs.append(expertise)
+            instructor.expertise.set(expertise_objs)
+
         return instructor
+
+    def update(self, instance, validated_data):
+        email = validated_data.pop('email', None)
+        expertise_data = validated_data.pop('expertise', [])
+
+        if email:
+            try:
+                user = User.objects.get(email=email.lower())
+            except User.DoesNotExist:
+                username = email.lower()
+                password = User.objects.make_random_password()
+                user = User.objects.create_user(
+                    username=username,
+                    email=email.lower(),
+                    password=password
+                )
+            instance.user = user
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if expertise_data:
+            expertise_objs = []
+            for exp_data in expertise_data:
+                expertise, _ = Expertise.objects.get_or_create(name=exp_data['name'])
+                expertise_objs.append(expertise)
+            instance.expertise.set(expertise_objs)
+
+        return instance
+    
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,27 +109,30 @@ class CourseSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     learning_objectives = LearningObjectiveSerializer(many=True, required=False)
     prerequisites = PrerequisiteSerializer(many=True, required=False)
-
     price = serializers.SerializerMethodField()
 
     def get_price(self, obj):
         return f"${obj.price:,.2f}"
-    
+
     class Meta:
         model = Course
         fields = [
             'id', 'title', 'slug', 'description', 'category', 'difficulty',
             'estimated_duration', 'tags', 'status', 'created_at', 'updated_at',
             'total_lessons', 'total_duration', 'instructor', 'learning_objectives',
-            'prerequisites','rating', 'enrolled_students', 'price', 'is_popular',
+            'prerequisites', 'rating', 'enrolled_students', 'price', 'is_popular',
             'thumbnail'
         ]
 
     def validate(self, data):
+        # Validate title and description for all requests
         if not data.get('title'):
             raise serializers.ValidationError({"title": "This field is required."})
         if not data.get('description'):
             raise serializers.ValidationError({"description": "This field is required."})
+        # Only validate instructor.email if instructor is included in the payload
+        if 'instructor' in data and (not data.get('instructor') or not data['instructor'].get('email')):
+            raise serializers.ValidationError({"instructor.email": "Email is required."})
         return data
 
     def create(self, validated_data):
@@ -79,34 +141,25 @@ class CourseSerializer(serializers.ModelSerializer):
         objectives_data = validated_data.pop('learning_objectives', [])
         prerequisites_data = validated_data.pop('prerequisites', [])
 
-        user = self.context['request'].user
-        instructor, created = Instructor.objects.get_or_create(user=user)
+        # Use InstructorSerializer to create instructor
+        instructor_serializer = InstructorSerializer(data=instructor_data, context=self.context)
+        instructor_serializer.is_valid(raise_exception=True)
+        instructor = instructor_serializer.save()
 
-        if not created:
-            expertise_data = instructor_data.pop('expertise', None)
-
-            for attr, value in instructor_data.items():
-                setattr(instructor, attr, value)
-            instructor.save()
-
-            if expertise_data:
-                expertise_objs = []
-                for item in expertise_data:
-                    obj, _ = Expertise.objects.get_or_create(name=item['name'])
-                    expertise_objs.append(obj)
-                instructor.expertise.set(expertise_objs)
-
+        # Create course
         course = Course.objects.create(instructor=instructor, **validated_data)
 
-        # Handle tags - modified to skip existing tags without error
+        # Handle tags
         for tag_data in tags_data:
             tag, _ = Tag.objects.get_or_create(name=tag_data['name'])
             course.tags.add(tag)
-        
+
+        # Handle learning objectives
         for obj_data in objectives_data:
             objective = LearningObjective.objects.create(course=course, **obj_data)
             course.learning_objectives.add(objective)
 
+        # Handle prerequisites
         for pre_data in prerequisites_data:
             prerequisite = Prerequisite.objects.create(course=course, **pre_data)
             course.prerequisites.add(prerequisite)
@@ -120,7 +173,9 @@ class CourseSerializer(serializers.ModelSerializer):
         prerequisites_data = validated_data.pop('prerequisites', [])
 
         if instructor_data:
-            instructor_serializer = InstructorSerializer(instance.instructor, data=instructor_data, partial=True)
+            instructor_serializer = InstructorSerializer(
+                instance.instructor, data=instructor_data, partial=True, context=self.context
+            )
             instructor_serializer.is_valid(raise_exception=True)
             instructor_serializer.save()
 
@@ -143,7 +198,7 @@ class CourseSerializer(serializers.ModelSerializer):
                 instance.prerequisites.add(prerequisite)
 
         return instance
-
+       
 # learnhub/serializers.py
 class ModuleSerializer(serializers.ModelSerializer):
     progress = serializers.SerializerMethodField()

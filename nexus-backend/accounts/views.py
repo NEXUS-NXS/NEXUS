@@ -164,14 +164,20 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Profile.objects.filter(user=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        try:
+            print(f"Updating profile for user: {self.request.user.email}, profile ID: {self.kwargs.get('pk')}")
+            print(f"Request data: {self.request.data}")
+            serializer.save(user=self.request.user)
+        except Exception as e:
+            print(f"Error in perform_update: {str(e)}")
+            raise
 
     @action(detail=False, methods=['get'])
     def me(self, request):
         profile = Profile.objects.get(user=request.user)
         serializer = self.get_serializer(profile)
+        print(f"Profile /me/ response for user {request.user.email}: {serializer.data}")
         return Response(serializer.data)
-
 
 
 class ProfileByEmailView(APIView):
@@ -188,6 +194,18 @@ class ProfileByEmailView(APIView):
             serializer = InstructorSerializer(instructor, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
-            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            # Optionally create a new user and instructor
+            username = email.lower()
+            password = User.objects.make_random_password()
+            user = User.objects.create_user(
+                username=username,
+                email=email.lower(),
+                password=password
+            )
+            instructor = Instructor.objects.create(user=user)
+            serializer = InstructorSerializer(instructor, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Instructor.DoesNotExist:
-            return Response({"detail": "Instructor profile not found"}, status=status.HTTP_404_NOT_FOUND)
+            instructor = Instructor.objects.create(user=user)
+            serializer = InstructorSerializer(instructor, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -84,10 +84,13 @@ const Profile = () => {
     const csrfToken = getCookie("csrftoken");
     const accessToken = localStorage.getItem("access_token");
 
+    if (!accessToken) {
+      throw new Error("No access token found. Please log in again.");
+    }
+
     let profileId = user?.profile_id;
 
     if (!profileId) {
-      // Fallback: Fetch profile ID from /me/
       console.warn("Profile ID missing, fetching from /me/");
       const profileResponse = await axios.get(
         "https://127.0.0.1:8000/auth/api/profile/me/",
@@ -100,25 +103,19 @@ const Profile = () => {
       );
       console.log("Profile response from /me/:", profileResponse.data);
 
-      if (profileResponse.data && profileResponse.data.user && profileResponse.data.user.id) {
-        
-        const profileId = profileResponse.data?.id; // ✅ profile ID to PATCH
-
-
-        console.log("Fetched profileId from /me/:", profileId);
-
-        setUser((prev) => {
-          const updatedUser = { ...prev, profile_id: profileId };
-          localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
-          return updatedUser;
-        });
-      } else {
-        console.warn("Unexpected /me/ profile response:", profileResponse.data);
-        throw new Error("No profile data found in /me/");
+      profileId = profileResponse.data.id; // Correctly extract ID from response
+      if (!profileId) {
+        console.error("No profile ID found in /me/ response:", profileResponse.data);
+        throw new Error("No profile ID found in /me/ response");
       }
+
+      setUser((prev) => {
+        const updatedUser = { ...prev, profile_id: profileId };
+        localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
+        return updatedUser;
+      });
     }
 
-    // ✅ This PATCH block is now OUTSIDE the `if (!profileId)` block
     const response = await axios.patch(
       `https://127.0.0.1:8000/auth/api/profile/${profileId}/`,
       formData,
@@ -134,14 +131,12 @@ const Profile = () => {
 
     const updatedProfilePhoto = response.data.profile_photo;
 
-    // Update user context
     setUser((prev) => {
       const updatedUser = { ...prev, profile_photo: updatedProfilePhoto };
       localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
       return updatedUser;
     });
 
-    // Update local state for UI
     setProfileData((prev) => ({
       ...prev,
       profile_photo: updatedProfilePhoto,
@@ -153,10 +148,11 @@ const Profile = () => {
     if (error.response) {
       console.error("Response data:", error.response.data);
       console.error("Response status:", error.response.status);
+    } else {
+      console.error("Error message:", error.message);
     }
   }
 };
-
   const handleSave = () => {
     setIsEditing(false)
     console.log("Profile saved:", profileData)

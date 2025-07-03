@@ -5,6 +5,9 @@ from rest_framework import permissions
 from rest_framework import permissions
 from .models import Instructor, Course, Lesson
 
+from rest_framework import permissions
+from .models import Instructor, Course, Lesson, Module
+
 class IsInstructorOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
@@ -25,9 +28,9 @@ class IsInstructorOrReadOnly(permissions.BasePermission):
             return obj.instructor.user == request.user
         elif isinstance(obj, Lesson):
             return obj.module.course.instructor.user == request.user
-        return False
-    
-    
+        elif isinstance(obj, Module):
+            return obj.course.instructor.user == request.user  # Check if the module's course belongs to the instructor
+        return False    
 class IsInstructor(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated 

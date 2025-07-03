@@ -261,12 +261,6 @@ const CreateCourse = () => {
     return;
   }
 
-  if (emailCheckStatus === "not-found") {
-    setError("Instructor email not found. Please use an existing user email or register the instructor.");
-    console.error("Instructor email not found:", courseForm.instructor.email);
-    return;
-  }
-
   // Validate tags
   const tagsArray = courseForm.tags
     .split(",")
@@ -298,7 +292,7 @@ const CreateCourse = () => {
       estimated_duration: courseForm.estimated_duration || "",
       status: "draft",
       instructor: {
-        user: courseForm.instructor.email,
+        email: courseForm.instructor.email,
         bio: courseForm.instructor.bio || "",
         experience: courseForm.instructor.experience || "",
         profile_image: courseForm.instructor.profile_image || "",
@@ -309,9 +303,9 @@ const CreateCourse = () => {
         },
         expertise: courseForm.instructor.expertise
           .filter((exp) => exp.trim())
-          .map((exp) => ({ name: exp })),
+          .map((exp) => ({ name: exp })), // Fixed: Ensure expertise is an array of objects
       },
-      tags: tagsArray.map((tag) => ({ name: tag })),
+      tags: tagsArray.map((tag) => ({ name: tag })), // Fixed: Ensure tags are objects
       learning_objectives: courseForm.learning_objectives
         .filter((obj) => obj.trim())
         .map((obj) => ({ text: obj })),
@@ -337,17 +331,13 @@ const CreateCourse = () => {
 
     console.log("Course creation response:", response.data);
 
-
     setCourseId(response.data.id); // Store course ID
     setShowCoverUpload(true); // Open the upload popup
-
-
   } catch (err) {
     console.error("Course creation failed:", err);
     if (err.response) {
       console.error("Response data:", err.response.data);
       console.error("Response status:", err.response.status);
-      // Log specific tag errors
       if (err.response.data.tags) {
         const tagErrors = err.response.data.tags;
         if (Array.isArray(tagErrors)) {
@@ -378,7 +368,7 @@ const CreateCourse = () => {
       const errorMessage =
         err.response?.data?.detail ||
         err.response?.data?.non_field_errors?.join(" ") ||
-        err.response?.data?.tags?.[0]?.name?.join(" ") || // Handle tag-specific errors
+        err.response?.data?.tags?.[0]?.name?.join(" ") ||
         Object.values(err.response?.data || {})
           .flat()
           .join(" ") ||
@@ -390,7 +380,6 @@ const CreateCourse = () => {
     setIsSubmitting(false);
   }
 };
-
 
 const handleCloseCoverUpload = () => {
     setShowCoverUpload(false);
