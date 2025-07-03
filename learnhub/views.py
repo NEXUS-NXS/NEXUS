@@ -217,4 +217,3 @@ from rest_framework.permissions import BasePermission
 class IsEnrolled(BasePermission):
     def has_object_permission(self, request, view, obj):
         return CourseEnrollment.objects.filter(user=request.user, course=obj).exists()
-

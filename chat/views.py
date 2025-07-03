@@ -11,15 +11,34 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-class CategoryListView(generics.ListAPIView):
+class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     pagination_class = None
 
-class ExamFocusListView(generics.ListAPIView):
+    def create(self, request, *args, **kwargs):
+        # Handle both single and bulk creation
+        many = isinstance(request.data, list)
+        serializer = self.get_serializer(data=request.data, many=many)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+class ExamFocusListCreateView(generics.ListCreateAPIView):
     queryset = ExamFocus.objects.all()
     serializer_class = ExamFocusSerializer
     pagination_class = None
+
+    def create(self, request, *args, **kwargs):
+        # Handle both single and bulk creation
+        many = isinstance(request.data, list)
+        serializer = self.get_serializer(data=request.data, many=many)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class TagListCreateView(generics.ListCreateAPIView):
     queryset = Tag.objects.all()
