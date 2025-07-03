@@ -17,7 +17,7 @@ import {
   Plus,
   Loader2
 } from "lucide-react"
-import { fetchModels, SimulationModel } from '@/lib/api'
+import { fetchModels, SimulationModel } from '@/lib/api' // <-- use fetchModels instead of getModel
 
 export default function ModelsPage() {
   const [models, setModels] = useState<SimulationModel[]>([])
@@ -26,18 +26,25 @@ export default function ModelsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
 
   useEffect(() => {
-    const fetchModels = async () => {
+    const fetchAllModels = async () => {
       try {
-        const response = await fetchModels()
-        setModels(response.results || [])
+        const response = await fetchModels() // <-- fetchModels gets all models
+        if (Array.isArray(response)) {
+          setModels(response)
+        } else if (response && response.results) {
+          setModels(response.results)
+        } else {
+          setModels([])
+        }
       } catch (error) {
         console.error('Error fetching models:', error)
+        setModels([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchModels()
+    fetchAllModels()
   }, [])
 
   const filteredModels = models.filter((model) => {
