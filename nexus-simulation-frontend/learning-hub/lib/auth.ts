@@ -148,29 +148,31 @@ export async function fetchCsrfToken(retries = 3, delay = 1000): Promise<string 
   return null;
 }
 
-// Initialize auth from URL parameters (if redirected from main frontend)
 export function initializeAuthFromParams(): boolean {
   if (typeof window === 'undefined') return false;
-  
+
   const urlParams = new URLSearchParams(window.location.search);
   const fromMainApp = urlParams.get('from_main_app');
-  
+
   if (fromMainApp === 'true') {
-    // User is coming from main app, they should already have auth in localStorage
-    const token = getAuthToken();
-    const user = getUser();
-    
-    if (token && user) {
-      // Clean up URL parameters
+    // User is coming from main app, get tokens from params
+    const access_token = urlParams.get('access_token');
+    const nexus_user = urlParams.get('nexus_user');
+
+    if (access_token && nexus_user) {
+      setAuthToken(access_token);
+      setUser(JSON.parse(decodeURIComponent(nexus_user)));
+      // Remove these params from the URL
       urlParams.delete('from_main_app');
+      urlParams.delete('access_token');
+      urlParams.delete('nexus_user');
       const newUrl = urlParams.toString() 
         ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
-      
       return true;
     }
   }
-  
+
   return false;
 }

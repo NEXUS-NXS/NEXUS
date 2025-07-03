@@ -32,10 +32,29 @@ const Sidebar = ({ isMobile, isOpen, onClose }) => {
     }
   }
 
+  // Handler for Simulations redirect
+  const handleSimulationsRedirect = () => {
+    const access_token = localStorage.getItem('access_token')
+    const nexus_user = localStorage.getItem('nexus_user')
+    if (access_token && nexus_user) {
+      const targetUrl = `https://localhost:3443?from_main_app=true&access_token=${encodeURIComponent(
+        access_token
+      )}&nexus_user=${encodeURIComponent(nexus_user)}`
+      window.location.href = targetUrl
+    } else {
+      alert("You must be logged in to access Simulations.")
+    }
+  }
+
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isMobile && isOpen && !event.target.closest(".sidebar") && !event.target.closest(".menu-button-top-nav")) {
+      if (
+        isMobile &&
+        isOpen &&
+        !event.target.closest(".sidebar") &&
+        !event.target.closest(".menu-button-top-nav")
+      ) {
         onClose()
       }
     }
@@ -152,10 +171,11 @@ const Sidebar = ({ isMobile, isOpen, onClose }) => {
               <span>Career Guidance</span>
             </NavLink>
 
-            <a href="http://localhost:3000/" className="nav-item" onClick={handleLinkClick}>
+            {/* Simulations link with token handoff */}
+            <button className="nav-item" onClick={() => { handleSimulationsRedirect(); handleLinkClick(); }}>
               <BarChart3 size={20} />
               <span>Simulations</span>
-            </a>
+            </button>
           </nav>
 
           <div className="sidebar-footer">
@@ -175,7 +195,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }) => {
     )
   }
 
-  // Desktop Sidebar (existing behavior)
+  // Desktop Sidebar
   return (
     <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="logo-container">
@@ -229,10 +249,11 @@ const Sidebar = ({ isMobile, isOpen, onClose }) => {
           {!collapsed && <span>Career Guidance</span>}
         </NavLink>
 
-        <a href="http://localhost:3000/" className="nav-item">
+        {/* Simulations link with token handoff */}
+        <button className="nav-item" onClick={handleSimulationsRedirect}>
           <BarChart3 size={20} />
           {!collapsed && <span>Simulations</span>}
-        </a>
+        </button>
       </nav>
 
       <div className="sidebar-footer">

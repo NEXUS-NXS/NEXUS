@@ -30,12 +30,6 @@ import { ResultsVisualization } from "@/components/results-visualization"
 import { ParameterForm } from "@/components/parameter-form"
 import { ValidationPanel } from "@/components/validation-panel"
 
-interface SimulationPageProps {
-  params: {
-    modelId: string
-  }
-}
-
 interface SimulationState {
   status: "idle" | "validating" | "running" | "completed" | "error"
   progress: number
@@ -60,6 +54,20 @@ export default function SimulationPage() {
     errors: [],
     warnings: [],
   })
+  const [parameters, setParameters] = useState({
+    initial_value: 100000,
+    growth_rate: 0.08,
+    volatility: 0.15,
+    time_horizon: 10,
+    simulations: 10000,
+    confidence_level: 0.95,
+  })
+  const [collaborators] = useState([
+    { id: "1", name: "Alice Chen", avatar: "/placeholder.svg", status: "active", cursor: { x: 45, y: 23 } },
+    { id: "2", name: "Bob Smith", avatar: "/placeholder.svg", status: "viewing", cursor: null },
+    { id: "3", name: "Carol Davis", avatar: "/placeholder.svg", status: "editing", cursor: { x: 78, y: 56 } },
+  ])
+  const [activeTab, setActiveTab] = useState("parameters")
 
   useEffect(() => {
     const loadModel = async () => {
@@ -73,7 +81,6 @@ export default function SimulationPage() {
         setLoading(false)
       }
     }
-
     if (modelId) {
       loadModel()
     }
@@ -104,51 +111,6 @@ export default function SimulationPage() {
 
   if (!model) {
     return (
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Model not found</h1>
-            <p className="mt-2 text-gray-500">The requested model could not be found.</p>
-            <Link href="/models">
-              <Button className="mt-4">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Models
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const [simulation, setSimulation] = useState<SimulationState>({
-    status: "idle",
-    progress: 0,
-    currentStep: "",
-    results: null,
-    errors: [],
-    warnings: [],
-  })
-
-  const [parameters, setParameters] = useState({
-    initial_value: 100000,
-    growth_rate: 0.08,
-    volatility: 0.15,
-    time_horizon: 10,
-    simulations: 10000,
-    confidence_level: 0.95,
-  })
-
-  const [collaborators] = useState([
-    { id: "1", name: "Alice Chen", avatar: "/placeholder.svg", status: "active", cursor: { x: 45, y: 23 } },
-    { id: "2", name: "Bob Smith", avatar: "/placeholder.svg", status: "viewing", cursor: null },
-    { id: "3", name: "Carol Davis", avatar: "/placeholder.svg", status: "editing", cursor: { x: 78, y: 56 } },
-  ])
-
-  const [activeTab, setActiveTab] = useState("parameters")
-
-  if (!model) {
-    return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold">Model not found</h1>
@@ -161,10 +123,11 @@ export default function SimulationPage() {
     )
   }
 
+  // Helper functions for simulation
   const runSimulation = async () => {
     setSimulation((prev) => ({ ...prev, status: "validating", progress: 0, errors: [], warnings: [] }))
 
-    // Validation phase
+    // Validation phase (mock)
     await new Promise((resolve) => setTimeout(resolve, 1000))
     setSimulation((prev) => ({
       ...prev,
@@ -174,7 +137,7 @@ export default function SimulationPage() {
       startTime: new Date(),
     }))
 
-    // Simulation steps with progress updates
+    // Simulation steps with progress updates (mocked for UI)
     const steps = [
       { progress: 15, step: "Loading datasets and parameters" },
       { progress: 25, step: "Validating input parameters" },
@@ -210,7 +173,7 @@ export default function SimulationPage() {
       return parameters.initial_value * returns.reduce((acc, r) => acc * (1 + r), 1)
     })
 
-    const sortedValues = finalValues.sort((a, b) => a - b)
+    const sortedValues = finalValues.slice().sort((a, b) => a - b)
     const mean = finalValues.reduce((sum, val) => sum + val, 0) / finalValues.length
     const var95 = sortedValues[Math.floor(0.05 * sortedValues.length)]
     const var99 = sortedValues[Math.floor(0.01 * sortedValues.length)]
@@ -315,7 +278,6 @@ export default function SimulationPage() {
                 </div>
               </div>
             </div>
-
             <div className="flex space-x-2">
               {simulation.status === "running" ? (
                 <Button variant="outline" onClick={stopSimulation}>
@@ -332,21 +294,19 @@ export default function SimulationPage() {
                   Run Simulation
                 </Button>
               )}
-
               {simulation.results && (
                 <Button variant="outline" onClick={exportResults}>
                   <Download className="mr-2 h-4 w-4" />
                   Export PDF
                 </Button>
               )}
-
               <Button variant="outline">
                 <Share2 className="mr-2 h-4 w-4" />
                 Share
               </Button>
             </div>
-        {/* Collaboration Bar */}
-        {/* <CollaborationPanel collaborators={collaborators} /> */}
+          </div>
+        </div>
 
         {/* Collaboration Bar */}
         <CollaborationPanel collaborators={collaborators} />
@@ -494,11 +454,11 @@ def calculate_statistics(results):
               <CardContent className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={model.author.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{model.author.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={model.author?.avatar || "/placeholder.svg"} />
+                    <AvatarFallback>{model.author?.name ? model.author.name.charAt(0) : "A"}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium">{model.author.name}</p>
+                    <p className="text-sm font-medium">{model.author?.name || "Unknown"}</p>
                     <p className="text-xs text-gray-500">Model Author</p>
                   </div>
                 </div>
@@ -516,11 +476,11 @@ def calculate_statistics(results):
                   </div>
                   <div className="flex justify-between">
                     <span>Last Run:</span>
-                    <span>{model.lastRun}</span>
+                    <span>{model.lastRun || "-"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Popularity:</span>
-                    <span>{model.popularity}%</span>
+                    <span>{model.popularity ? `${model.popularity}%` : "-"}</span>
                   </div>
                 </div>
               </CardContent>

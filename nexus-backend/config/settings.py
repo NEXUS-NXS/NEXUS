@@ -66,17 +66,20 @@ MIDDLEWARE = [
 # CORS settings
 # CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 CORS_ALLOWED_ORIGINS = [
-    'https://127.0.0.1:5173',
-    'http://127.0.0.1:5173',
-    'https://127.0.0.1:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'https://localhost:5173',
-    'http://localhost:3000',
-    'https://localhost:3000',
+    "https://localhost:3443",
+    "https://127.0.0.1:8000",   # Only needed if you access the backend from the browser directly
+    "https://127.0.0.1:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:3000",
+    "http://127.0.0.1:3000",
+    "https://localhost:5173",
+    "http://localhost:5173",
+    "https://localhost:3000",
+    "http://localhost:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://localhost:3443",
     'https://127.0.0.1:5173',
     'https://127.0.0.1:3000',
     'https://localhost:5173',
