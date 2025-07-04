@@ -203,3 +203,79 @@ class SimulationProgress(models.Model):
     
     def __str__(self):
         return f"{self.simulation.session_id} - {self.progress_percentage}%"
+
+
+class SimulationParameter(models.Model):
+    """Individual parameter definitions for simulation models"""
+    TYPE_CHOICES = [
+        ('number', 'Number'),
+        ('string', 'String'),
+        ('boolean', 'Boolean'),
+        ('date', 'Date'),
+        ('select', 'Select'),
+        ('range', 'Range'),
+    ]
+    
+    model = models.ForeignKey(Model, on_delete=models.CASCADE, related_name='parameters')
+    name = models.CharField(max_length=100)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    default_value = models.TextField(blank=True)  # Store as string, convert based on type
+    min_value = models.FloatField(null=True, blank=True)
+    max_value = models.FloatField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    required = models.BooleanField(default=True)
+    options = JSONField(default=list, blank=True)  # For select type parameters
+    order = models.IntegerField(default=0)  # For parameter ordering in UI
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['model', 'name']
+        ordering = ['order', 'name']
+    
+    def __str__(self):
+        return f"{self.model.name} - {self.name}"
+    
+    def get_typed_default_value(self):
+        """Convert default_value string to proper type"""
+        if not self.default_value:
+            return None
+        
+        if self.type == 'number':
+            try:
+                return float(self.default_value)
+            except ValueError:
+                return 0.0
+        elif self.type == 'boolean':
+            return self.default_value.lower() in ('true', '1', 'yes', 'on')
+        elif self.type == 'date':
+            return self.default_value  # Let frontend handle date parsing
+        else:
+            return self.default_value
+    
+    def validate_value(self, value):
+        """Validate a parameter value against constraints"""
+        errors = []
+        
+        if self.required and (value is None or value == ''):
+            errors.append(f"{self.name} is required")
+            return errors
+        
+        if value is None or value == '':
+            return errors  # Optional parameters can be empty
+        
+        if self.type == 'number':
+            try:
+                num_value = float(value)
+                if self.min_value is not None and num_value < self.min_value:
+                    errors.append(f"{self.name} must be at least {self.min_value}")
+                if self.max_value is not None and num_value > self.max_value:
+                    errors.append(f"{self.name} must be at most {self.max_value}")
+            except ValueError:
+                errors.append(f"{self.name} must be a valid number")
+        
+        elif self.type == 'select' and self.options:
+            if value not in self.options:
+                errors.append(f"{self.name} must be one of: {', '.join(self.options)}")
+        
+        return errors

@@ -19,7 +19,8 @@ from simulations.views import (
     DatasetViewSet,
     ModelParameterTemplateViewSet,
     ModelCollaboratorViewSet,
-    ModelSessionViewSet
+    ModelSessionViewSet,
+    SimulationParameterViewSet
 )
 
 # Main router
@@ -29,7 +30,8 @@ router.register(r'models', ModelViewSet, basename='models')
 
 # Create nested routers for model-related endpoints
 models_router = routers.NestedDefaultRouter(router, r'models', lookup='model')
-models_router.register(r'parameters', ModelParameterTemplateViewSet, basename='model-parameters')
+models_router.register(r'parameters', SimulationParameterViewSet, basename='model-parameters')
+models_router.register(r'parameter-templates', ModelParameterTemplateViewSet, basename='model-parameter-templates')
 models_router.register(r'collaborators', ModelCollaboratorViewSet, basename='model-collaborators')
 models_router.register(r'sessions', ModelSessionViewSet, basename='model-sessions')
 
