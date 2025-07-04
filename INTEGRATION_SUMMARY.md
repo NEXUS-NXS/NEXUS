@@ -51,10 +51,30 @@ GET    /api/simulations/datasets/<id>/download/    # Download dataset
 
 ### Simulation Endpoints
 ```
-POST   /api/simulations/run/                       # Run simulation
-GET    /api/simulations/<session_id>/status/       # Get simulation status  
+POST   /api/simulations/run/                       # Run simulation (enhanced with parameter validation)
+GET    /api/simulations/<session_id>/status/       # Get simulation status (enhanced with more details)
 GET    /api/simulations/<session_id>/results/      # Get simulation results
-GET    /api/simulations/<session_id>/export/       # Export simulation results
+GET    /api/simulations/<session_id>/export/       # Export simulation results (enhanced with CSV support)
+GET    /api/simulations/<session_id>/progress/     # Get detailed simulation progress
+```
+
+### Parameter Management Endpoints
+```
+GET    /api/simulations/models/<id>/parameters/                    # List model parameters
+POST   /api/simulations/models/<id>/parameters/                    # Create new parameter
+GET    /api/simulations/models/<id>/parameters/<param_id>/         # Get parameter details
+PUT    /api/simulations/models/<id>/parameters/<param_id>/         # Update parameter
+DELETE /api/simulations/models/<id>/parameters/<param_id>/         # Delete parameter
+POST   /api/simulations/models/<id>/parameters/validate/          # Validate parameter values
+```
+
+### Parameter Template Endpoints
+```
+GET    /api/simulations/models/<id>/parameter-templates/          # List parameter templates
+POST   /api/simulations/models/<id>/parameter-templates/          # Create parameter template
+GET    /api/simulations/models/<id>/parameter-templates/<id>/     # Get template details
+PUT    /api/simulations/models/<id>/parameter-templates/<id>/     # Update template
+DELETE /api/simulations/models/<id>/parameter-templates/<id>/     # Delete template
 ```
 
 ### Session Management
@@ -91,24 +111,86 @@ npm run dev  # Usually runs on 127.0.0.1:3000
 1. In simulation platform, try:
    - Loading models (should call `/api/simulations/models/`)
    - Creating a new model
-   - Running a simulation
+   - Managing model parameters (should call `/api/simulations/models/<id>/parameters/`)
+   - Running a simulation with parameter validation
    - Managing datasets
+
+### 4. Test Parameter Management
+1. **Create Parameters for a Model**:
+   ```bash
+   curl -X POST http://127.0.0.1:8000/api/simulations/models/1/parameters/ \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "interest_rate",
+       "type": "number",
+       "default_value": "0.05",
+       "min_value": 0.0,
+       "max_value": 1.0,
+       "description": "Annual interest rate",
+       "required": true
+     }'
+   ```
+
+2. **Validate Parameters Before Simulation**:
+   ```bash
+   curl -X POST http://127.0.0.1:8000/api/simulations/models/1/parameters/validate/ \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "parameters": {
+         "interest_rate": 0.07
+       }
+     }'
+   ```
+
+3. **Run Simulation with Validated Parameters**:
+   ```bash
+   curl -X POST http://127.0.0.1:8000/api/simulations/run/ \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "model_id": 1,
+       "parameters": {
+         "interest_rate": 0.07
+       }
+     }'
+   ```
 
 ## 📋 Next Steps for Full Implementation
 
+### ✅ Completed Features
+1. **✅ SimulationParameter Model**: Individual parameter management with validation
+2. **✅ Parameter Management API**: Full CRUD operations for model parameters
+3. **✅ Enhanced Simulation Execution**: Parameter validation and improved export
+4. **✅ Comprehensive Permissions**: Model owner/collaborator access control
+5. **✅ Parameter Validation**: Type checking, range validation, required field checks
+
 ### Immediate (Required for Basic Functionality)
-1. **Add Missing Model Fields** to Django models:
+1. **Run Database Migrations**: Create the database tables for new models:
+   ```bash
+   python manage.py makemigrations simulations
+   python manage.py migrate
+   ```
+
+2. **Add Missing Model Fields** to Django models (if needed):
    ```python
    # In simulations/models.py - Model class
    rating = models.FloatField(default=0.0)
    runs = models.IntegerField(default=0)  
    is_public = models.BooleanField(default=False)
-   collaborators = models.ManyToManyField(User, related_name='collaborated_models', blank=True)
    ```
 
-2. **Update Component Props**: The simulation components expect mock data format - update them to work with real API data
+3. **Update Component Props**: The simulation components expect mock data format - update them to work with real API data
 
-3. **WebSocket Integration**: For real-time collaboration features
+4. **Permission System**: The new permission system includes:
+   - `IsModelOwnerOrAdmin`: Full access for model owners and admin collaborators
+   - `IsParameterModelOwnerOrAdmin`: Parameter management restricted to owners/admins
+   - `IsModelOwnerOrCollaborator`: Read access for all collaborators
+   - `IsSimulationOwner`: Simulation access restricted to simulation creator
+
+### Enhanced Features (Can be added later)
+1. **WebSocket Integration**: For real-time collaboration features
    ```python
    # Add to routing.py for real-time updates
    websocket_urlpatterns = [
@@ -116,8 +198,7 @@ npm run dev  # Usually runs on 127.0.0.1:3000
    ]
    ```
 
-### Enhanced Features (Can be added later)
-1. **PDF Export**: Implement actual PDF generation in `SimulationExportView`
+2. **PDF Export**: Implement actual PDF generation in `SimulationExportView`
 2. **Advanced Sharing**: Add proper user-to-user sharing with permissions
 3. **Real-time Collaboration**: WebSocket integration for live collaboration
 4. **Model Versioning**: Track model changes and versions
