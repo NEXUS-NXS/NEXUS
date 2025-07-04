@@ -6,13 +6,14 @@ import uuid
 from django.db.models import Q
 from simulations.models import (
     Simulation, Model, Dataset, Result, 
-    ModelParameterTemplate, ModelCollaborator, ModelSession, SimulationProgress
+    ModelParameterTemplate, ModelCollaborator, ModelSession, SimulationProgress,
+    SimulationParameter
 )
 from simulations.serializers import (
     SimulationSerializer, ResultSerializer, ModelSerializer, 
     ModelValidationSerializer, DatasetSerializer, DatasetCreateSerializer,
     ModelParameterTemplateSerializer, ModelCollaboratorSerializer, 
-    ModelSessionSerializer, SimulationProgressSerializer
+    ModelSessionSerializer, SimulationProgressSerializer, SimulationParameterSerializer
 )
 from simulations.tasks import run_simulation_task
 from simulations.engine import SimulationEngine
@@ -24,6 +25,11 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
+from .permissions import (
+    IsModelOwnerOrAdmin, IsModelOwnerOrCollaborator, 
+    IsParameterModelOwnerOrAdmin, IsSimulationOwner
+)
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 User = get_user_model()
 
@@ -206,7 +212,30 @@ class RunSimulationView(APIView):
         
         try:
             model = Model.objects.get(id=model_id)
+            
+            # Check if user has permission to run simulations with this model
+            if not (model.owner == request.user or 
+                   ModelCollaborator.objects.filter(
+                       model=model, user=request.user
+                   ).exists()):
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            
             dataset = Dataset.objects.get(id=dataset_id) if dataset_id else None
+            
+            # Validate parameters against model parameter definitions
+            validation_errors = {}
+            for param in model.parameters.all():
+                param_value = parameters.get(param.name)
+                errors = param.validate_value(param_value)
+                if errors:
+                    validation_errors[param.name] = errors
+            
+            if validation_errors:
+                return Response({
+                    'error': 'Parameter validation failed',
+                    'parameter_errors': validation_errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
             simulation = Simulation.objects.create(
                 session_id=str(uuid.uuid4()),
                 model=model,
@@ -217,6 +246,7 @@ class RunSimulationView(APIView):
             run_simulation_task.delay(simulation.session_id)
             serializer = SimulationSerializer(simulation)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
         except Model.DoesNotExist:
             return Response({'error': 'Model not found'}, status=status.HTTP_404_NOT_FOUND)
         except Dataset.DoesNotExist:
@@ -225,20 +255,29 @@ class RunSimulationView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class SimulationStatusView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSimulationOwner]
 
     def get(self, request, session_id):
         try:
-            simulation = Simulation.objects.get(session_id=session_id, user=request.user)
+            simulation = Simulation.objects.get(session_id=session_id)
+            
+            # Check permissions
+            if simulation.user != request.user:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            
             return Response({
+                "session_id": simulation.session_id,
                 "status": simulation.status,
                 "progress": simulation.progress,
                 "current_step": simulation.current_step,
                 "start_time": simulation.start_time,
                 "estimated_completion": simulation.estimated_completion,
+                "model_name": simulation.model.name,
+                "created_at": simulation.created_at,
+                "updated_at": simulation.updated_at,
             })
         except Simulation.DoesNotExist:
-            return Response({'error': 'Simulation not found or not authorized'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Simulation not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class SimulationResultView(APIView):
@@ -400,27 +439,152 @@ class SimulationExportView(APIView):
 
     def get(self, request, session_id):
         try:
-            simulation = Simulation.objects.get(session_id=session_id, user=request.user)
+            simulation = Simulation.objects.get(session_id=session_id)
+            
+            # Check permissions
+            if simulation.user != request.user:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+                
             result = Result.objects.filter(simulation=simulation).first()
             
             if not result:
                 return Response({'error': 'No results available for export'}, status=status.HTTP_404_NOT_FOUND)
             
-            # For now, return JSON data that frontend can convert to PDF
-            # You can implement actual PDF generation later
+            export_format = request.query_params.get('format', 'json')
+            
+            # Prepare comprehensive export data
             export_data = {
-                'simulation_id': session_id,
-                'model_name': simulation.model.name,
+                'simulation': {
+                    'id': session_id,
+                    'status': simulation.status,
+                    'created_at': simulation.created_at,
+                    'start_time': simulation.start_time,
+                    'completed_at': result.created_at if simulation.status == 'completed' else None,
+                },
+                'model': {
+                    'id': simulation.model.id,
+                    'name': simulation.model.name,
+                    'category': simulation.model.category,
+                    'language': simulation.model.language,
+                },
                 'parameters': simulation.parameters,
-                'results': result.data,
-                'created_at': simulation.created_at,
-                'export_format': request.query_params.get('format', 'json')
+                'dataset': {
+                    'id': simulation.dataset.id if simulation.dataset else None,
+                    'name': simulation.dataset.name if simulation.dataset else None,
+                } if simulation.dataset else None,
+                'results': {
+                    'summary': result.summary,
+                    'metrics': result.metrics,
+                    'chart_data': result.chart_data,
+                    'errors': result.errors,
+                },
+                'metadata': {
+                    'export_format': export_format,
+                    'exported_at': timezone.now(),
+                    'exported_by': request.user.username,
+                }
             }
             
-            return Response(export_data)
+            if export_format == 'csv' and result.chart_data:
+                # Convert chart data to CSV format for specific chart types
+                import csv
+                import io
+                
+                csv_data = {}
+                for chart_type, data in result.chart_data.items():
+                    if isinstance(data, list) and len(data) > 0:
+                        output = io.StringIO()
+                        if isinstance(data[0], list) and len(data[0]) >= 2:
+                            # Data points format [[x1, y1], [x2, y2], ...]
+                            writer = csv.writer(output)
+                            writer.writerow(['x', 'y'])
+                            writer.writerows(data)
+                            csv_data[chart_type] = output.getvalue()
+                        elif isinstance(data[0], dict):
+                            # Dictionary format
+                            writer = csv.DictWriter(output, fieldnames=data[0].keys())
+                            writer.writeheader()
+                            writer.writerows(data)
+                            csv_data[chart_type] = output.getvalue()
+                
+                export_data['csv_data'] = csv_data
+            
+            # Set appropriate headers for download
+            if export_format == 'json':
+                response = Response(export_data, content_type='application/json')
+                response['Content-Disposition'] = f'attachment; filename="simulation_{session_id}_results.json"'
+            else:
+                response = Response(export_data)
+            
+            return response
             
         except Simulation.DoesNotExist:
-            return Response({'error': 'Simulation not found or access denied'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Simulation not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'Export failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SimulationParameterViewSet(viewsets.ModelViewSet):
+    """Manage individual simulation parameters for models"""
+    serializer_class = SimulationParameterSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParameterModelOwnerOrAdmin]
+    
+    def get_queryset(self):
+        model_id = self.kwargs.get('model_pk')
+        if model_id:
+            return SimulationParameter.objects.filter(model_id=model_id)
+        return SimulationParameter.objects.none()
+    
+    def perform_create(self, serializer):
+        model_id = self.kwargs.get('model_pk')
+        try:
+            model = Model.objects.get(id=model_id)
+            # Check if user has permission to modify this model
+            if not (model.owner == self.request.user or 
+                   ModelCollaborator.objects.filter(
+                       model=model, user=self.request.user, permission='admin'
+                   ).exists()):
+                raise PermissionDenied("You don't have permission to modify this model's parameters")
+            
+            serializer.save(model=model)
+        except Model.DoesNotExist:
+            raise NotFound("Model not found")
+    
+    def get_permissions(self):
+        """Custom permissions for different actions"""
+        if self.action in ['list', 'retrieve']:
+            # Allow model owner and any collaborator to view parameters
+            permission_classes = [permissions.IsAuthenticated, IsModelOwnerOrCollaborator]
+        else:
+            # Only model owner and admin collaborators can modify parameters
+            permission_classes = [permissions.IsAuthenticated, IsParameterModelOwnerOrAdmin]
+        
+        return [permission() for permission in permission_classes]
+    
+    @action(detail=False, methods=['post'], url_path='validate')
+    def validate_parameters(self, request, model_pk=None):
+        """Validate a set of parameter values against the model's parameter definitions"""
+        try:
+            model = Model.objects.get(id=model_pk)
+            parameters = request.data.get('parameters', {})
+            
+            all_errors = {}
+            model_parameters = model.parameters.all()
+            
+            for param in model_parameters:
+                param_name = param.name
+                param_value = parameters.get(param_name)
+                errors = param.validate_value(param_value)
+                if errors:
+                    all_errors[param_name] = errors
+            
+            if all_errors:
+                return Response({'valid': False, 'errors': all_errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'valid': True, 'message': 'All parameters are valid'})
+            
+        except Model.DoesNotExist:
+            return Response({'error': 'Model not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 # Model Collaboration and Parameters Views

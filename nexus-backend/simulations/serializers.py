@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from simulations.models import (
     Simulation, Model, Dataset, Result, 
-    ModelParameterTemplate, ModelCollaborator, ModelSession, SimulationProgress
+    ModelParameterTemplate, ModelCollaborator, ModelSession, SimulationProgress,
+    SimulationParameter
 )
 from django.contrib.auth import get_user_model
 
@@ -19,6 +20,35 @@ class UserBasicSerializer(serializers.ModelSerializer):
     def get_avatar(self, obj):
         # Return a placeholder or user's actual avatar URL
         return f"/api/users/{obj.id}/avatar/" if hasattr(obj, 'profile') else "/placeholder.svg"
+
+
+class SimulationParameterSerializer(serializers.ModelSerializer):
+    typed_default_value = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SimulationParameter
+        fields = [
+            'id', 'name', 'type', 'default_value', 'typed_default_value',
+            'min_value', 'max_value', 'description', 'required', 'options', 
+            'order', 'created_at', 'updated_at'
+        ]
+    
+    def get_typed_default_value(self, obj):
+        """Get default value converted to proper type"""
+        return obj.get_typed_default_value()
+    
+    def validate(self, data):
+        """Validate parameter constraints"""
+        if data.get('type') == 'number':
+            min_val = data.get('min_value')
+            max_val = data.get('max_value')
+            if min_val is not None and max_val is not None and min_val > max_val:
+                raise serializers.ValidationError("min_value cannot be greater than max_value")
+        
+        if data.get('type') == 'select' and not data.get('options'):
+            raise serializers.ValidationError("Select type parameters must have options")
+        
+        return data
 
 
 class ModelParameterTemplateSerializer(serializers.ModelSerializer):
@@ -56,6 +86,7 @@ class SimulationProgressSerializer(serializers.ModelSerializer):
 class ModelSerializer(serializers.ModelSerializer):
     owner = serializers.StringRelatedField(read_only=True)
     parameter_templates = ModelParameterTemplateSerializer(many=True, read_only=True)
+    parameters = SimulationParameterSerializer(many=True, read_only=True)
     collaborators = ModelCollaboratorSerializer(many=True, read_only=True)
     active_sessions = serializers.SerializerMethodField()
     
@@ -63,7 +94,7 @@ class ModelSerializer(serializers.ModelSerializer):
         model = Model
         fields = [
             'id', 'name', 'category', 'language', 'code', 'metadata', 'owner', 
-            'parameter_templates', 'collaborators', 'active_sessions',
+            'parameter_templates', 'parameters', 'collaborators', 'active_sessions',
             'created_at', 'updated_at'
         ]
     
