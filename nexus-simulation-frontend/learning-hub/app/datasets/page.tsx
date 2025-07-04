@@ -182,10 +182,10 @@ export default function DatasetsPage() {
                         {dataset.type === "csv" && <FileSpreadsheet className="h-5 w-5 text-green-500" />}
                         {dataset.type === "database" && <Database className="h-5 w-5 text-blue-500" />}
                         {dataset.type === "json" && <BarChart className="h-5 w-5 text-purple-500" />}
-                        <CardTitle className="text-lg">{dataset.title}</CardTitle>
+                        <CardTitle className="text-lg">{dataset.name}</CardTitle>
                       </div>
-                      <Badge variant={dataset.isPublic ? "default" : "secondary"}>
-                        {dataset.isPublic ? "Public" : "Private"}
+                      <Badge variant={dataset.is_public ? "default" : "secondary"}>
+                        {dataset.is_public ? "Public" : "Private"}
                       </Badge>
                     </div>
                     <CardDescription className="line-clamp-2">{dataset.description}</CardDescription>
@@ -212,16 +212,16 @@ export default function DatasetsPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{dataset.lastUpdated}</span>
+                          <span>{dataset.updated_at}</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src="/placeholder.svg?height=24&width=24" alt={dataset.author} />
-                            <AvatarFallback>{dataset.author.charAt(0)}</AvatarFallback>
+                            <AvatarImage src="/placeholder.svg?height=24&width=24" alt={dataset.owner} />
+                            <AvatarFallback>{dataset.owner.charAt(0)}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-muted-foreground">{dataset.author}</span>
+                          <span className="text-sm text-muted-foreground">{dataset.owner}</span>
                         </div>
                         <Button size="sm" asChild>
                           <Link href={`/datasets/${dataset.id}`}>View Dataset</Link>
@@ -244,10 +244,10 @@ export default function DatasetsPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <FileSpreadsheet className="h-5 w-5 text-green-500" />
-                          <CardTitle className="text-lg">{dataset.title}</CardTitle>
+                          <CardTitle className="text-lg">{dataset.name}</CardTitle>
                         </div>
-                        <Badge variant={dataset.isPublic ? "default" : "secondary"}>
-                          {dataset.isPublic ? "Public" : "Private"}
+                        <Badge variant={dataset.is_public ? "default" : "secondary"}>
+                          {dataset.is_public ? "Public" : "Private"}
                         </Badge>
                       </div>
                       <CardDescription className="line-clamp-2">{dataset.description}</CardDescription>
@@ -274,16 +274,16 @@ export default function DatasetsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>{dataset.lastUpdated}</span>
+                            <span>{dataset.updated_at}</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
-                              <AvatarImage src="/placeholder.svg?height=24&width=24" alt={dataset.author} />
-                              <AvatarFallback>{dataset.author.charAt(0)}</AvatarFallback>
+                              <AvatarImage src="/placeholder.svg?height=24&width=24" alt={dataset.owner} />
+                              <AvatarFallback>{dataset.owner.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span className="text-sm text-muted-foreground">{dataset.author}</span>
+                            <span className="text-sm text-muted-foreground">{dataset.owner}</span>
                           </div>
                           <Button size="sm" asChild>
                             <Link href={`/datasets/${dataset.id}`}>View Dataset</Link>

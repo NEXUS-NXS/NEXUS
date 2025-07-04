@@ -1,22 +1,80 @@
 from rest_framework import serializers
-from simulations.models import Simulation, Model, Dataset, Result
+from simulations.models import (
+    Simulation, Model, Dataset, Result, 
+    ModelParameterTemplate, ModelCollaborator, ModelSession, SimulationProgress
+)
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 class UserBasicSerializer(serializers.ModelSerializer):
     """Serializer for basic user information in datasets"""
+    avatar = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email']
-        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'email']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'avatar']
+        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'avatar']
+    
+    def get_avatar(self, obj):
+        # Return a placeholder or user's actual avatar URL
+        return f"/api/users/{obj.id}/avatar/" if hasattr(obj, 'profile') else "/placeholder.svg"
+
+
+class ModelParameterTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ModelParameterTemplate
+        fields = ['id', 'name', 'description', 'parameters', 'is_default', 'created_at']
+
+
+class ModelCollaboratorSerializer(serializers.ModelSerializer):
+    user = UserBasicSerializer(read_only=True)
+    added_by = UserBasicSerializer(read_only=True)
+    
+    class Meta:
+        model = ModelCollaborator
+        fields = ['id', 'user', 'permission', 'added_by', 'added_at']
+
+
+class ModelSessionSerializer(serializers.ModelSerializer):
+    user = UserBasicSerializer(read_only=True)
+    
+    class Meta:
+        model = ModelSession
+        fields = ['id', 'user', 'status', 'cursor_position', 'last_activity']
+
+
+class SimulationProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SimulationProgress
+        fields = [
+            'current_step', 'progress_percentage', 'estimated_completion',
+            'steps_completed', 'steps_total', 'detailed_log', 'updated_at'
+        ]
+
 
 class ModelSerializer(serializers.ModelSerializer):
     owner = serializers.StringRelatedField(read_only=True)
+    parameter_templates = ModelParameterTemplateSerializer(many=True, read_only=True)
+    collaborators = ModelCollaboratorSerializer(many=True, read_only=True)
+    active_sessions = serializers.SerializerMethodField()
     
     class Meta:
         model = Model
-        fields = ['id', 'name', 'category', 'language', 'code', 'metadata', 'owner', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'category', 'language', 'code', 'metadata', 'owner', 
+            'parameter_templates', 'collaborators', 'active_sessions',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_active_sessions(self, obj):
+        # Get sessions active in the last 5 minutes
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        recent_threshold = timezone.now() - timedelta(minutes=5)
+        recent_sessions = obj.sessions.filter(last_activity__gte=recent_threshold)
+        return ModelSessionSerializer(recent_sessions, many=True).data
 
 class DatasetSerializer(serializers.ModelSerializer):
     owner = serializers.StringRelatedField(read_only=True)
@@ -96,6 +154,7 @@ class DatasetCreateSerializer(serializers.ModelSerializer):
 class SimulationSerializer(serializers.ModelSerializer):
     model = ModelSerializer()
     dataset = DatasetSerializer(allow_null=True)
+    progress = SimulationProgressSerializer(read_only=True)
 
     class Meta:
         model = Simulation
@@ -109,6 +168,7 @@ class SimulationSerializer(serializers.ModelSerializer):
 
 class ResultSerializer(serializers.ModelSerializer):
     simulation = SimulationSerializer()
+    
     class Meta:
         model = Result
         fields = ['simulation', 'summary', 'metrics', 'chart_data', 'errors', 'created_at']

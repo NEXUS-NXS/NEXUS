@@ -128,3 +128,78 @@ class Result(models.Model):
 
     def __str__(self):
         return f"Result for {self.simulation.session_id}"
+
+
+class ModelParameterTemplate(models.Model):
+    """Default parameter templates for models"""
+    model = models.ForeignKey(Model, on_delete=models.CASCADE, related_name='parameter_templates')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    parameters = JSONField(default=dict)  # Default parameter values
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['model', 'name']
+    
+    def __str__(self):
+        return f"{self.model.name} - {self.name}"
+
+
+class ModelCollaborator(models.Model):
+    """Track who has access to collaborate on a model"""
+    PERMISSION_CHOICES = [
+        ('view', 'View Only'),
+        ('edit', 'Edit'),
+        ('admin', 'Admin'),
+    ]
+    
+    model = models.ForeignKey(Model, on_delete=models.CASCADE, related_name='collaborators')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    permission = models.CharField(max_length=10, choices=PERMISSION_CHOICES)
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='added_collaborators')
+    added_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['model', 'user']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.model.name} ({self.permission})"
+
+
+class ModelSession(models.Model):
+    """Track active collaboration sessions for models"""
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('viewing', 'Viewing'),
+        ('editing', 'Editing'),
+        ('idle', 'Idle'),
+    ]
+    
+    model = models.ForeignKey(Model, on_delete=models.CASCADE, related_name='sessions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='viewing')
+    cursor_position = JSONField(default=dict, blank=True)  # {x: 45, y: 23}
+    last_activity = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['model', 'user']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.model.name} ({self.status})"
+
+
+class SimulationProgress(models.Model):
+    """Track detailed progress of running simulations"""
+    simulation = models.OneToOneField(Simulation, on_delete=models.CASCADE, related_name='progress_details')
+    current_step = models.CharField(max_length=255, blank=True)
+    progress_percentage = models.IntegerField(default=0)
+    estimated_completion = models.DateTimeField(null=True, blank=True)
+    steps_completed = JSONField(default=list)  # List of completed steps
+    steps_total = JSONField(default=list)  # List of all steps
+    detailed_log = JSONField(default=list)  # Detailed execution log
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.simulation.session_id} - {self.progress_percentage}%"

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,20 @@ import {
   Loader2,
 } from "lucide-react"
 import Link from "next/link"
-import { getModel, SimulationModel } from "@/lib/api"
+import { 
+  getModel, 
+  SimulationModel, 
+  fetchModelCollaborators,
+  fetchModelSessions,
+  fetchModelParameters,
+  updateModelSession,
+  runSimulation,
+  fetchSimulationProgressWithPolling,
+  fetchSimulationResults,
+  ModelSession,
+  ModelParameterTemplate,
+  SimulationProgressData
+} from '@/lib/api'
 import { SimulationProgress } from "@/components/simulation-progress"
 import { CollaborationPanel } from "@/components/collaboration-panel"
 import { ResultsVisualization } from "@/components/results-visualization"
@@ -62,27 +75,72 @@ export default function SimulationPage() {
     simulations: 10000,
     confidence_level: 0.95,
   })
-  const [collaborators] = useState([
-    { id: "1", name: "Alice Chen", avatar: "/placeholder.svg", status: "active", cursor: { x: 45, y: 23 } },
-    { id: "2", name: "Bob Smith", avatar: "/placeholder.svg", status: "viewing", cursor: null },
-    { id: "3", name: "Carol Davis", avatar: "/placeholder.svg", status: "editing", cursor: { x: 78, y: 56 } },
-  ])
+  const [collaborators, setCollaborators] = useState<ModelSession[]>([])
+  const [parameterTemplates, setParameterTemplates] = useState<ModelParameterTemplate[]>([])
   const [activeTab, setActiveTab] = useState("parameters")
+  const progressCleanup = useRef<(() => void) | null>(null)
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+  const [simulationLogs, setSimulationLogs] = useState<Array<{
+    timestamp: string;
+    level: string;
+    message: string;
+  }>>([])
+
+  // Transform ModelSession data to Collaborator format for the UI
+  const transformedCollaborators = collaborators.map(session => ({
+    id: session.id.toString(),
+    name: `${session.user.first_name} ${session.user.last_name}`.trim() || session.user.username,
+    avatar: session.user.avatar,
+    status: session.status === 'idle' ? 'away' as const : session.status,
+    cursor: session.cursor_position && session.cursor_position.x !== undefined && session.cursor_position.y !== undefined 
+      ? { x: session.cursor_position.x, y: session.cursor_position.y } 
+      : null
+  }))
 
   useEffect(() => {
+    let isMounted = true
     const loadModel = async () => {
       try {
         setLoading(true)
         const data = await getModel(modelId)
+        if (!isMounted) return
         setModel(data)
+        
+        // Load collaborators/active sessions
+        const sessions = await fetchModelSessions(modelId)
+        if (!isMounted) return
+        setCollaborators(sessions)
+        
+        // Load parameter templates
+        const templates = await fetchModelParameters(modelId)
+        if (!isMounted) return
+        setParameterTemplates(templates)
+        
+        // Set default parameters if available
+        const defaultTemplate = templates.find(t => t.is_default)
+        if (defaultTemplate) {
+          setParameters(defaultTemplate.parameters)
+        }
       } catch (error) {
         console.error("Failed to load model:", error)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
+    
     if (modelId) {
       loadModel()
+      // Update user session status
+      updateModelSession(modelId, { status: 'viewing' }).catch(console.error)
+    }
+    
+    return () => {
+      isMounted = false
+      // Cleanup progress polling when component unmounts
+      if (progressCleanup.current) {
+        progressCleanup.current()
+        progressCleanup.current = null
+      }
     }
   }, [modelId])
 
@@ -96,7 +154,7 @@ export default function SimulationPage() {
       'ml': 'bg-pink-500',
       'machine learning': 'bg-pink-500',
     }
-    return colors[category.toLowerCase()] || 'bg-gray-500'
+    return colors[category?.toLowerCase?.()] || 'bg-gray-500'
   }
 
   if (loading) {
@@ -124,118 +182,92 @@ export default function SimulationPage() {
   }
 
   // Helper functions for simulation
-  const runSimulation = async () => {
-    setSimulation((prev) => ({ ...prev, status: "validating", progress: 0, errors: [], warnings: [] }))
-
-    // Validation phase (mock)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setSimulation((prev) => ({
-      ...prev,
-      status: "running",
-      progress: 5,
-      currentStep: "Initializing simulation environment",
-      startTime: new Date(),
-    }))
-
-    // Simulation steps with progress updates (mocked for UI)
-    const steps = [
-      { progress: 15, step: "Loading datasets and parameters" },
-      { progress: 25, step: "Validating input parameters" },
-      { progress: 35, step: "Setting up Monte Carlo framework" },
-      { progress: 50, step: "Running simulation iterations (5,000/10,000)" },
-      { progress: 70, step: "Running simulation iterations (8,000/10,000)" },
-      { progress: 85, step: "Calculating statistics and risk metrics" },
-      { progress: 95, step: "Generating visualizations" },
-      { progress: 100, step: "Simulation completed successfully" },
-    ]
-
-    for (const { progress, step } of steps) {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setSimulation((prev) => ({ ...prev, progress, currentStep: step }))
+  const runSimulationHandler = async () => {
+    if (!model) return
+    try {
+      setSimulation((prev) => ({ 
+        ...prev, 
+        status: "validating", 
+        progress: 0, 
+        errors: [], 
+        warnings: [] 
+      }))
+      // Update session status to editing
+      await updateModelSession(modelId, { status: 'editing' })
+      // Start simulation
+      const simulationData = await runSimulation({
+        model_id: model.id,
+        parameters: parameters
+      })
+      const sessionId = simulationData.session_id
+      setCurrentSessionId(sessionId)
+      setSimulation((prev) => ({
+        ...prev,
+        status: "running",
+        progress: 5,
+        currentStep: "Simulation started",
+        startTime: new Date(),
+      }))
+      // Start polling for progress
+      const cleanup = await fetchSimulationProgressWithPolling(
+        sessionId,
+        async (progress: SimulationProgressData) => {
+          setSimulation((prev) => ({
+            ...prev,
+            progress: progress.progress_percentage,
+            currentStep: progress.current_step,
+          }))
+          // Update logs from detailed log
+          if (progress.detailed_log && Array.isArray(progress.detailed_log)) {
+            setSimulationLogs(progress.detailed_log)
+          }
+          // Check if simulation is complete
+          if (progress.progress_percentage >= 100) {
+            setSimulation((prev) => ({
+              ...prev,
+              status: "completed",
+              endTime: new Date(),
+              currentStep: "Simulation completed successfully",
+            }))
+            // Fetch simulation results
+            try {
+              const results = await fetchSimulationResults(sessionId)
+              setSimulation((prev) => ({
+                ...prev,
+                results: results,
+              }))
+            } catch (error) {
+              console.error("Failed to fetch simulation results:", error)
+            }
+            setActiveTab("results")
+            // Update session status back to viewing
+            updateModelSession(modelId, { status: 'viewing' }).catch(console.error)
+            // Stop polling
+            if (progressCleanup.current) {
+              progressCleanup.current()
+              progressCleanup.current = null
+            }
+          }
+        },
+        2000 // Poll every 2 seconds
+      )
+      if (progressCleanup.current) progressCleanup.current()
+      progressCleanup.current = cleanup
+    } catch (error) {
+      console.error("Simulation failed:", error)
+      setSimulation((prev) => ({
+        ...prev,
+        status: "error",
+        errors: [error instanceof Error ? error.message : "Simulation failed"],
+      }))
     }
-
-    // Generate mock results
-    const mockResults = generateMockResults()
-    setSimulation((prev) => ({
-      ...prev,
-      status: "completed",
-      results: mockResults,
-      endTime: new Date(),
-      currentStep: "Simulation completed successfully",
-    }))
-    setActiveTab("results")
-  }
-
-  const generateMockResults = () => {
-    // Generate realistic simulation results
-    const finalValues = Array.from({ length: 10000 }, () => {
-      const returns = Array.from({ length: 10 }, () => (Math.random() - 0.5) * 0.4 + 0.08)
-      return parameters.initial_value * returns.reduce((acc, r) => acc * (1 + r), 1)
-    })
-
-    const sortedValues = finalValues.slice().sort((a, b) => a - b)
-    const mean = finalValues.reduce((sum, val) => sum + val, 0) / finalValues.length
-    const var95 = sortedValues[Math.floor(0.05 * sortedValues.length)]
-    const var99 = sortedValues[Math.floor(0.01 * sortedValues.length)]
-
-    return {
-      summary: {
-        mean: mean,
-        median: sortedValues[Math.floor(sortedValues.length / 2)],
-        stdDev: Math.sqrt(finalValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / finalValues.length),
-        var95: var95,
-        var99: var99,
-        min: Math.min(...finalValues),
-        max: Math.max(...finalValues),
-        probLoss: finalValues.filter((v) => v < parameters.initial_value).length / finalValues.length,
-      },
-      timeSeries: generateTimeSeriesData(),
-      histogram: generateHistogramData(finalValues),
-      riskMetrics: {
-        sharpeRatio: 1.2,
-        maxDrawdown: 0.18,
-        volatility: 0.15,
-        beta: 1.05,
-      },
-    }
-  }
-
-  const generateTimeSeriesData = () => {
-    const paths = []
-    for (let i = 0; i < 20; i++) {
-      const path = []
-      let value = parameters.initial_value
-      for (let t = 0; t <= parameters.time_horizon; t++) {
-        const return_ = (Math.random() - 0.5) * 0.3 + 0.08
-        value *= 1 + return_ / parameters.time_horizon
-        path.push({ time: t, value, path: i })
-      }
-      paths.push(path)
-    }
-    return paths
-  }
-
-  const generateHistogramData = (values: number[]) => {
-    const bins = 25
-    const min = Math.min(...values)
-    const max = Math.max(...values)
-    const binWidth = (max - min) / bins
-
-    const histogram = Array.from({ length: bins }, (_, i) => ({
-      bin: `${((min + i * binWidth) / 1000).toFixed(0)}k`,
-      count: 0,
-      range: [min + i * binWidth, min + (i + 1) * binWidth],
-    }))
-
-    values.forEach((value) => {
-      const binIndex = Math.min(Math.floor((value - min) / binWidth), bins - 1)
-      histogram[binIndex].count++
-    })
-
-    return histogram
   }
 
   const stopSimulation = () => {
+    if (progressCleanup.current) {
+      progressCleanup.current()
+      progressCleanup.current = null
+    }
     setSimulation((prev) => ({ ...prev, status: "idle", progress: 0, currentStep: "" }))
   }
 
@@ -255,7 +287,6 @@ export default function SimulationPage() {
               Back to Models
             </Button>
           </Link>
-
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center space-x-3 mb-2">
@@ -271,10 +302,10 @@ export default function SimulationPage() {
                 </div>
                 <div className="flex items-center">
                   <Users className="mr-1 h-4 w-4" />
-                  <span>By {model.owner}</span>
+                  <span>By {model.owner?.name || model.owner || "Unknown"}</span>
                 </div>
                 <div className="flex items-center">
-                  <span>Created: {new Date(model.created_at).toLocaleDateString()}</span>
+                  <span>Created: {model.created_at ? new Date(model.created_at).toLocaleDateString() : "-"}</span>
                 </div>
               </div>
             </div>
@@ -286,7 +317,7 @@ export default function SimulationPage() {
                 </Button>
               ) : (
                 <Button
-                  onClick={runSimulation}
+                  onClick={runSimulationHandler}
                   disabled={simulation.status === "validating"}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -307,23 +338,17 @@ export default function SimulationPage() {
             </div>
           </div>
         </div>
-
         {/* Collaboration Bar */}
-        <CollaborationPanel collaborators={collaborators} />
-
+        <CollaborationPanel collaborators={transformedCollaborators} />
         {/* Simulation Progress */}
-        {(simulation.status === "validating" || simulation.status === "running") && (
+        {(simulation.status === "validating" || simulation.status === "running") && currentSessionId && (
           <SimulationProgress
-            progress={simulation.progress}
-            currentStep={simulation.currentStep}
-            status={simulation.status}
+            sessionId={currentSessionId}
             startTime={simulation.startTime}
           />
         )}
-
         {/* Validation Errors/Warnings */}
         <ValidationPanel errors={simulation.errors} warnings={simulation.warnings} />
-
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Panel */}
@@ -347,7 +372,6 @@ export default function SimulationPage() {
                   Logs
                 </TabsTrigger>
               </TabsList>
-
               <TabsContent value="parameters">
                 <ParameterForm
                   parameters={parameters}
@@ -355,7 +379,6 @@ export default function SimulationPage() {
                   disabled={simulation.status === "running"}
                 />
               </TabsContent>
-
               <TabsContent value="code">
                 <Card>
                   <CardHeader>
@@ -364,7 +387,7 @@ export default function SimulationPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                      <pre>{`# Monte Carlo Portfolio Simulation
+                      <pre>{model.code || `# Monte Carlo Portfolio Simulation
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -405,11 +428,9 @@ def calculate_statistics(results):
                   </CardContent>
                 </Card>
               </TabsContent>
-
               <TabsContent value="results">
                 {simulation.results && <ResultsVisualization results={simulation.results} parameters={parameters} />}
               </TabsContent>
-
               <TabsContent value="logs">
                 <Card>
                   <CardHeader>
@@ -419,23 +440,22 @@ def calculate_statistics(results):
                   <CardContent>
                     <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto">
                       <div className="space-y-1">
-                        <div>[2023-12-15 14:30:15] INFO: Simulation started</div>
-                        <div>
-                          [2023-12-15 14:30:15] INFO: Loading parameters: initial_value=100000, growth_rate=0.08
-                        </div>
-                        <div>[2023-12-15 14:30:16] INFO: Validating input parameters</div>
-                        <div>[2023-12-15 14:30:16] INFO: ✓ All parameters within valid ranges</div>
-                        <div>[2023-12-15 14:30:17] INFO: Initializing Monte Carlo framework</div>
-                        <div>[2023-12-15 14:30:18] INFO: Starting simulation with 10,000 iterations</div>
-                        <div>[2023-12-15 14:30:20] INFO: Progress: 2,500/10,000 iterations completed</div>
-                        <div>[2023-12-15 14:30:22] INFO: Progress: 5,000/10,000 iterations completed</div>
-                        <div>[2023-12-15 14:30:24] INFO: Progress: 7,500/10,000 iterations completed</div>
-                        <div>[2023-12-15 14:30:26] INFO: Progress: 10,000/10,000 iterations completed</div>
-                        <div>[2023-12-15 14:30:27] INFO: Calculating risk metrics and statistics</div>
-                        <div>[2023-12-15 14:30:28] INFO: Generating visualization data</div>
-                        <div>[2023-12-15 14:30:29] INFO: ✓ Simulation completed successfully</div>
-                        <div>[2023-12-15 14:30:29] INFO: Total runtime: 14.2 seconds</div>
-                        <div>[2023-12-15 14:30:29] INFO: Results exported to workspace</div>
+                        {simulationLogs.length > 0 ? (
+                          simulationLogs.map((log, index) => (
+                            <div key={index} className={`${
+                              log.level === 'ERROR' ? 'text-red-400' :
+                              log.level === 'WARNING' ? 'text-yellow-400' :
+                              log.level === 'INFO' ? 'text-green-400' :
+                              'text-gray-400'
+                            }`}>
+                              [{log.timestamp}] {log.level}: {log.message}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-gray-500 italic">
+                            {simulation.status === "idle" ? "Run a simulation to see logs here" : "Loading logs..."}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -443,7 +463,6 @@ def calculate_statistics(results):
               </TabsContent>
             </Tabs>
           </div>
-
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Model Info */}
@@ -454,17 +473,15 @@ def calculate_statistics(results):
               <CardContent className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={model.author?.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{model.author?.name ? model.author.name.charAt(0) : "A"}</AvatarFallback>
+                    <AvatarImage src={model.owner?.avatar || "/placeholder.svg"} />
+                    <AvatarFallback>{model.owner?.name ? model.owner.name.charAt(0) : "A"}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium">{model.author?.name || "Unknown"}</p>
+                    <p className="text-sm font-medium">{model.owner?.name || "Unknown"}</p>
                     <p className="text-xs text-gray-500">Model Author</p>
                   </div>
                 </div>
-
                 <Separator />
-
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Language:</span>
@@ -485,7 +502,6 @@ def calculate_statistics(results):
                 </div>
               </CardContent>
             </Card>
-
             {/* Simulation Status */}
             <Card>
               <CardHeader>
@@ -505,15 +521,12 @@ def calculate_statistics(results):
                     {simulation.status === "error" && <div className="w-2 h-2 bg-red-400 rounded-full" />}
                     <span className="text-sm font-medium capitalize">{simulation.status}</span>
                   </div>
-
                   {simulation.startTime && (
                     <div className="text-xs text-gray-500">Started: {simulation.startTime.toLocaleTimeString()}</div>
                   )}
-
                   {simulation.endTime && (
                     <div className="text-xs text-gray-500">Completed: {simulation.endTime.toLocaleTimeString()}</div>
                   )}
-
                   {simulation.results && (
                     <div className="pt-2 border-t">
                       <p className="text-xs text-gray-500 mb-2">Quick Stats:</p>
@@ -536,7 +549,6 @@ def calculate_statistics(results):
                 </div>
               </CardContent>
             </Card>
-
             {/* Quick Actions */}
             <Card>
               <CardHeader>

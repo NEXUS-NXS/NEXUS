@@ -87,6 +87,67 @@ export interface SimulationSession {
   created_at: string;
 }
 
+// Types for collaboration features
+export interface ModelCollaborator {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar: string;
+  };
+  permission: 'view' | 'edit' | 'admin';
+  added_by: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar: string;
+  };
+  added_at: string;
+}
+
+export interface ModelSession {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar: string;
+  };
+  status: 'active' | 'viewing' | 'editing' | 'idle';
+  cursor_position: { x?: number; y?: number };
+  last_activity: string;
+}
+
+export interface ModelParameterTemplate {
+  id: number;
+  name: string;
+  description: string;
+  parameters: any;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface SimulationProgressData {
+  current_step: string;
+  progress_percentage: number;
+  estimated_completion: string | null;
+  steps_completed: string[];
+  steps_total: string[];
+  detailed_log: Array<{
+    timestamp: string;
+    level: string;
+    message: string;
+  }>;
+  updated_at: string;
+}
+
 // Helper function for API calls
 async function apiCall(endpoint: string, options: RequestInit = {}) {
   const url = `${BASE_URL}${endpoint}`;
@@ -325,4 +386,123 @@ export async function shareSimulationSession(session_id: string) {
 
 export async function fetchSharedSessions() {
   return apiCall('/sessions/shared/');
+}
+
+// ==========================
+// COLLABORATION ENDPOINTS
+// ==========================
+
+export async function fetchModelCollaborators(modelId: string): Promise<ModelCollaborator[]> {
+  return apiCall(`/models/${modelId}/collaborators/`);
+}
+
+export async function addModelCollaborator(modelId: string, data: {
+  user_id: number;
+  permission: 'view' | 'edit' | 'admin';
+}) {
+  return apiCall(`/models/${modelId}/collaborators/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateModelCollaborator(modelId: string, collaboratorId: number, data: {
+  permission: 'view' | 'edit' | 'admin';
+}) {
+  return apiCall(`/models/${modelId}/collaborators/${collaboratorId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeModelCollaborator(modelId: string, collaboratorId: number) {
+  return apiCall(`/models/${modelId}/collaborators/${collaboratorId}/`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchModelSessions(modelId: string): Promise<ModelSession[]> {
+  return apiCall(`/models/${modelId}/sessions/`);
+}
+
+export async function updateModelSession(modelId: string, data: {
+  status?: 'active' | 'viewing' | 'editing' | 'idle';
+  cursor_position?: { x?: number; y?: number };
+}) {
+  return apiCall(`/models/${modelId}/sessions/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchModelParameters(modelId: string): Promise<ModelParameterTemplate[]> {
+  return apiCall(`/models/${modelId}/parameters/`);
+}
+
+export async function createParameterTemplate(modelId: string, data: {
+  name: string;
+  description?: string;
+  parameters: any;
+  is_default?: boolean;
+}) {
+  return apiCall(`/models/${modelId}/parameters/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateParameterTemplate(modelId: string, templateId: number, data: Partial<ModelParameterTemplate>) {
+  return apiCall(`/models/${modelId}/parameters/${templateId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteParameterTemplate(modelId: string, templateId: number) {
+  return apiCall(`/models/${modelId}/parameters/${templateId}/`, {
+    method: 'DELETE',
+  });
+}
+
+// ==========================
+// ENHANCED SIMULATION ENDPOINTS
+// ==========================
+
+export async function fetchSimulationProgress(session_id: string): Promise<SimulationProgressData> {
+  return apiCall(`/${session_id}/progress/`);
+}
+
+export async function fetchSimulationProgressWithPolling(
+  session_id: string,
+  onProgress: (progress: SimulationProgressData) => void,
+  interval: number = 2000
+): Promise<() => void> {
+  let isPolling = true;
+  
+  const poll = async () => {
+    while (isPolling) {
+      try {
+        const progress = await fetchSimulationProgress(session_id);
+        onProgress(progress);
+        
+        // Stop polling if simulation is complete or failed
+        if (progress.progress_percentage >= 100) {
+          isPolling = false;
+          break;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, interval));
+      } catch (error) {
+        console.error('Error polling simulation progress:', error);
+        await new Promise(resolve => setTimeout(resolve, interval * 2));
+      }
+    }
+  };
+  
+  poll();
+  
+  // Return cleanup function
+  return () => {
+    isPolling = false;
+  };
 }

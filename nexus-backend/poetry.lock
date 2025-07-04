@@ -589,6 +589,22 @@ python-jose = ["python-jose (==3.3.0)"]
 test = ["cryptography", "freezegun", "pytest", "pytest-cov", "pytest-django", "pytest-xdist", "tox"]
 
 [[package]]
+name = "drf-nested-routers"
+version = "0.94.2"
+description = "Nested resources for the Django Rest Framework"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "drf_nested_routers-0.94.2-py2.py3-none-any.whl", hash = "sha256:74dbdceeae2a32f8668ba0df8e3eeabeb9b1c64d2621d914901ae653e4e3bcff"},
+    {file = "drf_nested_routers-0.94.2.tar.gz", hash = "sha256:aa70923b716dc47cd93b8129b06be6c15706b405cf5f718f59cb8eed01de59cc"},
+]
+
+[package.dependencies]
+Django = ">=4.2"
+djangorestframework = ">=3.15.0"
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -2264,4 +2280,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "667264a55af56c17a2c461397f86923ffda9810767272d48f45db2bf3a53e064"
+content-hash = "d7b0a497e6b527d7d95153270249a4f39206daf09534980d6027d4bf8134add3"

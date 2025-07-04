@@ -4,10 +4,15 @@ from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
 import uuid
 from django.db.models import Q
-from simulations.models import Simulation, Model, Dataset, Result
+from simulations.models import (
+    Simulation, Model, Dataset, Result, 
+    ModelParameterTemplate, ModelCollaborator, ModelSession, SimulationProgress
+)
 from simulations.serializers import (
     SimulationSerializer, ResultSerializer, ModelSerializer, 
-    ModelValidationSerializer, DatasetSerializer, DatasetCreateSerializer
+    ModelValidationSerializer, DatasetSerializer, DatasetCreateSerializer,
+    ModelParameterTemplateSerializer, ModelCollaboratorSerializer, 
+    ModelSessionSerializer, SimulationProgressSerializer
 )
 from simulations.tasks import run_simulation_task
 from simulations.engine import SimulationEngine
@@ -16,6 +21,11 @@ from rest_framework.decorators import action
 from django.http import FileResponse
 from .serializers import DatasetSerializer
 from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class DatasetViewSet(viewsets.ModelViewSet):
@@ -411,3 +421,161 @@ class SimulationExportView(APIView):
             
         except Simulation.DoesNotExist:
             return Response({'error': 'Simulation not found or access denied'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Model Collaboration and Parameters Views
+
+class ModelParameterTemplateViewSet(viewsets.ModelViewSet):
+    """Manage parameter templates for models"""
+    serializer_class = ModelParameterTemplateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        model_id = self.kwargs.get('model_pk')
+        return ModelParameterTemplate.objects.filter(model_id=model_id)
+    
+    def perform_create(self, serializer):
+        model_id = self.kwargs.get('model_pk')
+        model = Model.objects.get(id=model_id)
+        serializer.save(model=model)
+
+
+class ModelCollaboratorViewSet(viewsets.ModelViewSet):
+    """Manage model collaborators"""
+    serializer_class = ModelCollaboratorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        model_id = self.kwargs.get('model_pk')
+        return ModelCollaborator.objects.filter(model_id=model_id)
+    
+    def perform_create(self, serializer):
+        model_id = self.kwargs.get('model_pk')
+        model = Model.objects.get(id=model_id)
+        serializer.save(model=model, added_by=self.request.user)
+
+
+class ModelSessionViewSet(viewsets.ModelViewSet):
+    """Manage active model sessions for collaboration"""
+    serializer_class = ModelSessionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        model_id = self.kwargs.get('model_pk')
+        # Only return recent sessions (last 10 minutes)
+        recent_threshold = timezone.now() - timedelta(minutes=10)
+        return ModelSession.objects.filter(
+            model_id=model_id,
+            last_activity__gte=recent_threshold
+        )
+    
+    def perform_create(self, serializer):
+        model_id = self.kwargs.get('model_pk')
+        model = Model.objects.get(id=model_id)
+        
+        # Update or create session for this user and model
+        session, created = ModelSession.objects.update_or_create(
+            model=model,
+            user=self.request.user,
+            defaults={
+                'status': serializer.validated_data.get('status', 'viewing'),
+                'cursor_position': serializer.validated_data.get('cursor_position', {}),
+            }
+        )
+        return session
+    
+    @action(detail=True, methods=['patch'])
+    def update_status(self, request, model_pk=None, pk=None):
+        """Update session status (active, viewing, editing, idle)"""
+        session = self.get_object()
+        status = request.data.get('status')
+        cursor_position = request.data.get('cursor_position', {})
+        
+        if status:
+            session.status = status
+        if cursor_position:
+            session.cursor_position = cursor_position
+        session.save()
+        
+        return Response(ModelSessionSerializer(session).data)
+
+
+class SimulationProgressView(APIView):
+    """Get detailed progress for a simulation"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, session_id):
+        try:
+            simulation = Simulation.objects.get(session_id=session_id, user=request.user)
+            progress = getattr(simulation, 'progress_details', None)
+            
+            if not progress:
+                # Create default progress if it doesn't exist
+                progress = SimulationProgress.objects.create(
+                    simulation=simulation,
+                    current_step="Initializing...",
+                    progress_percentage=0,
+                    steps_total=[
+                        "Validating parameters",
+                        "Loading datasets",
+                        "Setting up simulation environment",
+                        "Running simulation",
+                        "Calculating results",
+                        "Generating visualizations"
+                    ]
+                )
+            
+            return Response(SimulationProgressSerializer(progress).data)
+            
+        except Simulation.DoesNotExist:
+            return Response({'error': 'Simulation not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class ModelViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing simulation models"""
+    serializer_class = ModelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name', 'category', 'metadata__description']
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Model.objects.filter(
+            Q(owner=user) | Q(collaborators__user=user)
+        ).distinct()
+        
+        # Filter by category if provided
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        
+        # Filter by language if provided
+        language = self.request.query_params.get('language')
+        if language:
+            queryset = queryset.filter(language=language)
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+    
+    @action(detail=True, methods=['get'])
+    def collaborators(self, request, pk=None):
+        """Get all collaborators for a model"""
+        model = self.get_object()
+        collaborators = model.collaborators.all()
+        return Response(ModelCollaboratorSerializer(collaborators, many=True).data)
+    
+    @action(detail=True, methods=['get'])
+    def sessions(self, request, pk=None):
+        """Get active sessions for a model"""
+        model = self.get_object()
+        recent_threshold = timezone.now() - timedelta(minutes=10)
+        sessions = model.sessions.filter(last_activity__gte=recent_threshold)
+        return Response(ModelSessionSerializer(sessions, many=True).data)
+    
+    @action(detail=True, methods=['get'])
+    def parameters(self, request, pk=None):
+        """Get parameter templates for a model"""
+        model = self.get_object()
+        templates = model.parameter_templates.all()
+        return Response(ModelParameterTemplateSerializer(templates, many=True).data)
