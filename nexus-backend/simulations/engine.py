@@ -2,11 +2,19 @@ import uuid
 import pandas as pd
 import numpy as np
 from RestrictedPython import compile_restricted, safe_globals
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
 from simulations.models import Simulation, Result
 import json
 from scipy import stats
+
+# Optional rpy2 imports
+try:
+    import rpy2.robjects as ro
+    from rpy2.robjects import pandas2ri
+    RPY2_AVAILABLE = True
+except ImportError:
+    ro = None
+    pandas2ri = None
+    RPY2_AVAILABLE = False
 
 class SimulationEngine:
     def __init__(self, simulation):
